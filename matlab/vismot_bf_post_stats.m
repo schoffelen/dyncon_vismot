@@ -3,7 +3,7 @@ function stat = vismot_bf_post_stats(suffix, contrast, varargin)
 dolog    = ft_getopt(varargin, 'dolog', 0);
 fliphemi = ft_getopt(varargin, 'fliphemi', [0 0 0 0 0]);
 
-datadir = '/home/language/jansch/projects/visuomotor/data/analyse/source';
+datadir = '/project/3011085.01/visuomotor/data/analyse/source';
 d   = dir(datadir);
 sel = ~cellfun('isempty', strfind({d.name}', suffix));
 d   = d(sel);
