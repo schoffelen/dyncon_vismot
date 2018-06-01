@@ -1,0 +1,41 @@
+function vismot_anatomy_qualitycheck(subject)
+
+% load in the head model and the source model.
+sourcemodel = vismot_anatomy_sourcemodel2d(subject);
+load(fullfile(subject.pathname, 'headmodel', [subject.name, '_headmodel']));
+
+% load in the header to get the grad-info
+filename = vismot_subject2datafile(subject);
+hdr      = ft_read_header(filename);
+grad     = hdr.grad;
+
+% set metrical units
+headmodel   = ft_convert_units(headmodel, 'm');
+sourcemodel = ft_convert_units(sourcemodel, 'm');
+grad        = ft_convert_units(grad, 'm');
+
+% coregister the gradiometers if needed
+if ~isempty(strfind(subject.datafile, 'h'))
+  load(fullfile(subject.pathname, 'dewar2head_avg', [subject.name, 'dewar2head_avg']));
+  
+  % the transformation matrix M is in centimeters
+  M(1:3,4) = M(1:3,4)./100; % convert to meters
+  grad = ft_transform_geometry(M, ft_convert_units(grad, 'm'));
+end
+
+figure;hold on;
+
+subplot(2,2,1);
+ft_plot_sens(grad, 'chantype', 'megmag');
+ft_plot_vol(headmodel, 'edgecolor', 'none', 'facecolor', [0.1 0.3 0.5], 'facealpha', 0.3);
+ft_plot_mesh(sourcemodel, 'edgecolor', 'none', 'vertexcolor', sourcemodel.curv);
+subplot(2,2,2);
+ft_plot_sens(grad, 'chantype', 'megmag');
+ft_plot_vol(headmodel, 'edgecolor', 'none', 'facecolor', [0.1 0.3 0.5], 'facealpha', 0.3);
+ft_plot_mesh(sourcemodel, 'edgecolor', 'none', 'vertexcolor', sourcemodel.curv);
+view([90 0]);
+subplot(2,2,3);
+ft_plot_sens(grad, 'chantype', 'megmag');
+ft_plot_vol(headmodel, 'edgecolor', 'none', 'facecolor', [0.1 0.3 0.5], 'facealpha', 0.3);
+ft_plot_mesh(sourcemodel, 'edgecolor', 'none', 'vertexcolor', sourcemodel.curv);
+view([0 0]);

@@ -1,0 +1,61 @@
+%---doSourcestatistics
+subjinfo
+
+cd([SUBJ(1).pathname,'source']);
+cnt = 0;
+for k = 1:length(SUBJ)
+    try,
+        fname = [SUBJ(k).name,'stat10'];
+        fprintf('%s\n',fname);
+        load(fname);
+        cnt = cnt+1;
+        allstat13{1,cnt} = stat13;
+        allstat42{1,cnt} = stat42;
+    end
+end
+
+fname = [homejanmatlab,'/mri/templategrid6mm'];        
+load(fname, 'grid');
+for k = 1:length(allstat13)
+    allstat13{k}.dimord = 'pos';
+    allstat42{k}.dimord = 'pos';
+    allstat13{k}.pos    = grid.pos;
+    allstat42{k}.pos    = grid.pos;
+end
+gavg13 = selectdata(allstat13{:}, 'param', 'stat2');
+gavg42 = selectdata(allstat42{:}, 'param', 'stat2');
+gavg13.dim = gavg13.dim(1:2);
+gavg42.dim = gavg42.dim(1:2);
+Nsubj      = gavg13.dim(1);
+
+gavg13.stat2(Nsubj+1:2*Nsubj,:) = 0;
+gavg42.stat2(Nsubj+1:2*Nsubj,:) = 0;
+gavg13.dim(1) = 2*Nsubj;
+gavg42.dim(1) = 2*Nsubj;
+
+cfg           = [];
+cfg.method    = 'montecarlo';
+cfg.statistic = 'pooledT';
+cfg.parameter = 'stat2';
+cfg.numrandomization = 500;
+cfg.design    = [ones(1,Nsubj) ones(1,Nsubj)*2];
+cfg.ivar      = 1;
+stat13        = sourcestatistics(cfg, gavg13);
+stat42        = sourcestatistics(cfg, gavg42);
+
+%---with the flipdim
+%flipdim left-effector
+dim  = pos2dim3d(grid.pos);
+dum  = zeros(dim);
+gavg = gavg42;
+for k = 1:Nsubj
+  dum(:) = gavg13.stat2(k,:);
+  dum    = flipdim(dum,1);
+  gavg.stat2(k,:) = (gavg.stat2(k,:)+dum(:)')./2;
+end
+stat = sourcestatistics(cfg, gavg);
+
+
+    
+    
+
