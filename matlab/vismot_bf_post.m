@@ -1,4 +1,4 @@
-function [source, stat13, stat42] = vismot_bf_post(subject,varargin)
+function [source, stat13, stat42, stat12, stat43] = vismot_bf_post(subject,varargin)
 
 %function [source, filter, freq] = vismot_bf_post(subject,varargin)
 
@@ -25,7 +25,9 @@ cfg = [];
 cfg.appenddim = 'rpt';
 cfg.parameter = 'fourierspctrm';
 freq = ft_appendfreq(cfg, freqpre(1), freqpre(2), freqpre(3), freqpre(4), freqpre(5), freqpst(1), freqpst(2), freqpst(3), freqpst(4), freqpst(5));
-clear freqpst;
+% freq = ft_appendfreq(cfg, freqpst(1), freqpst(2), freqpst(3), freqpst(4), freqpst(5));
+
+% clear freqpst;
 
 % load in the head model and the source model.
 sourcemodel = vismot_anatomy_sourcemodel2d(subject);
@@ -44,6 +46,11 @@ headmodel   = ft_convert_units(headmodel,   'm');
 sourcemodel = ft_convert_units(sourcemodel, 'm');
 if ~isfield(sourcemodel, 'inside')
   sourcemodel.inside = true(size(sourcemodel.pnt,1),1);
+else
+    sourcemodel.inside = true(size(sourcemodel.pos,1),1);
+    A = load('atlas_subparc374_8k.mat');
+    idx = match_str(A.atlas.parcellationlabel, {'R_???_01', 'R_MEDIAL.WALL_01', 'L_???_01', 'L_MEDIAL.WALL_01'});
+    sourcemodel.inside(ismember(A.atlas.parcellation, idx))=0;
 end
 
 %sourcemodel.inside(11:end)=false;
@@ -61,7 +68,7 @@ cfg.grid            = leadfield;
 cfg.headmodel       = headmodel;
 cfg.method          = 'dics';
 cfg.keeptrials      = 'yes';
-cfg.dics.lambda     = '10%';
+cfg.dics.lambda     = '100%';
 cfg.dics.fixedori   = 'yes';
 cfg.dics.keepfilter = 'yes';
 cfg.dics.realfilter = 'yes';
@@ -82,29 +89,32 @@ cfg.dics.keepfilter = 'no';
 cfgs        = [];
 cfgs.method = 'montecarlo';
 cfgs.numrandomization = 0;
-cfgs.statistic        = 'statfun_yuenTtest';
+% cfgs.statistic        = 'statfun_yuenTtest'; % This statistics function
+% is not available.
+cfgs.statistic       = 'indepsamplesT';
 
 s     = keepfields(tmpsource,{'freq' 'tri' 'inside' 'pos'});
 
+% same response hand contrast
 cfg2              = [];
 cfg2.trials       = find(ismember(freq.trialinfo(:,1),[1 3]) & freq.trialinfo(:,end)==2); % for the pst trials only
 tmpfreq           = ft_selectdata(cfg2, freq);
 s.pow = zeros(numel(s.inside),numel(cfg2.trials));
-s.pow(s.inside,:) = fourier2pow(cat(3, filter{:}), tmpfreq.fourierspctrm, tmpfreq.cumtapcnt);
+s.pow(s.inside,:) = fourier2pow(cat(1, filter{:}), tmpfreq.fourierspctrm, tmpfreq.cumtapcnt);
 s.trialinfo       = tmpfreq.trialinfo;
 
 cfgs.design                 = s.trialinfo(:,1)';
 cfgs.design(cfgs.design==3) = 2;
 stat13                      = ft_sourcestatistics(cfgs, s);
 stat13 = rmfield(stat13, {'prob', 'cirange', 'mask'});
-stat13.tri = int16(stat13.tri);
-stat13.pos = single(stat13.pos);
+stat13.tri = int16(stat13.tri); % what is this step for?
+stat13.pos = single(stat13.pos); % what is this step for?
 
 cfg2              = [];
 cfg2.trials       = find(ismember(freq.trialinfo(:,1),[2 4]) & freq.trialinfo(:,end)==2); % for the pst trials only
 tmpfreq           = ft_selectdata(cfg2, freq);
 s.pow = zeros(numel(s.inside),numel(cfg2.trials));
-s.pow(s.inside,:) = fourier2pow(cat(3, filter{:}), tmpfreq.fourierspctrm, tmpfreq.cumtapcnt);
+s.pow(s.inside,:) = fourier2pow(cat(1, filter{:}), tmpfreq.fourierspctrm, tmpfreq.cumtapcnt);
 s.trialinfo       = tmpfreq.trialinfo;
 
 cfgs.design                 = s.trialinfo(:,1)';
@@ -114,6 +124,35 @@ stat42 = rmfield(stat42, {'prob', 'cirange', 'mask'});
 stat42.tri = int16(stat42.tri);
 stat42.pos = single(stat42.pos);
 
+% same hemifield contrast
+cfg2              = [];
+cfg2.trials       = find(ismember(freq.trialinfo(:,1),[1 2]) & freq.trialinfo(:,end)==2); % for the pst trials only
+tmpfreq           = ft_selectdata(cfg2, freq);
+s.pow = zeros(numel(s.inside),numel(cfg2.trials));
+s.pow(s.inside,:) = fourier2pow(cat(1, filter{:}), tmpfreq.fourierspctrm, tmpfreq.cumtapcnt);
+s.trialinfo       = tmpfreq.trialinfo;
+
+cfgs.design                 = s.trialinfo(:,1)';
+stat12                      = ft_sourcestatistics(cfgs, s);
+stat12 = rmfield(stat12, {'prob', 'cirange', 'mask'});
+stat12.tri = int16(stat12.tri);
+stat12.pos = single(stat12.pos);
+
+cfg2              = [];
+cfg2.trials       = find(ismember(freq.trialinfo(:,1),[4 3]) & freq.trialinfo(:,end)==2); % for the pst trials only
+tmpfreq           = ft_selectdata(cfg2, freq);
+s.pow = zeros(numel(s.inside),numel(cfg2.trials));
+s.pow(s.inside,:) = fourier2pow(cat(1, filter{:}), tmpfreq.fourierspctrm, tmpfreq.cumtapcnt);
+s.trialinfo       = tmpfreq.trialinfo;
+
+cfgs.design                 = s.trialinfo(:,1)';
+cfgs.design(cfgs.design==4) = 1;
+cfgs.design(cfgs.design==3) = 2;
+stat43                      = ft_sourcestatistics(cfgs, s);
+stat43 = rmfield(stat43, {'prob', 'cirange', 'mask'});
+stat43.tri = int16(stat43.tri);
+stat43.pos = single(stat43.pos);
+
 % compute condition specific power
 for k = 1:5
   cfg2.trials = find(freq.trialinfo(:,1)==k & freq.trialinfo(:,end)==2); % for the pst trials only
@@ -122,6 +161,31 @@ for k = 1:5
   tmp         = smooth_source(tmp, 'parameter', 'pow', 'maxdist', 0.025);
   source(k)   = tmp;
 end
+
+% smooth contrasts
+% same response hand:
+tmp         = stat13;
+tmp.fwhm    = fwhm;
+tmp         = smooth_source(tmp, 'parameter', 'stat', 'maxdist', 0.025);
+stat13      = tmp;
+
+tmp         = stat42;
+tmp.fwhm    = fwhm;
+tmp         = smooth_source(tmp, 'parameter', 'stat', 'maxdist', 0.025);
+stat42         = tmp;
+
+% same hemifield
+tmp         = stat12;
+tmp.fwhm    = fwhm;
+tmp         = smooth_source(tmp, 'parameter', 'stat', 'maxdist', 0.025);
+stat12      = tmp;
+
+tmp         = stat43;
+tmp.fwhm    = fwhm;
+tmp         = smooth_source(tmp, 'parameter', 'stat', 'maxdist', 0.025);
+stat43      = tmp;
+
+
 
 %%condition 1: cue left, response left
 %%condition 2: cue left, response right
