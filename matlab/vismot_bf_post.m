@@ -4,6 +4,7 @@ function [source, stat13, stat42] = vismot_bf_post(subject,varargin)
 
 frequency = ft_getopt(varargin, 'frequency', 10);
 smoothing = ft_getopt(varargin, 'smoothing', []);
+sourcemodel = ft_getopt(varargin, 'sourcemodel');
 
 if isempty(smoothing)
   if frequency < 30
@@ -28,7 +29,9 @@ freq = ft_appendfreq(cfg, freqpre(1), freqpre(2), freqpre(3), freqpre(4), freqpr
 clear freqpst;
 
 % load in the head model and the source model.
-sourcemodel = vismot_anatomy_sourcemodel2d(subject);
+if isempty(sourcemodel)
+  sourcemodel = vismot_anatomy_sourcemodel2d(subject);
+end
 load(fullfile(subject.pathname, 'headmodel', [subject.name, '_headmodel']));
 
 % coregister the gradiometers if needed
@@ -54,6 +57,7 @@ cfg.grad      = freq.grad;
 cfg.headmodel = headmodel;
 cfg.grid      = sourcemodel;
 cfg.channel   = freq.label;
+cfg.singleshell.batchsize = 2000;
 leadfield     = ft_prepare_leadfield(cfg);
 
 cfg                 = [];
