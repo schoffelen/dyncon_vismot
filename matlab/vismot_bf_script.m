@@ -12,10 +12,20 @@ if ~exist('smoothing', 'var'),
     smoothing = 4;
 end
 subject = vismot_subjinfo(subjectname);
+<<<<<<< HEAD
 
 [source, stat13, stat42, stat12, stat43] = vismot_bf_post(subject,'frequency',frequency, 'smoothing', smoothing);
 filename = fullfile(subject.pathname,'source','mve',[subject.name,'source_post_',num2str(frequency)]);
 % filename = fullfile(subject.pathname,'source','mve','cmnfiltpost',[subject.name,'source_post_',num2str(frequency)]);
+=======
+ 
+%[source, stat13, stat42] = vismot_bf_post(subject,'frequency',frequency);
+%filename = fullfile(subject.pathname,'source',[subject.name,'source_post_',num2str(frequency)]);
+
+load(fullfile(subject.pathname,'mri',sprintf('%s_sourcemodel3d6mm',subject.name)),'sourcemodel');
+[source, stat13, stat42] = vismot_bf_post(subject,'frequency',frequency,'sourcemodel',sourcemodel);
+filename = fullfile(subject.pathname,'source',[subject.name,'source3d_post_',num2str(frequency)]);
+>>>>>>> 0810e3fbeac55e8b15c6ec0b5cff26ea88ebd83b
 
 % scrub the headmodel and grid from the output cfg
 for k = 1:numel(source)

@@ -4,6 +4,7 @@ function [source, stat13, stat42, stat12, stat43] = vismot_bf_post(subject,varar
 
 frequency = ft_getopt(varargin, 'frequency', 10);
 smoothing = ft_getopt(varargin, 'smoothing', []);
+sourcemodel = ft_getopt(varargin, 'sourcemodel');
 
 if isempty(smoothing)
   if frequency < 30
@@ -30,7 +31,9 @@ freq = ft_appendfreq(cfg, freqpre(1), freqpre(2), freqpre(3), freqpre(4), freqpr
 % clear freqpst;
 
 % load in the head model and the source model.
-sourcemodel = vismot_anatomy_sourcemodel2d(subject);
+if isempty(sourcemodel)
+  sourcemodel = vismot_anatomy_sourcemodel2d(subject);
+end
 load(fullfile(subject.pathname, 'headmodel', [subject.name, '_headmodel']));
 
 % coregister the gradiometers if needed
@@ -61,6 +64,7 @@ cfg.grad      = freq.grad;
 cfg.headmodel = headmodel;
 cfg.grid      = sourcemodel;
 cfg.channel   = freq.label;
+cfg.singleshell.batchsize = 2000;
 leadfield     = ft_prepare_leadfield(cfg);
 
 cfg                 = [];
@@ -77,7 +81,7 @@ filter    = tmpsource.avg.filter;
 
 cfg2             = [];
 cfg2.fwhm        = 'yes';
-cfg2.fwhmmethod  = 'gaussfit';
+if ~isfield(sourcemodel, 'dim'), cfg2.fwhmmethod  = 'gaussfit'; end
 cfg2.fwhmmaxdist = 0.02;
 fwhm             = ft_sourcedescriptives(cfg2, tmpsource);
 fwhm             = fwhm.fwhm;
@@ -107,8 +111,13 @@ cfgs.design                 = s.trialinfo(:,1)';
 cfgs.design(cfgs.design==3) = 2;
 stat13                      = ft_sourcestatistics(cfgs, s);
 stat13 = rmfield(stat13, {'prob', 'cirange', 'mask'});
+<<<<<<< HEAD
 stat13.tri = int16(stat13.tri); % what is this step for?
 stat13.pos = single(stat13.pos); % what is this step for?
+=======
+try, stat13.tri = int16(stat13.tri); end
+stat13.pos = single(stat13.pos);
+>>>>>>> 0810e3fbeac55e8b15c6ec0b5cff26ea88ebd83b
 
 cfg2              = [];
 cfg2.trials       = find(ismember(freq.trialinfo(:,1),[2 4]) & freq.trialinfo(:,end)==2); % for the pst trials only
@@ -121,7 +130,7 @@ cfgs.design                 = s.trialinfo(:,1)';
 cfgs.design(cfgs.design==4) = 1;
 stat42                      = ft_sourcestatistics(cfgs, s);
 stat42 = rmfield(stat42, {'prob', 'cirange', 'mask'});
-stat42.tri = int16(stat42.tri);
+try, stat42.tri = int16(stat42.tri); end
 stat42.pos = single(stat42.pos);
 
 % same hemifield contrast
@@ -157,8 +166,12 @@ stat43.pos = single(stat43.pos);
 for k = 1:5
   cfg2.trials = find(freq.trialinfo(:,1)==k & freq.trialinfo(:,end)==2); % for the pst trials only
   tmp         = ft_sourceanalysis(cfg, ft_selectdata(cfg2, freq));
-  tmp.fwhm    = fwhm;
-  tmp         = smooth_source(tmp, 'parameter', 'pow', 'maxdist', 0.025);
+  try
+    tmp.fwhm    = fwhm;
+    tmp         = smooth_source(tmp, 'parameter', 'pow', 'maxdist', 0.025);
+  catch
+    tmp = removefields(tmp, 'fwhm');
+  end
   source(k)   = tmp;
 end
 
