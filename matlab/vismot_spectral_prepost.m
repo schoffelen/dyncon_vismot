@@ -162,6 +162,7 @@ cfg.foilim  = foilim;
 cfg.taper   = taper;
 cfg.tapsmofrq = smoothing;
 cfg.channel   = pre{1}.label;
+cfg.keeptrials = 'yes';
 %cfg.channel = 'MEG';
 %freqpre = cell(1,5);
 %freqpst = cell(1,5);
