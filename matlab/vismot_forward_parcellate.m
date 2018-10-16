@@ -37,7 +37,7 @@ cfg.channel = tlckpre(1).label;
 cfg.backproject = 'no';
 leadfieldorig = ft_prepare_leadfield(cfg);
 
-load(fullfile('/home/language/jansch/projects/visuomotor/data/analyse/mri/Conte69_32k/atlas_subparc374_8k'));
+load(fullfile('/project/3011085.03/analysis/mri/Conte69_32k/atlas_subparc374_8k'));
 
 leadfield = rmfield(leadfieldorig, {'pos' ,'tri', 'inside', 'unit', 'leadfield'});
 leadfield.brainordinate = atlas;

@@ -50,7 +50,7 @@ cfg.grid            = rmfield(leadfield, 'leadfield');
 cfg.headmodel       = headmodel;
 cfg.method          = 'lcmv';
 cfg.keeptrials      = 'yes';
-cfg.lcmv.lambda     = '10%';
+cfg.lcmv.lambda     = '100%';
 cfg.lcmv.keepfilter = 'yes';
 source1             = ft_sourceanalysis(cfg, tlck);
 filter_avgpos       = source1.avg.filter;
@@ -60,5 +60,5 @@ filter_lfsvd        = source2.avg.filter;
 cfg.grid            = leadfieldorig;
 source              = ft_sourceanalysis(cfg, tlck);
 
-load(fullfile('/home/language/jansch/projects/visuomotor/data/analyse/mri/Conte69_32k/atlas_subparc374_8k'));
+load(fullfile('/project/3011085.03/analysis/mri/Conte69_32k/atlas_subparc374_8k'));
 [source, parcellation] = vismot_bf_lcmv_parcellate(source, tlck, 'parcellation', atlas);

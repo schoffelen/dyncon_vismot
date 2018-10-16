@@ -3,7 +3,11 @@ function stat = vismot_bf_post_stats(suffix, contrast, varargin)
 dolog    = ft_getopt(varargin, 'dolog', 0);
 fliphemi = ft_getopt(varargin, 'fliphemi', [0 0 0 0 0]);
 
+<<<<<<< HEAD
+datadir = '/project/3011085.03/analysis/source/mve';
+=======
 datadir = '/project/3011085.01/visuomotor/data/analyse/source';
+>>>>>>> 0810e3fbeac55e8b15c6ec0b5cff26ea88ebd83b
 d   = dir(datadir);
 sel = ~cellfun('isempty', strfind({d.name}', suffix));
 d   = d(sel);
@@ -34,12 +38,12 @@ for k = 1:5
 end
 clear Fpst;
 
-if dolog,
+if dolog
   cfg = [];
   cfg.operation = 'log10';
   cfg.parameter = 'pow';
   for k = 1:numel(F)
-		if isfield(F{k}, 'tri'),
+		if isfield(F{k}, 'tri')
 			tri  = F{k}.tri;
 			F{k} = rmfield(F{k},'tri');
 		end
@@ -50,7 +54,7 @@ if dolog,
   end
 end
 
-if any(fliphemi),
+if any(fliphemi)
   for k = 1:numel(fliphemi)
     if fliphemi(k)
       n = size(F{k}.pos,1)./2;
