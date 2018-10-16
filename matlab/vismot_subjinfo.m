@@ -18,8 +18,8 @@ elseif strcmp(computer, 'MACI'),
 else
     %praw = '/raw/11/';
     %pana = '/analyse/4/';
-    praw = '/project/3011085.01/visuomotor/data/raw';
-    pana = '/project/3011085.01/visuomotor/data/analyse';
+    praw = '/project/3011085.03/raw';
+    pana = '/project/3011085.03/analysis';
 end;
 pwdir = pwd;
 
