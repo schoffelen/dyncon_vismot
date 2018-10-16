@@ -1,8 +1,15 @@
 function stat = vismot_spectral_prepost_stats(suffix, contrast, varargin)
+% contrast: 10 item vector with (-)1's or zeros, depending on specific 
+% contrast. items order as follows: [condition 1-5 pre, condition 1-5 post]
+% condition 1: cue left, response left
+% condition 2: cue left, response right
+% condition 3: cue right, response left
+% condition 4: cue right, response right
+% condition 5: catch trial
 
 dolog = ft_getopt(varargin , 'dolog', 0);
 
-datadir = '/home/language/jansch/projects/visuomotor/data/analyse/freq';
+datadir = '/project/3011085.03/analysis/freq';
 d   = dir(datadir);
 sel = ~cellfun('isempty', strfind({d.name}', suffix));
 d   = d(sel);
@@ -28,7 +35,7 @@ for k = 1:5
 end
 clear Fpre Fpst;
 
-if dolog,
+if dolog
   cfg = [];
   cfg.operation = 'log10';
   cfg.parameter = 'powspctrm';
@@ -73,7 +80,3 @@ cfg.numrandomization = 1000;
 cfg.design = [ones(1,n) 2*ones(1,n);1:n 1:n];
 stat = ft_freqstatistics(cfg, dat1, dat2);
 
-%%condition 1: cue left, response left
-%%condition 2: cue left, response right
-%%condition 3: cue right, response left
-%%condition 4: cue right, response right
