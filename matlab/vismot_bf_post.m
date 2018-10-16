@@ -74,7 +74,7 @@ filter    = tmpsource.avg.filter;
 
 cfg2             = [];
 cfg2.fwhm        = 'yes';
-cfg2.fwhmmethod  = 'gaussfit';
+if ~isfield(sourcemodel, 'dim'), cfg2.fwhmmethod  = 'gaussfit'; end
 cfg2.fwhmmaxdist = 0.02;
 fwhm             = ft_sourcedescriptives(cfg2, tmpsource);
 fwhm             = fwhm.fwhm;
@@ -101,7 +101,7 @@ cfgs.design                 = s.trialinfo(:,1)';
 cfgs.design(cfgs.design==3) = 2;
 stat13                      = ft_sourcestatistics(cfgs, s);
 stat13 = rmfield(stat13, {'prob', 'cirange', 'mask'});
-stat13.tri = int16(stat13.tri);
+try, stat13.tri = int16(stat13.tri); end
 stat13.pos = single(stat13.pos);
 
 cfg2              = [];
@@ -115,7 +115,7 @@ cfgs.design                 = s.trialinfo(:,1)';
 cfgs.design(cfgs.design==4) = 1;
 stat42                      = ft_sourcestatistics(cfgs, s);
 stat42 = rmfield(stat42, {'prob', 'cirange', 'mask'});
-stat42.tri = int16(stat42.tri);
+try, stat42.tri = int16(stat42.tri); end
 stat42.pos = single(stat42.pos);
 
 % compute condition specific power

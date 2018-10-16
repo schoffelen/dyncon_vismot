@@ -10,8 +10,12 @@ if ~exist('subjectname', 'var'),
 end
 subject = vismot_subjinfo(subjectname);
  
-[source, stat13, stat42] = vismot_bf_post(subject,'frequency',frequency);
-filename = fullfile(subject.pathname,'source',[subject.name,'source_post_',num2str(frequency)]);
+%[source, stat13, stat42] = vismot_bf_post(subject,'frequency',frequency);
+%filename = fullfile(subject.pathname,'source',[subject.name,'source_post_',num2str(frequency)]);
+
+load(fullfile(subject.pathname,'mri',sprintf('%s_sourcemodel3d6mm',subject.name)),'sourcemodel');
+[source, stat13, stat42] = vismot_bf_post(subject,'frequency',frequency,'sourcemodel',sourcemodel);
+filename = fullfile(subject.pathname,'source',[subject.name,'source3d_post_',num2str(frequency)]);
 
 % scrub the headmodel and grid from the output cfg
 for k = 1:numel(source)
