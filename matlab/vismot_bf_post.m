@@ -118,6 +118,7 @@ stat42 = rmfield(stat42, {'prob', 'cirange', 'mask'});
 try, stat42.tri = int16(stat42.tri); end
 stat42.pos = single(stat42.pos);
 
+try
 % compute condition specific power
 for k = 1:5
   cfg2.trials = find(freq.trialinfo(:,1)==k & freq.trialinfo(:,end)==2); % for the pst trials only
@@ -125,6 +126,7 @@ for k = 1:5
   tmp.fwhm    = fwhm;
   tmp         = smooth_source(tmp, 'parameter', 'pow', 'maxdist', 0.025);
   source(k)   = tmp;
+end
 end
 
 %%condition 1: cue left, response left
