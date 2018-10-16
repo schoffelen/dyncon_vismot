@@ -65,7 +65,7 @@ cfg.grid            = leadfield;
 cfg.headmodel       = headmodel;
 cfg.method          = 'dics';
 cfg.keeptrials      = 'yes';
-cfg.dics.lambda     = '10%';
+cfg.dics.lambda     = '50%';
 cfg.dics.fixedori   = 'yes';
 cfg.dics.keepfilter = 'yes';
 cfg.dics.realfilter = 'yes';
@@ -74,8 +74,10 @@ filter    = tmpsource.avg.filter;
 
 cfg2             = [];
 cfg2.fwhm        = 'yes';
-if ~isfield(sourcemodel, 'dim'), cfg2.fwhmmethod  = 'gaussfit'; end
-cfg2.fwhmmaxdist = 0.02;
+if ~isfield(sourcemodel, 'dim')
+  cfg2.fwhmmethod  = 'gaussfit';
+  cfg2.fwhmmaxdist = 0.02;
+end
 fwhm             = ft_sourcedescriptives(cfg2, tmpsource);
 fwhm             = fwhm.fwhm;
 
@@ -88,7 +90,7 @@ cfgs.method = 'montecarlo';
 cfgs.numrandomization = 0;
 cfgs.statistic        = 'statfun_yuenTtest';
 
-s     = keepfields(tmpsource,{'freq' 'tri' 'inside' 'pos'});
+s     = keepfields(tmpsource,{'freq' 'tri' 'inside' 'pos' 'dim'});
 
 cfg2              = [];
 cfg2.trials       = find(ismember(freq.trialinfo(:,1),[1 3]) & freq.trialinfo(:,end)==2); % for the pst trials only
@@ -122,14 +124,26 @@ stat42.pos = single(stat42.pos);
 for k = 1:5
   cfg2.trials = find(freq.trialinfo(:,1)==k & freq.trialinfo(:,end)==2); % for the pst trials only
   tmp         = ft_sourceanalysis(cfg, ft_selectdata(cfg2, freq));
-  try
+  %try
     tmp.fwhm    = fwhm;
     tmp         = smooth_source(tmp, 'parameter', 'pow', 'maxdist', 0.025);
-  catch
-    tmp = removefields(tmp, 'fwhm');
-  end
+  %catch
+  %  tmp = removefields(tmp, 'fwhm');
+  %end
   source(k)   = tmp;
 end
+
+if isfield(sourcemodel, 'dim')
+  % 3D source data -> do smoothing on the stats, too
+  stat13.fwhm = fwhm;
+  stat13.inside = stat13.inside&isfinite(fwhm);
+  stat13      = smooth_source(stat13, 'parameter', 'stat', 'maxdist', 0.025);
+  stat42.fwhm = fwhm;
+  stat42.inside = stat42.inside&isfinite(fwhm);
+  stat42      = smooth_source(stat42, 'parameter', 'stat', 'maxdist', 0.025);
+end
+
+  
 
 %%condition 1: cue left, response left
 %%condition 2: cue left, response right
