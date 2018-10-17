@@ -50,10 +50,12 @@ sourcemodel = ft_convert_units(sourcemodel, 'm');
 if ~isfield(sourcemodel, 'inside')
   sourcemodel.inside = true(size(sourcemodel.pnt,1),1);
 else
-    sourcemodel.inside = true(size(sourcemodel.pos,1),1);
+  try
     A = load('atlas_subparc374_8k.mat');
     idx = match_str(A.atlas.parcellationlabel, {'R_???_01', 'R_MEDIAL.WALL_01', 'L_???_01', 'L_MEDIAL.WALL_01'});
-    sourcemodel.inside(ismember(A.atlas.parcellation, idx))=0;
+    sourcemodel.inside = sourcemodel.inside & ~ismember(A.atlas.parcellation, idx);
+    %sourcemodel.inside(ismember(A.atlas.parcellation, idx))=0;
+  end
 end
 
 %sourcemodel.inside(11:end)=false;
@@ -95,9 +97,9 @@ cfg.dics.keepfilter = 'no';
 cfgs        = [];
 cfgs.method = 'montecarlo';
 cfgs.numrandomization = 0;
-% cfgs.statistic        = 'statfun_yuenTtest'; % This statistics function
+cfgs.statistic        = 'statfun_yuenTtest'; % This statistics function
 % is not available.
-cfgs.statistic       = 'indepsamplesT';
+%cfgs.statistic       = 'indepsamplesT';
 
 s     = keepfields(tmpsource,{'freq' 'tri' 'inside' 'pos' 'dim'});
 
@@ -113,7 +115,7 @@ cfgs.design                 = s.trialinfo(:,1)';
 cfgs.design(cfgs.design==3) = 2;
 stat13                      = ft_sourcestatistics(cfgs, s);
 stat13 = rmfield(stat13, {'prob', 'cirange', 'mask'});
-stat13.tri = int16(stat13.tri); % what is this step for?
+try, stat13.tri = int16(stat13.tri); end
 stat13.pos = single(stat13.pos); % what is this step for?
 
 cfg2              = [];
@@ -141,7 +143,7 @@ s.trialinfo       = tmpfreq.trialinfo;
 cfgs.design                 = s.trialinfo(:,1)';
 stat12                      = ft_sourcestatistics(cfgs, s);
 stat12 = rmfield(stat12, {'prob', 'cirange', 'mask'});
-stat12.tri = int16(stat12.tri);
+try, stat12.tri = int16(stat12.tri); end
 stat12.pos = single(stat12.pos);
 
 cfg2              = [];
@@ -156,7 +158,7 @@ cfgs.design(cfgs.design==4) = 1;
 cfgs.design(cfgs.design==3) = 2;
 stat43                      = ft_sourcestatistics(cfgs, s);
 stat43 = rmfield(stat43, {'prob', 'cirange', 'mask'});
-stat43.tri = int16(stat43.tri);
+try, stat43.tri = int16(stat43.tri); end
 stat43.pos = single(stat43.pos);
 
 % compute condition specific power
@@ -165,6 +167,7 @@ for k = 1:5
   tmp         = ft_sourceanalysis(cfg, ft_selectdata(cfg2, freq));
   %try
     tmp.fwhm    = fwhm;
+    tmp.inside  = tmp.inside & isfinite(fwhm);
     tmp         = smooth_source(tmp, 'parameter', 'pow', 'maxdist', 0.025);
   %catch
   %  tmp = removefields(tmp, 'fwhm');
