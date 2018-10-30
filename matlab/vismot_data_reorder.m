@@ -29,7 +29,7 @@ switch conditions
         newc(k) = c(sel);
       end
     end
-    % add the condition of the previou trial to the trialinfo.
+    % add the condition of the previous trial to the trialinfo.
     data.trialinfo(:,end+1) = newc;
     
     cfg = [];

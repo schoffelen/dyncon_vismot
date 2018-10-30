@@ -123,7 +123,7 @@ cfg2              = [];
 cfg2.trials       = find(ismember(freq.trialinfo(:,1),[2 4]) & freq.trialinfo(:,end)==2); % for the pst trials only
 tmpfreq           = ft_selectdata(cfg2, freq);
 s.pow = zeros(numel(s.inside),numel(cfg2.trials));
-s.pow(s.inside,:) = fourier2pow(cat(1, filter{:}), tmpfreq.fourierspctrm, tmpfreq.cumtapcnt);
+s.pow(s.inside,:) = fourier2pow(cat(3, filter{:}), tmpfreq.fourierspctrm, tmpfreq.cumtapcnt);
 s.trialinfo       = tmpfreq.trialinfo;
 
 cfgs.design                 = s.trialinfo(:,1)';
@@ -138,7 +138,7 @@ cfg2              = [];
 cfg2.trials       = find(ismember(freq.trialinfo(:,1),[1 2]) & freq.trialinfo(:,end)==2); % for the pst trials only
 tmpfreq           = ft_selectdata(cfg2, freq);
 s.pow = zeros(numel(s.inside),numel(cfg2.trials));
-s.pow(s.inside,:) = fourier2pow(cat(1, filter{:}), tmpfreq.fourierspctrm, tmpfreq.cumtapcnt);
+s.pow(s.inside,:) = fourier2pow(cat(3, filter{:}), tmpfreq.fourierspctrm, tmpfreq.cumtapcnt);
 s.trialinfo       = tmpfreq.trialinfo;
 
 cfgs.design                 = s.trialinfo(:,1)';
@@ -151,7 +151,7 @@ cfg2              = [];
 cfg2.trials       = find(ismember(freq.trialinfo(:,1),[4 3]) & freq.trialinfo(:,end)==2); % for the pst trials only
 tmpfreq           = ft_selectdata(cfg2, freq);
 s.pow = zeros(numel(s.inside),numel(cfg2.trials));
-s.pow(s.inside,:) = fourier2pow(cat(1, filter{:}), tmpfreq.fourierspctrm, tmpfreq.cumtapcnt);
+s.pow(s.inside,:) = fourier2pow(cat(3, filter{:}), tmpfreq.fourierspctrm, tmpfreq.cumtapcnt);
 s.trialinfo       = tmpfreq.trialinfo;
 
 cfgs.design                 = s.trialinfo(:,1)';
