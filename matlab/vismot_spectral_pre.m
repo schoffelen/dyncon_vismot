@@ -9,7 +9,8 @@ smoothing = ft_getopt(varargin, 'smoothing', 4);
 foilim    = ft_getopt(varargin, 'foilim', 'all');
 output    = ft_getopt(varargin, 'output', 'pow');
 doplanar  = ft_getopt(varargin, 'doplanar', 0);
-conditions = ft_getopt(varargin, 'conditions', 'current');
+conditions = ft_getopt(varargin, 'conditions', 'previous');
+nrand      = ft_getopt(varargin, 'nrand', 100);
 
 if smoothing==0,
   taper = 'hanning';

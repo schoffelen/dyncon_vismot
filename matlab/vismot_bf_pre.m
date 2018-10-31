@@ -2,9 +2,10 @@ function [coh,zx13,zx42,looptime] = vismot_bf_pre(subject,varargin)
 
 %function [source, filter, freq] = vismot_bf_post(subject,varargin)
 
-frequency = ft_getopt(varargin, 'frequency', 20);
-smoothing = ft_getopt(varargin, 'smoothing', []);
+frequency   = ft_getopt(varargin, 'frequency', 20);
+smoothing   = ft_getopt(varargin, 'smoothing', []);
 sourcemodel = ft_getopt(varargin, 'sourcemodel');
+nrand       = ft_getopt(varargin, 'nrand', 100); % number of randomization for sensor subsampling
 
 if isempty(smoothing)
   if frequency < 30
@@ -68,7 +69,13 @@ allfreq.crsspctrm = mean(cat(3,freq.crsspctrm),3);
 
 lambda = 0.1.*trace(allfreq.crsspctrm)./numel(allfreq.label);
 
-allcoh = estimate_coh2x2_2dip_new(leadfield,allfreq,'memory','high','lambda',lambda, 'outputflags', [1 0 0 0]);
+if sum(leadfield.inside)>6000
+  memreq = 'low';
+else
+  memreq = 'high';
+end
+
+allcoh = estimate_coh2x2_2dip_new(leadfield,allfreq,'memory',memreq,'lambda',lambda, 'outputflags', [1 0 0 0]);
 
 leadfield_scalar = leadfield;
 cnt = 0;
@@ -81,10 +88,9 @@ leadfield_scalar = rmfield(leadfield_scalar, 'v');
 % this line was to check equivalence of the results.
 %cohtmp = estimate_coh2x2_2dip_new(leadfield_scalar,allfreq,'memory','low','lambda',0.05);
 for k = 1:5
-  coh(k) = estimate_coh2x2_2dip_new(leadfield_scalar,freq(k),'memory','high','lambda',lambda, 'outputflags', [1 0 0 0]);
+  coh(k) = estimate_coh2x2_2dip_new(leadfield_scalar,freq(k),'memory',memreq,'lambda',lambda, 'outputflags', [1 0 0 0]);
 end
 
-nrand = 100;
 N     = 150;
 
 dcoh13 = single(zeros(size(coh(1).coh)));
@@ -100,7 +106,7 @@ for k = 1:nrand
   tmpcfg.channel = allfreq.label(indx);
   tmpfreq = ft_selectdata(tmpcfg, allfreq);
   tmplambda = 0.1.*trace(tmpfreq.crsspctrm)./numel(tmpfreq.label);
-  tmpcoh  = estimate_coh2x2_2dip_new(tmpleadfield,tmpfreq,'memory','high','lambda',tmplambda, 'outputflags', [1 0 0 0]);
+  tmpcoh  = estimate_coh2x2_2dip_new(tmpleadfield,tmpfreq,'memory',memreq,'lambda',tmplambda, 'outputflags', [1 0 0 0]);
 
   tmpleadfield_scalar = tmpleadfield;
   cnt = 0;
@@ -112,7 +118,7 @@ for k = 1:nrand
   
   for m = 1:5
     tmpfreq = ft_selectdata(tmpcfg, freq(m));
-    tmpcoh(m)  = estimate_coh2x2_2dip_new(tmpleadfield_scalar,tmpfreq,'memory','high','lambda',tmplambda, 'outputflags', [1 0 0 0]);
+    tmpcoh(m)  = estimate_coh2x2_2dip_new(tmpleadfield_scalar,tmpfreq,'memory',memreq,'lambda',tmplambda, 'outputflags', [1 0 0 0]);
   end
   
   dcoh13   = dcoh13   + double(abs(tmpcoh(1).coh) - abs(tmpcoh(3).coh));
@@ -122,15 +128,20 @@ for k = 1:nrand
   looptime(k) = toc;
 end
 
-mx13 = dcoh13./nrand;
-sx13 = sqrt((dcoh13sq-(dcoh13.^2)./nrand)./nrand);
-zx13 = mx13./sx13;
+if nrand>0
+  mx13 = dcoh13./nrand;
+  sx13 = sqrt((dcoh13sq-(dcoh13.^2)./nrand)./nrand);
+  zx13 = mx13./sx13;
 
-mx42 = dcoh42./nrand;
-sx42 = sqrt((dcoh42sq-(dcoh42.^2)./nrand)./nrand);
-zx42 = mx42./sx42;
+  mx42 = dcoh42./nrand;
+  sx42 = sqrt((dcoh42sq-(dcoh42.^2)./nrand)./nrand);
+  zx42 = mx42./sx42;
+else
+  zx13 = abs(coh(1).coh)-abs(coh(3).coh);
+  zx42 = abs(coh(4).coh)-abs(coh(2).coh);
+end
 
-
+if ~exist('looptime', 'var'), looptime = nan; end
 
 
 
