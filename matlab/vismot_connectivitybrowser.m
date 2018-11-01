@@ -76,7 +76,8 @@ if isempty(c2min) && isempty(c2max)
   c2max = 1;
 end
 
-
+val1 = 0;
+val2 = 0;
 while ishandle(h)
   clf
   h1 = subplot( 'position', [0.01 0.15 0.48 0.82]); %axis([1 siz(2) 1 siz(3)]); % subplot(2,4,1);
@@ -106,16 +107,14 @@ while ishandle(h)
   hold on;plot(xstar,ystar,'w*','linewidth',2); set(gca, 'tag', 'right');
   colormap jet
   
+  ind1 = sub2ind(grid.dim,x1i,y1i,z1i);
+  ind2 = sub2ind(grid.dim,x2i,y2i,z2i);
   
-    ind1 = sub2ind(grid.dim,x1i,y1i,z1i);
-    ind2 = sub2ind(grid.dim,x2i,y2i,z2i);
-    val1 = vol2(x1i,y1i,z1i);
-    val2 = vol1(x2i,y1i,z2i);
-   
+  
   p1   = grid.pos(ind1,:);
   p2   = grid.pos(ind2,:);
-  subplot(h1t);text(0,.5,sprintf('ind1=%6.0f\npos1=[%3.1f %3.1f %3.1f],\nval1=%f', ind1,p1(1),p1(2),p1(3), val2));axis off
-  subplot(h2t);text(0,.5,sprintf('ind2=%6.0f\npos2=[%3.1f %3.1f %3.1f],\nval2=%f', ind2,p2(1),p2(2),p2(3), val1));axis off
+  subplot(h1t);text(0,.5,sprintf('ind1=%6.0f\npos1=[%3.1f %3.1f %3.1f],\nval1=%f', ind1,p1(1),p1(2),p1(3), val1));axis off
+  subplot(h2t);text(0,.5,sprintf('ind2=%6.0f\npos2=[%3.1f %3.1f %3.1f],\nval2=%f', ind2,p2(1),p2(2),p2(3), val2));axis off
 
   try, [d1, d2, key] = ginput(1); catch, return; end
   if key==113  % q
@@ -128,9 +127,11 @@ while ishandle(h)
   case 'left'
     % update the indices for the volume to be displayed on the right
     [x1i,y1i,z1i] = two2three(d1,d2,size(map1),siz1);
+    val1 = vol1(x1i,y1i,z1i);
   case 'right'
     % update the indices for the volume to be displayed on the right
     [x2i,y2i,z2i] = two2three(d1,d2,size(map2),siz2);
+    val2 = vol2(x2i,y2i,z2i);
   end
   x1i = round(x1i);
   y1i = round(y1i);
