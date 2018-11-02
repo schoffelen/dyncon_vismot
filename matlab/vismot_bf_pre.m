@@ -182,26 +182,26 @@ end
 tmp         = stat13;
 tmp.fwhm    = fwhm;
 tmp.inside  = tmp.inside&isfinite(fwhm);
-tmp         = smooth_source(tmp, 'parameter', 'stat', 'maxdist', 0.025);
+%tmp         = smooth_source(tmp, 'parameter', 'stat', 'maxdist', 0.025);
 stat13      = tmp;
 
 tmp         = stat42;
 tmp.fwhm    = fwhm;
 tmp.inside  = tmp.inside&isfinite(fwhm);
-tmp         = smooth_source(tmp, 'parameter', 'stat', 'maxdist', 0.025);
+%tmp         = smooth_source(tmp, 'parameter', 'stat', 'maxdist', 0.025);
 stat42         = tmp;
 
 % same hemifield
 tmp         = stat12;
 tmp.fwhm    = fwhm;
 tmp.inside  = tmp.inside&isfinite(fwhm);
-tmp         = smooth_source(tmp, 'parameter', 'stat', 'maxdist', 0.025);
+%tmp         = smooth_source(tmp, 'parameter', 'stat', 'maxdist', 0.025);
 stat12      = tmp;
 
 tmp         = stat43;
 tmp.fwhm    = fwhm;
 tmp.inside  = tmp.inside&isfinite(fwhm);
-tmp         = smooth_source(tmp, 'parameter', 'stat', 'maxdist', 0.025);
+%tmp         = smooth_source(tmp, 'parameter', 'stat', 'maxdist', 0.025);
 stat43      = tmp;
 
 %%condition 1: cue left, response left
