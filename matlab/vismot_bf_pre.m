@@ -1,4 +1,4 @@
-function [coh,zx13,zx42,looptime] = vismot_bf_pre(subject,varargin)
+function [source, stat13, stat42, stat12, stat43] = vismot_bf_pre(subject,varargin)
 
 %function [source, filter, freq] = vismot_bf_post(subject,varargin)
 
@@ -15,8 +15,22 @@ if isempty(smoothing)
   end
 end
 
-[freq, tlckpre] =  vismot_spectral_pre(subject,'output','csd','conditions','previous', 'foilim', [frequency frequency], 'smoothing', smoothing);
+[freq, tlckpre] =  vismot_spectral_pre(subject,'output','fourier','conditions','previous', 'foilim', [frequency frequency], 'smoothing', smoothing);
+for k = 1:numel(freq)
+  if ~isfield(freq(k),'trialinfo')
+    freq(k).trialinfo = ones(numel(freq(k).cumtapcnt),1).*k;
+  else
+    freq(k).trialinfo(:,end+1) = k;
+  end
+end
 
+cfg = [];
+cfg.appenddim = 'rpt';
+cfg.parameter = 'fourierspctrm';
+freq = ft_appendfreq(cfg, freq(1), freq(2), freq(3), freq(4), freq(5));
+% freq = ft_appendfreq(cfg, freqpst(1), freqpst(2), freqpst(3), freqpst(4), freqpst(5));
+
+% clear freqpst;
 
 % load in the head model and the source model.
 if isempty(sourcemodel)
@@ -30,9 +44,7 @@ if ~isempty(strfind(subject.datafile, 'h'))
   
   % the transformation matrix M is in centimeters
   M(1:3,4)  = M(1:3,4)./100; % convert to meters
-  for k = 1:numel(freq)
-    freq(k).grad = ft_transform_geometry(M, ft_convert_units(freq(k).grad, 'm'));
-  end
+  freq.grad = ft_transform_geometry(M, ft_convert_units(freq.grad, 'm'));
 end
 
 headmodel   = ft_convert_units(headmodel,   'm');
@@ -52,98 +64,146 @@ end
 
 % compute beamformer common spatial filters
 cfg           = [];
-cfg.grad      = freq(1).grad;
+cfg.grad      = freq.grad;
 cfg.headmodel = headmodel;
 cfg.grid      = sourcemodel;
 cfg.channel   = freq.label;
 cfg.singleshell.batchsize = 2000;
 leadfield     = ft_prepare_leadfield(cfg);
-for k = find(leadfield.inside')
-  tmp = leadfield.leadfield{k};
-  [u,s,v] = svd(tmp,'econ');
-  leadfield.leadfield{k} = tmp*v(:,1:2);
-  leadfield.v{k} = v(:,1:2);
+
+cfg                 = [];
+cfg.grid            = leadfield;
+cfg.headmodel       = headmodel;
+cfg.method          = 'dics';
+cfg.keeptrials      = 'yes';
+cfg.dics.lambda     = '100%';
+cfg.dics.fixedori   = 'yes';
+cfg.dics.keepfilter = 'yes';
+cfg.dics.realfilter = 'yes';
+tmpsource = ft_sourceanalysis(cfg, freq);
+filter    = tmpsource.avg.filter;
+
+cfg2             = [];
+cfg2.fwhm        = 'yes';
+if ~isfield(sourcemodel, 'dim')
+  cfg2.fwhmmethod  = 'gaussfit';
+  cfg2.fwhmmaxdist = 0.02;
 end
-allfreq = freq(1);
-allfreq.crsspctrm = mean(cat(3,freq.crsspctrm),3);
+fwhm             = ft_sourcedescriptives(cfg2, tmpsource);
+fwhm             = fwhm.fwhm;
 
-lambda = 0.1.*trace(allfreq.crsspctrm)./numel(allfreq.label);
+cfg.grid.filter     = filter;
+cfg.dics.keepfilter = 'no';
 
-if sum(leadfield.inside)>6000
-  memreq = 'low';
-else
-  memreq = 'high';
-end
+% compute 1-3 and 2-4 contrasts as a yuen-welch T value
+cfgs        = [];
+cfgs.method = 'montecarlo';
+cfgs.numrandomization = 0;
+cfgs.statistic        = 'statfun_yuenTtest'; % This statistics function
+% is not available.
+%cfgs.statistic       = 'indepsamplesT';
 
-allcoh = estimate_coh2x2_2dip_new(leadfield,allfreq,'memory',memreq,'lambda',lambda, 'outputflags', [1 0 0 0]);
+s     = keepfields(tmpsource,{'freq' 'tri' 'inside' 'pos' 'dim'});
 
-leadfield_scalar = leadfield;
-cnt = 0;
-for k = find(leadfield.inside')
-  cnt = cnt+1;
-  leadfield_scalar.leadfield{k} = leadfield.leadfield{k}*allcoh.ori(cnt,:)';
-end
-leadfield_scalar = rmfield(leadfield_scalar, 'v');
+% same response hand contrast
+cfg2              = [];
+cfg2.trials       = find(ismember(freq.trialinfo(:,end),[1 3]));
+tmpfreq           = ft_selectdata(cfg2, freq);
+s.pow = zeros(numel(s.inside),numel(cfg2.trials));
+save('/home/language/jansch/tempfile','tmpfreq','s','cfg2','filter');
+s.pow(s.inside,:) = fourier2pow(cat(3, filter{:}), tmpfreq.fourierspctrm, tmpfreq.cumtapcnt);  
+s.trialinfo       = tmpfreq.trialinfo;
 
-% this line was to check equivalence of the results.
-%cohtmp = estimate_coh2x2_2dip_new(leadfield_scalar,allfreq,'memory','low','lambda',0.05);
+cfgs.design                 = s.trialinfo(:,1)';
+cfgs.design(cfgs.design==3) = 2;
+stat13                      = ft_sourcestatistics(cfgs, s);
+stat13 = rmfield(stat13, {'prob', 'cirange', 'mask'});
+try, stat13.tri = int16(stat13.tri); end
+stat13.pos = single(stat13.pos); % what is this step for?
+
+cfg2              = [];
+cfg2.trials       = find(ismember(freq.trialinfo(:,end),[2 4]));
+tmpfreq           = ft_selectdata(cfg2, freq);
+s.pow = zeros(numel(s.inside),numel(cfg2.trials));
+s.pow(s.inside,:) = fourier2pow(cat(3, filter{:}), tmpfreq.fourierspctrm, tmpfreq.cumtapcnt);
+s.trialinfo       = tmpfreq.trialinfo;
+
+cfgs.design                 = s.trialinfo(:,1)';
+cfgs.design(cfgs.design==4) = 1;
+stat42                      = ft_sourcestatistics(cfgs, s);
+stat42 = rmfield(stat42, {'prob', 'cirange', 'mask'});
+try, stat42.tri = int16(stat42.tri); end
+stat42.pos = single(stat42.pos);
+
+% same hemifield contrast
+cfg2              = [];
+cfg2.trials       = find(ismember(freq.trialinfo(:,end),[1 2]));
+tmpfreq           = ft_selectdata(cfg2, freq);
+s.pow = zeros(numel(s.inside),numel(cfg2.trials));
+s.pow(s.inside,:) = fourier2pow(cat(3, filter{:}), tmpfreq.fourierspctrm, tmpfreq.cumtapcnt);
+s.trialinfo       = tmpfreq.trialinfo;
+
+cfgs.design                 = s.trialinfo(:,1)';
+stat12                      = ft_sourcestatistics(cfgs, s);
+stat12 = rmfield(stat12, {'prob', 'cirange', 'mask'});
+try, stat12.tri = int16(stat12.tri); end
+stat12.pos = single(stat12.pos);
+
+cfg2              = [];
+cfg2.trials       = find(ismember(freq.trialinfo(:,end),[4 3]));
+tmpfreq           = ft_selectdata(cfg2, freq);
+s.pow = zeros(numel(s.inside),numel(cfg2.trials));
+s.pow(s.inside,:) = fourier2pow(cat(3, filter{:}), tmpfreq.fourierspctrm, tmpfreq.cumtapcnt);
+s.trialinfo       = tmpfreq.trialinfo;
+
+cfgs.design                 = s.trialinfo(:,1)';
+cfgs.design(cfgs.design==4) = 1;
+cfgs.design(cfgs.design==3) = 2;
+stat43                      = ft_sourcestatistics(cfgs, s);
+stat43 = rmfield(stat43, {'prob', 'cirange', 'mask'});
+try, stat43.tri = int16(stat43.tri); end
+stat43.pos = single(stat43.pos);
+
+% compute condition specific power
 for k = 1:5
-  coh(k) = estimate_coh2x2_2dip_new(leadfield_scalar,freq(k),'memory',memreq,'lambda',lambda, 'outputflags', [1 0 0 0]);
+  cfg2.trials = find(freq.trialinfo(:,end)==k);
+  tmp         = ft_sourceanalysis(cfg, ft_selectdata(cfg2, freq));
+  %try
+    tmp.fwhm    = fwhm;
+    tmp.inside  = tmp.inside & isfinite(fwhm);
+    tmp         = smooth_source(tmp, 'parameter', 'pow', 'maxdist', 0.025);
+  %catch
+  %  tmp = removefields(tmp, 'fwhm');
+  %end
+  source(k)   = tmp;
 end
 
-N     = 150;
+% smooth contrasts
+% same response hand:
+tmp         = stat13;
+tmp.fwhm    = fwhm;
+tmp.inside  = tmp.inside&isfinite(fwhm);
+tmp         = smooth_source(tmp, 'parameter', 'stat', 'maxdist', 0.025);
+stat13      = tmp;
 
-dcoh13 = single(zeros(size(coh(1).coh)));
-dcoh42 = dcoh13;
-dcoh13sq = dcoh13;
-dcoh42sq = dcoh42;
+tmp         = stat42;
+tmp.fwhm    = fwhm;
+tmp.inside  = tmp.inside&isfinite(fwhm);
+tmp         = smooth_source(tmp, 'parameter', 'stat', 'maxdist', 0.025);
+stat42         = tmp;
 
-for k = 1:nrand
-  tic;
-  indx = sort(randperm(numel(allfreq.label),N)); % keep it sorted!! -> subsampling of sensors
-  tmpleadfield = leadfield;
-  tmpleadfield.leadfield(tmpleadfield.inside) = cellrowselect(tmpleadfield.leadfield(tmpleadfield.inside),indx);
-  tmpcfg.channel = allfreq.label(indx);
-  tmpfreq = ft_selectdata(tmpcfg, allfreq);
-  tmplambda = 0.1.*trace(tmpfreq.crsspctrm)./numel(tmpfreq.label);
-  tmpcoh  = estimate_coh2x2_2dip_new(tmpleadfield,tmpfreq,'memory',memreq,'lambda',tmplambda, 'outputflags', [1 0 0 0]);
+% same hemifield
+tmp         = stat12;
+tmp.fwhm    = fwhm;
+tmp.inside  = tmp.inside&isfinite(fwhm);
+tmp         = smooth_source(tmp, 'parameter', 'stat', 'maxdist', 0.025);
+stat12      = tmp;
 
-  tmpleadfield_scalar = tmpleadfield;
-  cnt = 0;
-  for m = find(tmpleadfield.inside')
-    cnt = cnt+1;
-    tmpleadfield_scalar.leadfield{m} = tmpleadfield.leadfield{m}*tmpcoh.ori(cnt,:)';
-  end
-  tmpleadfield_scalar = rmfield(tmpleadfield_scalar, 'v');
-  
-  for m = 1:5
-    tmpfreq = ft_selectdata(tmpcfg, freq(m));
-    tmpcoh(m)  = estimate_coh2x2_2dip_new(tmpleadfield_scalar,tmpfreq,'memory',memreq,'lambda',tmplambda, 'outputflags', [1 0 0 0]);
-  end
-  
-  dcoh13   = dcoh13   + double(abs(tmpcoh(1).coh) - abs(tmpcoh(3).coh));
-  dcoh13sq = dcoh13sq + double(abs(tmpcoh(1).coh) - abs(tmpcoh(3).coh)).^2;
-  dcoh42   = dcoh42   + double(abs(tmpcoh(4).coh) - abs(tmpcoh(2).coh));
-  dcoh42sq = dcoh42sq + double(abs(tmpcoh(4).coh) - abs(tmpcoh(2).coh)).^2;
-  looptime(k) = toc;
-end
-
-if nrand>0
-  mx13 = dcoh13./nrand;
-  sx13 = sqrt((dcoh13sq-(dcoh13.^2)./nrand)./nrand);
-  zx13 = mx13./sx13;
-
-  mx42 = dcoh42./nrand;
-  sx42 = sqrt((dcoh42sq-(dcoh42.^2)./nrand)./nrand);
-  zx42 = mx42./sx42;
-else
-  zx13 = abs(coh(1).coh)-abs(coh(3).coh);
-  zx42 = abs(coh(4).coh)-abs(coh(2).coh);
-end
-
-if ~exist('looptime', 'var'), looptime = nan; end
-
-
+tmp         = stat43;
+tmp.fwhm    = fwhm;
+tmp.inside  = tmp.inside&isfinite(fwhm);
+tmp         = smooth_source(tmp, 'parameter', 'stat', 'maxdist', 0.025);
+stat43      = tmp;
 
 %%condition 1: cue left, response left
 %%condition 2: cue left, response right

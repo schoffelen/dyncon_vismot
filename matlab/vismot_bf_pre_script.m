@@ -17,7 +17,7 @@ if ~exist('smoothing', 'var')
 end
 subject = vismot_subjinfo(subjectname);
 load(fullfile(subject.pathname,'grid',sprintf('%s_sourcemodel3d8mm',subject.name)),'sourcemodel');
-[coh,zx13,zx42,looptime] = vismot_bf_pre(subject,'sourcemodel',sourcemodel,'frequency',frequency,'smoothing',smoothing,'nrand',nrand);
+[coh,zx13,zx42,looptime] = vismot_bf_pre_coh(subject,'sourcemodel',sourcemodel,'frequency',frequency,'smoothing',smoothing,'nrand',nrand);
 
 filename = fullfile(subject.pathname,'source',[subject.name,'coh6d8mm_',num2str(frequency)]);
 save(filename, 'zx13', 'zx42');
