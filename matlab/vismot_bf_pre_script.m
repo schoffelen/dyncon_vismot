@@ -12,7 +12,7 @@ if ~exist('smoothing', 'var')
     smoothing = 4;
 end
 subject = vismot_subjinfo(subjectname);
-load(fullfile(subject.pathname,'grid',sprintf('%s_sourcemodel3d8mm',subject.name)),'sourcemodel');
+load(fullfile(subject.pathname,'grid',sprintf('%s_sourcemodel3d4mm',subject.name)),'sourcemodel');
 [source, stat13, stat42, stat12, stat43] = vismot_bf_pre(subject,'sourcemodel',sourcemodel,'frequency',frequency,'smoothing',smoothing);
 
 filename = fullfile(subject.pathname,'source',[subject.name,'source3d4mm_pre_',num2str(frequency)]);
