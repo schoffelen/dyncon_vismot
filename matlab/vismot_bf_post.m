@@ -108,7 +108,6 @@ cfg2              = [];
 cfg2.trials       = find(ismember(freq.trialinfo(:,1),[1 3]) & freq.trialinfo(:,end)==2); % for the pst trials only
 tmpfreq           = ft_selectdata(cfg2, freq);
 s.pow = zeros(numel(s.inside),numel(cfg2.trials));
-save('/home/language/jansch/tempfile','tmpfreq','s','cfg2','filter');
 s.pow(s.inside,:) = fourier2pow(cat(3, filter{:}), tmpfreq.fourierspctrm, tmpfreq.cumtapcnt);  
 s.trialinfo       = tmpfreq.trialinfo;
 

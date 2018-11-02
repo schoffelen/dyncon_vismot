@@ -110,7 +110,6 @@ cfg2              = [];
 cfg2.trials       = find(ismember(freq.trialinfo(:,end),[1 3]));
 tmpfreq           = ft_selectdata(cfg2, freq);
 s.pow = zeros(numel(s.inside),numel(cfg2.trials));
-save('/home/language/jansch/tempfile','tmpfreq','s','cfg2','filter');
 s.pow(s.inside,:) = fourier2pow(cat(3, filter{:}), tmpfreq.fourierspctrm, tmpfreq.cumtapcnt);  
 s.trialinfo       = tmpfreq.trialinfo;
 
@@ -168,13 +167,13 @@ stat43.pos = single(stat43.pos);
 for k = 1:5
   cfg2.trials = find(freq.trialinfo(:,end)==k);
   tmp         = ft_sourceanalysis(cfg, ft_selectdata(cfg2, freq));
-  %try
-    tmp.fwhm    = fwhm;
-    tmp.inside  = tmp.inside & isfinite(fwhm);
-    tmp         = smooth_source(tmp, 'parameter', 'pow', 'maxdist', 0.025);
-  %catch
-  %  tmp = removefields(tmp, 'fwhm');
-  %end
+%   %try
+%     tmp.fwhm    = fwhm;
+%     tmp.inside  = tmp.inside & isfinite(fwhm);
+%     tmp         = smooth_source(tmp, 'parameter', 'pow', 'maxdist', 0.025);
+%   %catch
+%   %  tmp = removefields(tmp, 'fwhm');
+%   %end
   source(k)   = tmp;
 end
 
