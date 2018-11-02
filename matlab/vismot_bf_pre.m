@@ -1,10 +1,11 @@
-function [source, stat13, stat42, stat12, stat43] = vismot_bf_post(subject,varargin)
+function [source, stat13, stat42, stat12, stat43] = vismot_bf_pre(subject,varargin)
 
 %function [source, filter, freq] = vismot_bf_post(subject,varargin)
 
-frequency = ft_getopt(varargin, 'frequency', 10);
-smoothing = ft_getopt(varargin, 'smoothing', []);
+frequency   = ft_getopt(varargin, 'frequency', 20);
+smoothing   = ft_getopt(varargin, 'smoothing', []);
 sourcemodel = ft_getopt(varargin, 'sourcemodel');
+nrand       = ft_getopt(varargin, 'nrand', 100); % number of randomization for sensor subsampling
 
 if isempty(smoothing)
   if frequency < 30
@@ -14,18 +15,19 @@ if isempty(smoothing)
   end
 end
 
-[freqpre,freqpst] = vismot_spectral_prepost(subject,'foilim',[frequency frequency],'smoothing',smoothing,'output','fourier');
-
-for k = 1:5
-  % add marker for pre/pst
-  freqpre(k).trialinfo(:,end+1) = 1;
-  freqpst(k).trialinfo(:,end+1) = 2;
+[freq, tlckpre] =  vismot_spectral_pre(subject,'output','fourier','conditions','previous', 'foilim', [frequency frequency], 'smoothing', smoothing);
+for k = 1:numel(freq)
+  if ~isfield(freq(k),'trialinfo')
+    freq(k).trialinfo = ones(numel(freq(k).cumtapcnt),1).*k;
+  else
+    freq(k).trialinfo(:,end+1) = k;
+  end
 end
 
 cfg = [];
 cfg.appenddim = 'rpt';
 cfg.parameter = 'fourierspctrm';
-freq = ft_appendfreq(cfg, freqpre(1), freqpre(2), freqpre(3), freqpre(4), freqpre(5), freqpst(1), freqpst(2), freqpst(3), freqpst(4), freqpst(5));
+freq = ft_appendfreq(cfg, freq(1), freq(2), freq(3), freq(4), freq(5));
 % freq = ft_appendfreq(cfg, freqpst(1), freqpst(2), freqpst(3), freqpst(4), freqpst(5));
 
 % clear freqpst;
@@ -105,7 +107,7 @@ s     = keepfields(tmpsource,{'freq' 'tri' 'inside' 'pos' 'dim'});
 
 % same response hand contrast
 cfg2              = [];
-cfg2.trials       = find(ismember(freq.trialinfo(:,1),[1 3]) & freq.trialinfo(:,end)==2); % for the pst trials only
+cfg2.trials       = find(ismember(freq.trialinfo(:,end),[1 3]));
 tmpfreq           = ft_selectdata(cfg2, freq);
 s.pow = zeros(numel(s.inside),numel(cfg2.trials));
 s.pow(s.inside,:) = fourier2pow(cat(3, filter{:}), tmpfreq.fourierspctrm, tmpfreq.cumtapcnt);  
@@ -119,7 +121,7 @@ try, stat13.tri = int16(stat13.tri); end
 stat13.pos = single(stat13.pos); % what is this step for?
 
 cfg2              = [];
-cfg2.trials       = find(ismember(freq.trialinfo(:,1),[2 4]) & freq.trialinfo(:,end)==2); % for the pst trials only
+cfg2.trials       = find(ismember(freq.trialinfo(:,end),[2 4]));
 tmpfreq           = ft_selectdata(cfg2, freq);
 s.pow = zeros(numel(s.inside),numel(cfg2.trials));
 s.pow(s.inside,:) = fourier2pow(cat(3, filter{:}), tmpfreq.fourierspctrm, tmpfreq.cumtapcnt);
@@ -134,7 +136,7 @@ stat42.pos = single(stat42.pos);
 
 % same hemifield contrast
 cfg2              = [];
-cfg2.trials       = find(ismember(freq.trialinfo(:,1),[1 2]) & freq.trialinfo(:,end)==2); % for the pst trials only
+cfg2.trials       = find(ismember(freq.trialinfo(:,end),[1 2]));
 tmpfreq           = ft_selectdata(cfg2, freq);
 s.pow = zeros(numel(s.inside),numel(cfg2.trials));
 s.pow(s.inside,:) = fourier2pow(cat(3, filter{:}), tmpfreq.fourierspctrm, tmpfreq.cumtapcnt);
@@ -147,7 +149,7 @@ try, stat12.tri = int16(stat12.tri); end
 stat12.pos = single(stat12.pos);
 
 cfg2              = [];
-cfg2.trials       = find(ismember(freq.trialinfo(:,1),[4 3]) & freq.trialinfo(:,end)==2); % for the pst trials only
+cfg2.trials       = find(ismember(freq.trialinfo(:,end),[4 3]));
 tmpfreq           = ft_selectdata(cfg2, freq);
 s.pow = zeros(numel(s.inside),numel(cfg2.trials));
 s.pow(s.inside,:) = fourier2pow(cat(3, filter{:}), tmpfreq.fourierspctrm, tmpfreq.cumtapcnt);
@@ -163,15 +165,15 @@ stat43.pos = single(stat43.pos);
 
 % compute condition specific power
 for k = 1:5
-  cfg2.trials = find(freq.trialinfo(:,1)==k & freq.trialinfo(:,end)==2); % for the pst trials only
+  cfg2.trials = find(freq.trialinfo(:,end)==k);
   tmp         = ft_sourceanalysis(cfg, ft_selectdata(cfg2, freq));
-  %try
-    tmp.fwhm    = fwhm;
-    tmp.inside  = tmp.inside & isfinite(fwhm);
-    tmp         = smooth_source(tmp, 'parameter', 'pow', 'maxdist', 0.025);
-  %catch
-  %  tmp = removefields(tmp, 'fwhm');
-  %end
+%   %try
+%     tmp.fwhm    = fwhm;
+%     tmp.inside  = tmp.inside & isfinite(fwhm);
+%     tmp         = smooth_source(tmp, 'parameter', 'pow', 'maxdist', 0.025);
+%   %catch
+%   %  tmp = removefields(tmp, 'fwhm');
+%   %end
   source(k)   = tmp;
 end
 
@@ -180,26 +182,26 @@ end
 tmp         = stat13;
 tmp.fwhm    = fwhm;
 tmp.inside  = tmp.inside&isfinite(fwhm);
-tmp         = smooth_source(tmp, 'parameter', 'stat', 'maxdist', 0.025);
+%tmp         = smooth_source(tmp, 'parameter', 'stat', 'maxdist', 0.025);
 stat13      = tmp;
 
 tmp         = stat42;
 tmp.fwhm    = fwhm;
 tmp.inside  = tmp.inside&isfinite(fwhm);
-tmp         = smooth_source(tmp, 'parameter', 'stat', 'maxdist', 0.025);
+%tmp         = smooth_source(tmp, 'parameter', 'stat', 'maxdist', 0.025);
 stat42         = tmp;
 
 % same hemifield
 tmp         = stat12;
 tmp.fwhm    = fwhm;
 tmp.inside  = tmp.inside&isfinite(fwhm);
-tmp         = smooth_source(tmp, 'parameter', 'stat', 'maxdist', 0.025);
+%tmp         = smooth_source(tmp, 'parameter', 'stat', 'maxdist', 0.025);
 stat12      = tmp;
 
 tmp         = stat43;
 tmp.fwhm    = fwhm;
 tmp.inside  = tmp.inside&isfinite(fwhm);
-tmp         = smooth_source(tmp, 'parameter', 'stat', 'maxdist', 0.025);
+%tmp         = smooth_source(tmp, 'parameter', 'stat', 'maxdist', 0.025);
 stat43      = tmp;
 
 %%condition 1: cue left, response left

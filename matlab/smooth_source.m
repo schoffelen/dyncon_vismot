@@ -48,6 +48,7 @@ end
 pos = source.pos(inside,:);
 
 sigma = zeros(ninside, 3, 3);
+fwhm(~isfinite(fwhm)) = nanmax(fwhm(:));
 if numel(fwhm)==ninside
 	sigma(:,1,1) = (fwhm./(2.*sqrt(2.*log(2)))).^2;
   sigma(:,2,2) = (fwhm./(2.*sqrt(2.*log(2)))).^2;
