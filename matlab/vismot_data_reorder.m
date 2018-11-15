@@ -9,10 +9,15 @@ switch conditions
     
     % sanity check on input
     if numel(fieldnames(datain))~=5,
-      error('unexpected number of data arguments in input');
+      warning('unexpected number of data arguments in input');
     end
     
-    data = ft_appenddata([],datain.data1,datain.data2,datain.data3,datain.data4,datain.data5);
+    fd = fieldnames(datain);
+    for k=1:length(fd)
+        tmpdat{k} = datain.(fd{k});
+    end
+%     data = ft_appenddata([],datain.data1,datain.data2,datain.data3,datain.data4,datain.data5);
+    data = ft_appenddata([],tmpdat{:});
     clear datain;
     
     % assign new condition number based on the condition of the previous
