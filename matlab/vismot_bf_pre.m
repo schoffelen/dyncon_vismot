@@ -96,6 +96,7 @@ cfg.grid.filter     = filter;
 cfg.dics.keepfilter = 'no';
 
 % compute 1-3 and 2-4 contrasts as a yuen-welch T value
+cd /project/3011085.03/scripts/dyncon_vismot/matlab/private/
 cfgs        = [];
 cfgs.method = 'montecarlo';
 cfgs.numrandomization = 0;
