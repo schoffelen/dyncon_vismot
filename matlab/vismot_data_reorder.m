@@ -37,6 +37,15 @@ switch conditions
     % add the condition of the previous trial to the trialinfo.
     data.trialinfo(:,end+1) = newc;
     
+    % remove trials that were not preceded by a different trial, but
+    % instead were preceded by the baseline (trials were presented in
+    % blocks of 5).
+    cfg=[];
+    trialnumber = data.trialinfo(:,2);
+    not_first_trial_of_block = find(mod(trialnumber, 5)~=0);
+    cfg.trials = not_first_trial_of_block;
+    data = ft_selectdata(cfg, data);
+    
     cfg = [];
     cfg.trials    = find(newc==1);
     dataout.data1 = ft_selectdata(cfg, data);
