@@ -6,12 +6,16 @@ function dataout = hemiflip(datain, parameter)
 % NOTE: only works when parameter is 2D array.
 
 dataout = datain;
-for k=1:numel(parameter)
-    p = parameter{k};
-    
-    n = size(datain.(p),1)./2;
-    
-    dataout.(p) = datain.(p)([n+(1:n) 1:n],1);
+if iscell(parameter)
+    for k=1:numel(parameter)
+        p = parameter{k};
+        
+        n = size(datain.(p),1)./2;
+        
+        dataout.(p) = datain.(p)([n+(1:n) 1:n],1);
+    end
+else
+        n = size(datain.(parameter),1)./2;
+        dataout.(parameter) = datain.(parameter)([n+(1:n) 1:n],1);
 end
-
             
