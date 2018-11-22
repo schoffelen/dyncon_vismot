@@ -45,6 +45,7 @@ switch conditions
     not_first_trial_of_block = find(mod(trialnumber, 5)~=0);
     cfg.trials = not_first_trial_of_block;
     data = ft_selectdata(cfg, data);
+    newc = newc(not_first_trial_of_block,:);
     
     cfg = [];
     cfg.trials    = find(newc==1);
