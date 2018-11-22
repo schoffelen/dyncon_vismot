@@ -125,6 +125,10 @@ switch conditions
     cfg.trials = find(c==5 & prevc==5); % N-N
     dataout.data9 = ft_selectdata(cfg, data);
     
+    fd = fieldnames(dataout);
+    for k=1:numel(fd)
+        dataout.(fd{k}).trialinfo(:, end+1) = k;
+    end
   otherwise
     error('unsupported reordering of data objects required');
 end
