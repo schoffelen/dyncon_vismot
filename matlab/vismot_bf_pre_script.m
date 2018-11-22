@@ -31,12 +31,15 @@ if isfield(stat42, 'tri')
   n = size(stat43.pos,1)./2;
   stat43.stat = stat43.stat([n+(1:n) 1:n],1);
   %stat43.statsmooth = stat43.statsmooth([n+(1:n) 1:n],1);
+  n = size(stat25.pos,1)./2;
+  stat25.stat = stat25.stat([n+(1:n) 1:n],1);
+  n = size(stat45.pos,1)./2;
+  stat45.stat = stat45.stat([n+(1:n) 1:n],1);
 elseif isfield(stat42, 'dim')
   stat42.stat = reshape(flip(reshape(stat42.stat,stat42.dim),1),[],1);
   stat43.stat = reshape(flip(reshape(stat42.stat,stat42.dim),1),[],1);
   %stat42.statsmooth = reshape(flip(reshape(stat42.statsmooth,stat42.dim),1),[],1);
   %stat43.statsmooth = reshape(flip(reshape(stat42.statsmooth,stat42.dim),1),[],1);
-  
 end
 
 % treat as if everything is left handed response / cue presented in left
@@ -44,11 +47,17 @@ end
 statResp = stat13;
 statResp.stat = (statResp.stat + stat42.stat)/2;
 %statResp.statsmooth = (statResp.statsmooth + stat42.statsmooth)/2;
+% also for neutral conditions
+statCvsN = stat15;
+statCvsN.stat = (stat15.stat + stat45.stat)/2;
+statICvsN = stat35;
+statICvsN.stat = (stat35.stat + stat25.stat)/2;
+
 statHemi = stat12;
 statHemi.stat = (statHemi.stat + stat43.stat)/2;
 %statHemi.statsmooth = (statHemi.statsmooth + stat43.statsmooth)/2;
 
-save(filename, 'stat13', 'stat42','stat12', 'stat43', 'statResp', 'statHemi');
+save(filename, 'stat13', 'stat42','stat12', 'stat43', 'statResp', 'statHemi', 'statCvsN', 'statICvsN');
 % save(filename, 'stat13', 'stat42');
 
 clear source stat13 stat42

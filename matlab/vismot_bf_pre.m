@@ -1,4 +1,4 @@
-function [source, stat13, stat42, stat12, stat43] = vismot_bf_pre(subject,varargin)
+function [source, stat13, stat42, stat12, stat43, stat15, stat25, stat35, stat45] = vismot_bf_pre(subject,varargin)
 
 %function [source, filter, freq] = vismot_bf_post(subject,varargin)
 
@@ -107,6 +107,70 @@ cfgs.statistic        = 'statfun_yuenTtest'; % This statistics function
 s     = keepfields(tmpsource,{'freq' 'tri' 'inside' 'pos' 'dim'});
 
 % same response hand contrast
+% left hand response, C vs neutral
+cfg2              = [];
+cfg2.trials       = find(ismember(freq.trialinfo(:,end),[1 5]));
+tmpfreq           = ft_selectdata(cfg2, freq);
+s.pow = zeros(numel(s.inside),numel(cfg2.trials));
+s.pow(s.inside,:) = fourier2pow(cat(3, filter{:}), tmpfreq.fourierspctrm, tmpfreq.cumtapcnt);  
+s.trialinfo       = tmpfreq.trialinfo;
+
+cfgs.design                 = s.trialinfo(:,1)';
+cfgs.design(cfgs.design==5) = 2;
+stat_15    = ft_sourcestatistics(cfgs, s);
+stat_15 = rmfield(stat_15, {'prob', 'cirange', 'mask'});
+try, stat_15.tri = int16(stat_15.tri); end
+stat_15.pos = single(stat_15.pos);
+
+% left hand response, IC vs neutral
+cfg2              = [];
+cfg2.trials       = find(ismember(freq.trialinfo(:,end),[3 5]));
+tmpfreq           = ft_selectdata(cfg2, freq);
+s.pow = zeros(numel(s.inside),numel(cfg2.trials));
+s.pow(s.inside,:) = fourier2pow(cat(3, filter{:}), tmpfreq.fourierspctrm, tmpfreq.cumtapcnt);  
+s.trialinfo       = tmpfreq.trialinfo;
+
+cfgs.design                 = s.trialinfo(:,1)';
+cfgs.design(cfgs.design==3) = 1;
+cfgs.design(cfgs.design==5) = 2;
+stat_35    = ft_sourcestatistics(cfgs, s);
+stat_35 = rmfield(stat_35, {'prob', 'cirange', 'mask'});
+try, stat_35.tri = int16(stat_35.tri); end
+stat_35.pos = single(stat_35.pos);
+
+% right hand response, C vs neutral
+cfg2              = [];
+cfg2.trials       = find(ismember(freq.trialinfo(:,end),[4 5]));
+tmpfreq           = ft_selectdata(cfg2, freq);
+s.pow = zeros(numel(s.inside),numel(cfg2.trials));
+s.pow(s.inside,:) = fourier2pow(cat(3, filter{:}), tmpfreq.fourierspctrm, tmpfreq.cumtapcnt);  
+s.trialinfo       = tmpfreq.trialinfo;
+
+cfgs.design                 = s.trialinfo(:,1)';
+cfgs.design(cfgs.design==4) = 1;
+cfgs.design(cfgs.design==5) = 2;
+stat_45    = ft_sourcestatistics(cfgs, s);
+stat_45 = rmfield(stat_45, {'prob', 'cirange', 'mask'});
+try, stat_45.tri = int16(stat_45.tri); end
+stat_45.pos = single(stat_45.pos);
+
+% right hand response, IC vs neutral
+cfg2              = [];
+cfg2.trials       = find(ismember(freq.trialinfo(:,end),[2 5]));
+tmpfreq           = ft_selectdata(cfg2, freq);
+s.pow = zeros(numel(s.inside),numel(cfg2.trials));
+s.pow(s.inside,:) = fourier2pow(cat(3, filter{:}), tmpfreq.fourierspctrm, tmpfreq.cumtapcnt);  
+s.trialinfo       = tmpfreq.trialinfo;
+
+cfgs.design                 = s.trialinfo(:,1)';
+cfgs.design(cfgs.design==2) = 1;
+cfgs.design(cfgs.design==5) = 2;
+stat_25    = ft_sourcestatistics(cfgs, s);
+stat_25 = rmfield(stat_25, {'prob', 'cirange', 'mask'});
+try, stat_25.tri = int16(stat_25.tri); end
+stat_25.pos = single(stat_25.pos);
+
+% left hand response, C-IC
 cfg2              = [];
 cfg2.trials       = find(ismember(freq.trialinfo(:,end),[1 3]));
 tmpfreq           = ft_selectdata(cfg2, freq);
@@ -121,6 +185,7 @@ stat13 = rmfield(stat13, {'prob', 'cirange', 'mask'});
 try, stat13.tri = int16(stat13.tri); end
 stat13.pos = single(stat13.pos); % what is this step for?
 
+% right hand response, C-IC
 cfg2              = [];
 cfg2.trials       = find(ismember(freq.trialinfo(:,end),[2 4]));
 tmpfreq           = ft_selectdata(cfg2, freq);
