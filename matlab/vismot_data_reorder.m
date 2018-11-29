@@ -8,7 +8,7 @@ switch conditions
     % order according to previous trial.
     
     % sanity check on input
-    if numel(fieldnames(datain))~=5,
+    if numel(fieldnames(datain))~=5
       warning('unexpected number of data arguments in input');
     end
     
@@ -42,7 +42,7 @@ switch conditions
     % blocks of 5).
     cfg=[];
     trialnumber = data.trialinfo(:,2);
-    not_first_trial_of_block = find(mod(trialnumber, 5)~=0);
+    not_first_trial_of_block = find(mod(trialnumber, 4)~=1);
     cfg.trials = not_first_trial_of_block;
     data = ft_selectdata(cfg, data);
     newc = newc(not_first_trial_of_block,:);
@@ -97,7 +97,7 @@ switch conditions
     % blocks of 5).
     cfg=[];
     trialnumber = data.trialinfo(:,2);
-    not_first_trial_of_block = find(mod(trialnumber, 5)~=0);
+    not_first_trial_of_block = find(mod(trialnumber, 4)~=1);
     cfg.trials = not_first_trial_of_block;
     data = ft_selectdata(cfg, data);
     c = c(not_first_trial_of_block,:);
@@ -125,10 +125,10 @@ switch conditions
     cfg.trials = find(c==5 & prevc==5); % N-N
     dataout.data9 = ft_selectdata(cfg, data);
     
-    fd = fieldnames(dataout);
-    for k=1:numel(fd)
-        dataout.(fd{k}).trialinfo(:, end+1) = k;
-    end
+%     fd = fieldnames(dataout);
+%     for k=1:numel(fd)
+%         dataout.(fd{k}).trialinfo(:, end+1) = k;
+%     end
   otherwise
     error('unsupported reordering of data objects required');
 end
