@@ -21,7 +21,9 @@ for k = 1:numel(freq)
     if ~isfield(freq(k),'trialinfo')
         freq(k).trialinfo = ones(numel(freq(k).cumtapcnt),1).*k;
     else
-        freq(k).trialinfo(:,end+1) = k;
+        if ~freq(k).trialinfo(:,end)==k
+            freq(k).trialinfo(:,end+1) = k;
+        end
     end
 end
 
@@ -141,12 +143,12 @@ switch conditions
         s.pow(s.inside,:) = fourier2pow(cat(3, filter{:}), tmpfreq.fourierspctrm, tmpfreq.cumtapcnt);
         s.trialinfo       = tmpfreq.trialinfo;
         
-        cfgs.design                 = s.trialinfo(:,1)';
+        cfgs.design                 = s.trialinfo(:,4)';
         cfgs.design(cfgs.design==5) = 2;
-        stat_15    = ft_sourcestatistics(cfgs, s);
-        stat_15 = rmfield(stat_15, {'prob', 'cirange', 'mask'});
-        try, stat_15.tri = int16(stat_15.tri); end
-        stat_15.pos = single(stat_15.pos);
+        stat15    = ft_sourcestatistics(cfgs, s);
+        stat15 = rmfield(stat15, {'prob', 'cirange', 'mask'});
+        try, stat15.tri = int16(stat15.tri); end
+        stat15.pos = single(stat15.pos);
         
         % left hand response, IC vs neutral
         cfg2              = [];
@@ -156,13 +158,13 @@ switch conditions
         s.pow(s.inside,:) = fourier2pow(cat(3, filter{:}), tmpfreq.fourierspctrm, tmpfreq.cumtapcnt);
         s.trialinfo       = tmpfreq.trialinfo;
         
-        cfgs.design                 = s.trialinfo(:,1)';
+        cfgs.design                 = s.trialinfo(:,4)';
         cfgs.design(cfgs.design==3) = 1;
         cfgs.design(cfgs.design==5) = 2;
-        stat_35    = ft_sourcestatistics(cfgs, s);
-        stat_35 = rmfield(stat_35, {'prob', 'cirange', 'mask'});
-        try, stat_35.tri = int16(stat_35.tri); end
-        stat_35.pos = single(stat_35.pos);
+        stat35    = ft_sourcestatistics(cfgs, s);
+        stat35 = rmfield(stat35, {'prob', 'cirange', 'mask'});
+        try, stat35.tri = int16(stat35.tri); end
+        stat35.pos = single(stat35.pos);
         
         % right hand response, C vs neutral
         cfg2              = [];
@@ -172,13 +174,13 @@ switch conditions
         s.pow(s.inside,:) = fourier2pow(cat(3, filter{:}), tmpfreq.fourierspctrm, tmpfreq.cumtapcnt);
         s.trialinfo       = tmpfreq.trialinfo;
         
-        cfgs.design                 = s.trialinfo(:,1)';
+        cfgs.design                 = s.trialinfo(:,4)';
         cfgs.design(cfgs.design==4) = 1;
         cfgs.design(cfgs.design==5) = 2;
-        stat_45    = ft_sourcestatistics(cfgs, s);
-        stat_45 = rmfield(stat_45, {'prob', 'cirange', 'mask'});
-        try, stat_45.tri = int16(stat_45.tri); end
-        stat_45.pos = single(stat_45.pos);
+        stat45    = ft_sourcestatistics(cfgs, s);
+        stat45 = rmfield(stat45, {'prob', 'cirange', 'mask'});
+        try, stat45.tri = int16(stat45.tri); end
+        stat45.pos = single(stat45.pos);
         
         % right hand response, IC vs neutral
         cfg2              = [];
@@ -188,13 +190,13 @@ switch conditions
         s.pow(s.inside,:) = fourier2pow(cat(3, filter{:}), tmpfreq.fourierspctrm, tmpfreq.cumtapcnt);
         s.trialinfo       = tmpfreq.trialinfo;
         
-        cfgs.design                 = s.trialinfo(:,1)';
+        cfgs.design                 = s.trialinfo(:,4)';
         cfgs.design(cfgs.design==2) = 1;
         cfgs.design(cfgs.design==5) = 2;
-        stat_25    = ft_sourcestatistics(cfgs, s);
-        stat_25 = rmfield(stat_25, {'prob', 'cirange', 'mask'});
-        try, stat_25.tri = int16(stat_25.tri); end
-        stat_25.pos = single(stat_25.pos);
+        stat25    = ft_sourcestatistics(cfgs, s);
+        stat25 = rmfield(stat25, {'prob', 'cirange', 'mask'});
+        try, stat25.tri = int16(stat25.tri); end
+        stat25.pos = single(stat25.pos);
         
         % left hand response, C-IC
         cfg2              = [];
@@ -204,7 +206,7 @@ switch conditions
         s.pow(s.inside,:) = fourier2pow(cat(3, filter{:}), tmpfreq.fourierspctrm, tmpfreq.cumtapcnt);
         s.trialinfo       = tmpfreq.trialinfo;
         
-        cfgs.design                 = s.trialinfo(:,1)';
+        cfgs.design                 = s.trialinfo(:,4)';
         cfgs.design(cfgs.design==3) = 2;
         stat13                      = ft_sourcestatistics(cfgs, s);
         stat13 = rmfield(stat13, {'prob', 'cirange', 'mask'});
@@ -219,7 +221,7 @@ switch conditions
         s.pow(s.inside,:) = fourier2pow(cat(3, filter{:}), tmpfreq.fourierspctrm, tmpfreq.cumtapcnt);
         s.trialinfo       = tmpfreq.trialinfo;
         
-        cfgs.design                 = s.trialinfo(:,1)';
+        cfgs.design                 = s.trialinfo(:,4)';
         cfgs.design(cfgs.design==4) = 1;
         stat42                      = ft_sourcestatistics(cfgs, s);
         stat42 = rmfield(stat42, {'prob', 'cirange', 'mask'});
@@ -234,7 +236,7 @@ switch conditions
         s.pow(s.inside,:) = fourier2pow(cat(3, filter{:}), tmpfreq.fourierspctrm, tmpfreq.cumtapcnt);
         s.trialinfo       = tmpfreq.trialinfo;
         
-        cfgs.design                 = s.trialinfo(:,1)';
+        cfgs.design                 = s.trialinfo(:,4)';
         stat12                      = ft_sourcestatistics(cfgs, s);
         stat12 = rmfield(stat12, {'prob', 'cirange', 'mask'});
         try, stat12.tri = int16(stat12.tri); end
@@ -247,7 +249,7 @@ switch conditions
         s.pow(s.inside,:) = fourier2pow(cat(3, filter{:}), tmpfreq.fourierspctrm, tmpfreq.cumtapcnt);
         s.trialinfo       = tmpfreq.trialinfo;
         
-        cfgs.design                 = s.trialinfo(:,1)';
+        cfgs.design                 = s.trialinfo(:,4)';
         cfgs.design(cfgs.design==4) = 1;
         cfgs.design(cfgs.design==3) = 2;
         stat43                      = ft_sourcestatistics(cfgs, s);
@@ -286,7 +288,7 @@ switch conditions
         stat.stat13 = stat13;
         stat.stat42 = stat42;
         stat.stat12 = stat12;
-        stat.stat42 = stat43;
+        stat.stat43 = stat43;
         stat.stat15 = stat15;
         stat.stat25 = stat25;
         stat.stat35 = stat35;
