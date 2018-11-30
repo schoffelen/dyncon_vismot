@@ -12,7 +12,7 @@ doplanar  = ft_getopt(varargin, 'doplanar', 0);
 conditions = ft_getopt(varargin, 'conditions', 'previous');
 nrand      = ft_getopt(varargin, 'nrand', 100);
 
-if smoothing==0,
+if smoothing==0
   taper = 'hanning';
   smoothing = 4;
 else
@@ -27,24 +27,15 @@ if ischar(foilim) && strcmp(foilim, 'all')
   foilim = [0 alldata.data1.fsample./2];
 end
 
-pre = cell(1,numel(fieldnames(alldata)));
-for k = 1:numel(fieldnames(alldata))
-  if k==1,
-    data = alldata.data1;
-  elseif k==2,
-    data = alldata.data2;
-  elseif k==3,
-    data = alldata.data3;
-  elseif k==4,
-    data = alldata.data4;
-  elseif k==5,
-    data = alldata.data5;
-  end
+fd = fieldnames(alldata);
+pre = cell(1,numel(fd));
+for k = 1:numel(fd)
+  data = alldata.(fd{k});
   
   cfg           = [];
   cfg.toilim    = [-0.5 0-1/256];
   cfg.minlength = 0.25;
-	datapre       = ft_redefinetrial(cfg, data);
+  datapre       = ft_redefinetrial(cfg, data);
   clear data;
   
   cfg         = [];
@@ -54,11 +45,11 @@ for k = 1:numel(fieldnames(alldata))
   clear datapre;
 end
 
-if strcmp(output,'csd'), 
+if strcmp(output,'csd') 
 	output = 'fourier';
 	docsd  = true;
   dospectral = true;
-elseif strcmp(output, 'tlck'),
+elseif strcmp(output, 'tlck')
 	docsd = false;
 	dospectral = false;
 else
@@ -66,7 +57,7 @@ else
 	dospectral = true;
 end
 
-if dospectral,
+if dospectral
 cfg         = [];
 cfg.method  = 'mtmfft';
 cfg.output  = output;
@@ -86,12 +77,12 @@ if doplanar
   cfgp = [];
   cfgp.method = 'sincos';
   cfgp.neighbours = neighbours;
-  for k = 1:5
+  for k = 1:numel(pre)
     pre{k} = ft_megplanar(cfgp, pre{k});
   end
 end
 
-for k = 1:5
+for k = 1:numel(pre)
   tmp = ft_freqanalysis(cfg, pre{k});
   if docsd
 		ntap = sum(tmp.cumtapcnt);
@@ -103,7 +94,7 @@ end
 
 % combine planar gradients
 if doplanar
-  for k = 1:5
+  for k = 1:numel(pre)
     freqpre(k) = ft_combineplanar([], freqpre(k));
   end
 end
@@ -116,7 +107,7 @@ end
 cfg = [];
 cfg.covariance = 'yes';
 cfg.vartrllength = 2;
-for k = 1:5
+for k = 1:numel(pre)
 	tlckpre(k) = ft_timelockanalysis(cfg, pre{k});
 end
 
