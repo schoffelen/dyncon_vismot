@@ -1,39 +1,32 @@
 datadir = '/project/3011085.03/analysis/source';
-conditions = 'current_previous'; % 'previous' current_previous
-if strcmp(conditions, 'current_previous')
-    whichstat = 'statIC_ICvsC'; % statC_CvsN statIC_ICvsC statIC_ICvsN statC_CvsIC
-elseif strcmp(conditions, 'previous')
-    whichstat = 'statHemi';%'statHemi'; %statCvsN statICvsN
-end
+whichstat = 'statHemi';%'statHemi'; %statCvsN statICvsN
+
 
 frequency = [10 20 40:4:100];
 cnt = 0;
 for k = frequency
-  fprintf('computing T-statistic for frequency %d Hz\n', k);
-  if strcmp(conditions, 'current_previous')
-      d = dir(fullfile(datadir,sprintf('*3d4mm*pre_curprev_%d.mat',k)));
-  elseif strcmp(conditions, 'previous')
-      d = dir(fullfile(datadir,sprintf('*3d4mm*pre_%d.mat',k)));
-  end
-  for m = 1:numel(d)
-    dum = load(fullfile(d(m).folder,d(m).name),whichstat);
-    tmp(m) = dum.(whichstat);
-  end
-  clear dum
-  dat = cat(2,tmp.stat);
-  n   = size(dat,2);
-  for m = 1:n
-    dat(:,m+n) = nanmean(dat(:,m));
-  end
-  
-  design   = [ones(1,n) ones(1,n)*2;1:n 1:n];
-  cfg.ivar = 1;
-  cfg.uvar = 2;
-  tmp      = ft_statfun_depsamplesT(cfg, dat, design);
-  cnt      = cnt+1;
-  T(:,cnt) = tmp.stat;
-  clear tmp;
-  
+    fprintf('computing T-statistic for frequency %d Hz\n', k);
+    
+    d = dir(fullfile(datadir,sprintf('*3d4mm*pre_%d.mat',k)));
+    for m = 1:numel(d)
+        dum = load(fullfile(d(m).folder,d(m).name),whichstat);
+        tmp(m) = dum.(whichstat);
+    end
+    clear dum
+    dat = cat(2,tmp.stat);
+    n   = size(dat,2);
+    for m = 1:n
+        dat(:,m+n) = nanmean(dat(:,m));
+    end
+    
+    design   = [ones(1,n) ones(1,n)*2;1:n 1:n];
+    cfg.ivar = 1;
+    cfg.uvar = 2;
+    tmp      = ft_statfun_depsamplesT(cfg, dat, design);
+    cnt      = cnt+1;
+    T(:,cnt) = tmp.stat;
+    clear tmp;
+    
 end
 
 load standard_sourcemodel3d4mm;
@@ -68,17 +61,17 @@ cfgp.opacitylim = [2 4];
 cfgp.funcolorlim = [-3 3];
 cfgp.funparameter = 'alpha';
 ft_sourceplot(cfgp, source_int);
-title('alpha'); pause(0.01); 
+title('alpha'); pause(0.01);
 
 cfgp.funcolorlim = [-3 3];
 cfgp.funparameter = 'beta';
 ft_sourceplot(cfgp, source_int);
-title('beta'); pause(0.01); 
+title('beta'); pause(0.01);
 
 cfgp.funcolorlim = [-2 2];
 cfgp.funparameter  = 'gamma1';
 ft_sourceplot(cfgp, source_int);
-title('gamma1'); pause(0.01); 
+title('gamma1'); pause(0.01);
 cfgp.funparameter  = 'gamma2';
 ft_sourceplot(cfgp, source_int);
-title('gamma2'); pause(0.01); 
+title('gamma2'); pause(0.01);
