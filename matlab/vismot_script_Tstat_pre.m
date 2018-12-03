@@ -2,12 +2,12 @@ datadir = '/project/3011085.03/analysis/source';
 whichstat = 'statResp';%'statHemi'; %statCvsN statICvsN
 
 
-frequency = [10 20 40:4:100];
+frequency = [4:2:30 40:4:100];
 cnt = 0;
 for k = frequency
     fprintf('computing T-statistic for frequency %d Hz\n', k);
     
-    d = dir(fullfile(datadir,sprintf('*3d4mm*pre_%d.mat',k)));
+    d = dir(fullfile(datadir,sprintf('*3d4mm*pre_%03d.mat',k)));
     for m = 1:numel(d)
         dum = load(fullfile(d(m).folder,d(m).name),whichstat);
         tmp(m) = dum.(whichstat);
@@ -32,8 +32,8 @@ end
 load standard_sourcemodel3d4mm;
 mri = ft_read_mri('single_subj_T1_1mm.nii');
 source = sourcemodel;
-source.gamma1 = nanmean(T(:,3:8),2);
-source.gamma2 = nanmean(T(:,10:16),2);
+source.gamma1 = nanmean(T(:,nearest(frequency,40):nearest(frequency,60)),2);
+source.gamma2 = nanmean(T(:,nearest(frequency,70):nearest(frequency,90)),2);
 source.alpha  = T(:,1);
 source.beta   = T(:,2);
 

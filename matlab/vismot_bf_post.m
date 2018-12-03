@@ -26,9 +26,6 @@ cfg = [];
 cfg.appenddim = 'rpt';
 cfg.parameter = 'fourierspctrm';
 freq = ft_appendfreq(cfg, freqpre(1), freqpre(2), freqpre(3), freqpre(4), freqpre(5), freqpst(1), freqpst(2), freqpst(3), freqpst(4), freqpst(5));
-% freq = ft_appendfreq(cfg, freqpst(1), freqpst(2), freqpst(3), freqpst(4), freqpst(5));
-
-% clear freqpst;
 
 % load in the head model and the source model.
 if isempty(sourcemodel)
@@ -58,8 +55,6 @@ else
   end
 end
 
-%sourcemodel.inside(11:end)=false;
-
 % compute beamformer common spatial filters
 cfg           = [];
 cfg.grad      = freq.grad;
@@ -81,19 +76,79 @@ cfg.dics.realfilter = 'yes';
 tmpsource = ft_sourceanalysis(cfg, freq);
 filter    = tmpsource.avg.filter;
 
-cfg2             = [];
-cfg2.fwhm        = 'yes';
+tmpcfg             = [];
+tmpcfg.fwhm        = 'yes';
 if ~isfield(sourcemodel, 'dim')
-  cfg2.fwhmmethod  = 'gaussfit';
-  cfg2.fwhmmaxdist = 0.02;
+  tmpcfg.fwhmmethod  = 'gaussfit';
+  tmpcfg.fwhmmaxdist = 0.02;
 end
-fwhm             = ft_sourcedescriptives(cfg2, tmpsource);
+fwhm             = ft_sourcedescriptives(tmpcfg, tmpsource);
 fwhm             = fwhm.fwhm;
 
 cfg.grid.filter     = filter;
 cfg.dics.keepfilter = 'no';
 
-% compute 1-3 and 2-4 contrasts as a yuen-welch T value
+
+s     = keepfields(tmpsource, {'freq' 'tri' 'inside' 'pos' 'dim'});
+
+% same response hand contrast congruent minus incongruent
+stat13 = makesourcecontrast(freq, filter, s, [1 3], true);
+stat42 = makesourcecontrast(freq, filter, s, [4 2], true);
+
+% same hemifield contrast congruent minus incongruent
+stat12 = makesourcecontrast(freq, filter, s, [1 2], true);
+stat43 = makesourcecontrast(freq, filter, s, [4 3], true);
+
+% compute condition specific power, this is without stratification for RT
+for k = 1:5
+  tmpcfg.trials = find(freq.trialinfo(:,1)==k & freq.trialinfo(:,end)==2); % for the pst trials only
+  tmp         = ft_sourceanalysis(cfg, ft_selectdata(tmpcfg, freq));
+%   %try
+%     tmp.fwhm    = fwhm;
+%     tmp.inside  = tmp.inside & isfinite(fwhm);
+%     tmp         = smooth_source(tmp, 'parameter', 'pow', 'maxdist', 0.025);
+%   %catch
+%   %  tmp = removefields(tmp, 'fwhm');
+%   %end
+  source(k)   = tmp;
+end
+
+% % smooth contrasts
+% % same response hand:
+% tmp         = stat13;
+% tmp.fwhm    = fwhm;
+% tmp.inside  = tmp.inside&isfinite(fwhm);
+% tmp         = smooth_source(tmp, 'parameter', 'stat', 'maxdist', 0.025);
+% stat13      = tmp;
+% 
+% tmp         = stat42;
+% tmp.fwhm    = fwhm;
+% tmp.inside  = tmp.inside&isfinite(fwhm);
+% tmp         = smooth_source(tmp, 'parameter', 'stat', 'maxdist', 0.025);
+% stat42         = tmp;
+% 
+% % same hemifield
+% tmp         = stat12;
+% tmp.fwhm    = fwhm;
+% tmp.inside  = tmp.inside&isfinite(fwhm);
+% tmp         = smooth_source(tmp, 'parameter', 'stat', 'maxdist', 0.025);
+% stat12      = tmp;
+% 
+% tmp         = stat43;
+% tmp.fwhm    = fwhm;
+% tmp.inside  = tmp.inside&isfinite(fwhm);
+% tmp         = smooth_source(tmp, 'parameter', 'stat', 'maxdist', 0.025);
+% stat43      = tmp;
+
+%%condition 1: cue left, response left
+%%condition 2: cue left, response right
+%%condition 3: cue right, response left
+%%condition 4: cue right, response right
+%%condition 5: catch trial
+
+function stat = makesourcecontrast(freq, filter, s, contrast, stratifyflag)
+
+% compute contrasts as a yuen-welch T value
 cfgs        = [];
 cfgs.method = 'montecarlo';
 cfgs.numrandomization = 0;
@@ -101,109 +156,35 @@ cfgs.statistic        = 'statfun_yuenTtest'; % This statistics function
 % is not available.
 %cfgs.statistic       = 'indepsamplesT';
 
-s     = keepfields(tmpsource,{'freq' 'tri' 'inside' 'pos' 'dim'});
-
-% same response hand contrast
-cfg2              = [];
-cfg2.trials       = find(ismember(freq.trialinfo(:,1),[1 3]) & freq.trialinfo(:,end)==2); % for the pst trials only
-tmpfreq           = ft_selectdata(cfg2, freq);
-s.pow = zeros(numel(s.inside),numel(cfg2.trials));
+tmpcfg            = [];
+tmpcfg.trials     = find(ismember(freq.trialinfo(:,1),contrast) & freq.trialinfo(:,end)==2); % for the pst trials only
+tmpfreq           = ft_selectdata(tmpcfg, freq);
+s.pow             = zeros(numel(s.inside), numel(tmpcfg.trials));
 s.pow(s.inside,:) = fourier2pow(cat(3, filter{:}), tmpfreq.fourierspctrm, tmpfreq.cumtapcnt);  
 s.trialinfo       = tmpfreq.trialinfo;
 
-cfgs.design                 = s.trialinfo(:,1)';
-cfgs.design(cfgs.design==3) = 2;
-stat13                      = ft_sourcestatistics(cfgs, s);
-stat13 = rmfield(stat13, {'prob', 'cirange', 'mask'});
-try, stat13.tri = int16(stat13.tri); end
-stat13.pos = single(stat13.pos); % what is this step for?
-
-cfg2              = [];
-cfg2.trials       = find(ismember(freq.trialinfo(:,1),[2 4]) & freq.trialinfo(:,end)==2); % for the pst trials only
-tmpfreq           = ft_selectdata(cfg2, freq);
-s.pow = zeros(numel(s.inside),numel(cfg2.trials));
-s.pow(s.inside,:) = fourier2pow(cat(3, filter{:}), tmpfreq.fourierspctrm, tmpfreq.cumtapcnt);
-s.trialinfo       = tmpfreq.trialinfo;
-
-cfgs.design                 = s.trialinfo(:,1)';
-cfgs.design(cfgs.design==4) = 1;
-stat42                      = ft_sourcestatistics(cfgs, s);
-stat42 = rmfield(stat42, {'prob', 'cirange', 'mask'});
-try, stat42.tri = int16(stat42.tri); end
-stat42.pos = single(stat42.pos);
-
-% same hemifield contrast
-cfg2              = [];
-cfg2.trials       = find(ismember(freq.trialinfo(:,1),[1 2]) & freq.trialinfo(:,end)==2); % for the pst trials only
-tmpfreq           = ft_selectdata(cfg2, freq);
-s.pow = zeros(numel(s.inside),numel(cfg2.trials));
-s.pow(s.inside,:) = fourier2pow(cat(3, filter{:}), tmpfreq.fourierspctrm, tmpfreq.cumtapcnt);
-s.trialinfo       = tmpfreq.trialinfo;
-
-cfgs.design                 = s.trialinfo(:,1)';
-stat12                      = ft_sourcestatistics(cfgs, s);
-stat12 = rmfield(stat12, {'prob', 'cirange', 'mask'});
-try, stat12.tri = int16(stat12.tri); end
-stat12.pos = single(stat12.pos);
-
-cfg2              = [];
-cfg2.trials       = find(ismember(freq.trialinfo(:,1),[4 3]) & freq.trialinfo(:,end)==2); % for the pst trials only
-tmpfreq           = ft_selectdata(cfg2, freq);
-s.pow = zeros(numel(s.inside),numel(cfg2.trials));
-s.pow(s.inside,:) = fourier2pow(cat(3, filter{:}), tmpfreq.fourierspctrm, tmpfreq.cumtapcnt);
-s.trialinfo       = tmpfreq.trialinfo;
-
-cfgs.design                 = s.trialinfo(:,1)';
-cfgs.design(cfgs.design==4) = 1;
-cfgs.design(cfgs.design==3) = 2;
-stat43                      = ft_sourcestatistics(cfgs, s);
-stat43 = rmfield(stat43, {'prob', 'cirange', 'mask'});
-try, stat43.tri = int16(stat43.tri); end
-stat43.pos = single(stat43.pos);
-
-% compute condition specific power
-for k = 1:5
-  cfg2.trials = find(freq.trialinfo(:,1)==k & freq.trialinfo(:,end)==2); % for the pst trials only
-  tmp         = ft_sourceanalysis(cfg, ft_selectdata(cfg2, freq));
-  %try
-    tmp.fwhm    = fwhm;
-    tmp.inside  = tmp.inside & isfinite(fwhm);
-    tmp         = smooth_source(tmp, 'parameter', 'pow', 'maxdist', 0.025);
-  %catch
-  %  tmp = removefields(tmp, 'fwhm');
-  %end
-  source(k)   = tmp;
+if stratifyflag
+  % stratify the trials based on the RTs
+  RT = s.trialinfo(:,3);
+  c  = s.trialinfo(:,1);
+  
+  tmpcfg        = [];
+  tmpcfg.numbin = 5;
+  out = ft_stratify(tmpcfg, RT(c==contrast(1))', RT(c==contrast(2))');
+  s.trialinfo(c==contrast(1),3) = out{1}';
+  s.trialinfo(c==contrast(2),3) = out{2}';
 end
 
-% smooth contrasts
-% same response hand:
-tmp         = stat13;
-tmp.fwhm    = fwhm;
-tmp.inside  = tmp.inside&isfinite(fwhm);
-tmp         = smooth_source(tmp, 'parameter', 'stat', 'maxdist', 0.025);
-stat13      = tmp;
+tmpcfg        = [];
+tmpcfg.trials = find(isfinite(s.trialinfo(:,3)));
+s             = ft_selectdata(tmpcfg, s);
 
-tmp         = stat42;
-tmp.fwhm    = fwhm;
-tmp.inside  = tmp.inside&isfinite(fwhm);
-tmp         = smooth_source(tmp, 'parameter', 'stat', 'maxdist', 0.025);
-stat42         = tmp;
+cfgs.design                 = nan(1,size(s.trialinfo,1));
+cfgs.design(s.trialinfo(:,1)==contrast(1)) = 1;
+cfgs.design(s.trialinfo(:,1)==contrast(2)) = 2;
+stat                        = ft_sourcestatistics(cfgs, s);
+stat                        = rmfield(stat, {'prob', 'cirange', 'mask'});
 
-% same hemifield
-tmp         = stat12;
-tmp.fwhm    = fwhm;
-tmp.inside  = tmp.inside&isfinite(fwhm);
-tmp         = smooth_source(tmp, 'parameter', 'stat', 'maxdist', 0.025);
-stat12      = tmp;
-
-tmp         = stat43;
-tmp.fwhm    = fwhm;
-tmp.inside  = tmp.inside&isfinite(fwhm);
-tmp         = smooth_source(tmp, 'parameter', 'stat', 'maxdist', 0.025);
-stat43      = tmp;
-
-%%condition 1: cue left, response left
-%%condition 2: cue left, response right
-%%condition 3: cue right, response left
-%%condition 4: cue right, response right
-%%condition 5: catch trial
+% save some memory on disk
+if isfield(stat, 'tri'), stat.tri = int16(stat.tri); end
+stat.pos = single(stat.pos);
