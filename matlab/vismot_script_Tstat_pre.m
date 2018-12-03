@@ -1,5 +1,5 @@
 datadir = '/project/3011085.03/analysis/source';
-whichstat = 'statHemi';%'statHemi'; %statCvsN statICvsN
+whichstat = 'statICvsN';%'statHemi'; %statCvsN statICvsN statResp
 
 
 frequency = [10 20 40:4:100];
@@ -56,22 +56,24 @@ cfgp.nslices    =  30;
 cfgp.slicerange =  [40 150];
 cfgp.opacitylim = [2 4];
 
-% cfgp.method = 'surface';
+cfgp.method = 'surface';
 
-cfgp.funcolorlim = [-3 3];
+cfgp.funcolorlim = [-6 6];
 cfgp.funparameter = 'alpha';
 ft_sourceplot(cfgp, source_int);
 title('alpha'); pause(0.01);
 
-cfgp.funcolorlim = [-3 3];
+cfgp.funcolorlim = [-8 8];
 cfgp.funparameter = 'beta';
 ft_sourceplot(cfgp, source_int);
 title('beta'); pause(0.01);
 
-cfgp.funcolorlim = [-2 2];
+cfgp.funcolorlim = [-3 3];
 cfgp.funparameter  = 'gamma1';
 ft_sourceplot(cfgp, source_int);
 title('gamma1'); pause(0.01);
+
+cfgp.funcolorlim = [-2 2];
 cfgp.funparameter  = 'gamma2';
 ft_sourceplot(cfgp, source_int);
 title('gamma2'); pause(0.01);
