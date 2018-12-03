@@ -26,7 +26,7 @@ subject = vismot_subjinfo(subjectname);
 load(fullfile(subject.pathname,'grid',sprintf('%s_sourcemodel3d4mm',subject.name)),'sourcemodel');
 [source, stat] = vismot_bf_pre(subject,'sourcemodel',sourcemodel,'frequency',frequency,'smoothing',smoothing, 'conditions', conditions);
 
-filename = fullfile(subject.pathname,'source',[subject.name,'source3d4mm_pre_',num2str(frequency)]);
+filename = fullfile(subject.pathname,'source',[subject.name,'source3d4mm_pre_',num2str(frequency,'%03d')]);
 
 % scrub the headmodel and grid from the output cfg
 for k = 1:numel(source)
