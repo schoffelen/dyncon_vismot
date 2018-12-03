@@ -1,5 +1,5 @@
 datadir = '/project/3011085.03/analysis/source';
-whichstat = 'statHemi';%'statHemi'; %statCvsN statICvsN
+whichstat = 'statResp';%'statHemi'; %statCvsN statICvsN
 
 
 frequency = [10 20 40:4:100];

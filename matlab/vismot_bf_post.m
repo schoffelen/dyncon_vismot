@@ -10,7 +10,7 @@ if isempty(smoothing)
   if frequency < 30
     smoothing = 4;
   else
-    smoothing = 12;
+    smoothing = 8;
   end
 end
 

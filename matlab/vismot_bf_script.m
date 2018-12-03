@@ -9,7 +9,7 @@ if ~exist('subjectname', 'var')
     error('subjectname needs to be defined');
 end
 if ~exist('smoothing', 'var')
-    smoothing = 4;
+    smoothing = [];
 end
 subject = vismot_subjinfo(subjectname);
 
