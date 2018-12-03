@@ -11,6 +11,13 @@ end
 if ~exist('smoothing', 'var')
   smoothing = [];
 end
+if isempty(smoothing)
+  if frequency < 30
+    smoothing = 4;
+  else
+    smoothing = 8;
+  end
+end
 if ~exist('conditions', 'var')
   conditions = 'previous';
 end
@@ -69,7 +76,7 @@ statHemi.stat = (statHemi.stat + stat43.stat)/2;
 %statHemi.statsmooth = (statHemi.statsmooth + stat43.statsmooth)/2;
 
 
-save(filename, 'stat13', 'stat42','stat12', 'stat43', 'statResp', 'statHemi', 'statCvsN', 'statICvsN');
+save(filename, 'stat13', 'stat42','stat12', 'stat43', 'statResp', 'statHemi', 'statCvsN', 'statICvsN', 'stat15', 'stat25', 'stat35', 'stat45', 'smoothing');
 % save(filename, 'stat13', 'stat42');
 
 clear source stat13 stat42

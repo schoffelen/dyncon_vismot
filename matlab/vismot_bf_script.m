@@ -11,6 +11,13 @@ end
 if ~exist('smoothing', 'var')
     smoothing = [];
 end
+if isempty(smoothing)
+  if frequency < 30
+    smoothing = 4;
+  else
+    smoothing = 8;
+  end
+end
 subject = vismot_subjinfo(subjectname);
 
 %[source, stat13, stat42, stat12, stat43] = vismot_bf_post(subject,'frequency',frequency, 'smoothing', smoothing);
