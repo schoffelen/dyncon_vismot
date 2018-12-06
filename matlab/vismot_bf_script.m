@@ -21,7 +21,7 @@ end
 subject = vismot_subjinfo(subjectname);
  
 load(fullfile(subject.pathname,'grid',sprintf('%s_sourcemodel3d4mm',subject.name)),'sourcemodel');
-[source, stat13, stat42, stat12, stat43] = vismot_bf_post(subject,'frequency',frequency,'sourcemodel',sourcemodel);
+[source, stat13, stat42, stat12, stat43, stat15, stat25, stat35, stat45] = vismot_bf_post(subject,'frequency',frequency,'sourcemodel',sourcemodel);
 filename = fullfile(subject.pathname,'source',[subject.name,'source3d4mm_post_',num2str(frequency,'%03d')]);
 
 % scrub the headmodel and grid from the output cfg
@@ -34,27 +34,38 @@ end
 if isfield(stat42, 'tri')
   n = size(stat42.stat,1)./2;
   stat42.stat = stat42.stat([n+(1:n) 1:n],1);
-  stat42.statsmooth = stat42.statsmooth([n+(1:n) 1:n],1);
+%   stat42.statsmooth = stat42.statsmooth([n+(1:n) 1:n],1);
   n = size(stat43.pos,1)./2;
   stat43.stat = stat43.stat([n+(1:n) 1:n],1);
-  stat43.statsmooth = stat43.statsmooth([n+(1:n) 1:n],1);
+%   stat43.statsmooth = stat43.statsmooth([n+(1:n) 1:n],1);
+n = size(stat45.pos,1)./2;
+stat45.stat = stat45.stat([n+(1:n) 1:n],1);
+n = size(stat25.pos,1)./2;
+stat25.stat = stat25.stat([n+(1:n) 1:n],1);
 elseif isfield(stat42, 'dim')
   stat42.stat = reshape(flip(reshape(stat42.stat,stat42.dim),1),[],1);
-  stat43.stat = reshape(flip(reshape(stat42.stat,stat42.dim),1),[],1);
+  stat43.stat = reshape(flip(reshape(stat43.stat,stat43.dim),1),[],1);
+  stat45.stat = reshape(flip(reshape(stat45.stat,stat45.dim),1),[],1);
+  stat25.stat = reshape(flip(reshape(stat25.stat,stat25.dim),1),[],1);
   if isfield(stat42, 'statsmooth')
     stat42.statsmooth = reshape(flip(reshape(stat42.statsmooth,stat42.dim),1),[],1);
-    stat43.statsmooth = reshape(flip(reshape(stat42.statsmooth,stat42.dim),1),[],1);
+    stat43.statsmooth = reshape(flip(reshape(stat43.statsmooth,stat43.dim),1),[],1);
   end
 end
 
-% treat as if everything is left handed response / cue presented in left
-% hemifield.
+% treat as if everything is left handed response 
 statResp = stat13;
 statResp.stat = (statResp.stat + stat42.stat)/2;
-statResp.statsmooth = (statResp.statsmooth + stat42.statsmooth)/2;
+% statResp.statsmooth = (statResp.statsmooth + stat42.statsmooth)/2;
+% treat as if cue presented in left hemifield
 statHemi = stat12;
 statHemi.stat = (statHemi.stat + stat43.stat)/2;
-statHemi.statsmooth = (statHemi.statsmooth + stat43.statsmooth)/2;
+% statHemi.statsmooth = (statHemi.statsmooth + stat43.statsmooth)/2;
 
-save(filename, 'stat13', 'stat42','stat12', 'stat43', 'statResp', 'statHemi', 'smoothing');
+statCvsN = stat15;
+statCvsN.stat = (statCvsN.stat + stat45.stat)/2;
+statICvsN = stat35;
+statICvsN.stat = (statICvsN.stat + stat25.stat)/2;
+
+save(filename, 'source', 'stat13', 'stat42','stat12', 'stat43','stat15','stat25','stat35','stat45', 'statResp', 'statHemi', 'statCvsN', 'statICvsN', 'smoothing');
 
