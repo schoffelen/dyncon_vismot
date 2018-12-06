@@ -184,8 +184,8 @@ if doplanar
 end
 
 for k = 1:5
-  freqpre(k) = ft_freqanalysis(cfg, pre{k});
-  freqpst(k) = ft_freqanalysis(cfg, pst{k});
+  freqpre(k) = ft_freqanalysis(rmfield(cfg, 'channel'), pre{k});
+  freqpst(k) = ft_freqanalysis(rmfield(cfg, 'channel'), pst{k});
 end
 
 % combine planar gradients
