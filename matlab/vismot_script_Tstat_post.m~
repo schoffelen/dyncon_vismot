@@ -31,16 +31,14 @@ source = sourcemodel;
 source.gamma1 = nanmean(T(:,nearest(frequency, 56):nearest(frequency, 64)),2); % low gamma 50-70 Hz (56-64 Hz with 8 Hz smoothing )
 source.gamma2 = nanmean(T(:,nearest(frequency, 76):nearest(frequency, 84)),2);% high gamma 70-90 Hz (76-84 Hz with 8 Hz smoothing )
 source.alpha  = T(:,nearest(frequency, nearest(frequency, 10))); % classical alpha band 
-source.beta1  = T(:,nearest(frequency, 16)); % low beta 12-20 Hz (16 Hz with 4 Hz smoothing)
-source.beta2  = nanmean(T(:,nearest(frequency, 24):nearest(frequency, 26)),2); %20-30 Hz (24-26 Hz with 4 Hz smoothing)
+source.beta1   = T(:,nearest(frequency, 22));
 
 cfgi = [];
-cfgi.parameter = {'alpha' 'beta1' 'beta2' 'gamma1' 'gamma2'};
+cfgi.parameter = {'alpha' 'beta' 'gamma1' 'gamma2'};
 source_int = ft_sourceinterpolate(cfgi, source, mri);
 
 source_int.alpha(~isfinite(source_int.alpha))=0;
-source_int.beta1(~isfinite(source_int.beta))=0;
-source_int.beta2(~isfinite(source_int.beta))=0;
+source_int.beta(~isfinite(source_int.beta))=0;
 source_int.gamma1(~isfinite(source_int.gamma1))=0;
 source_int.gamma2(~isfinite(source_int.gamma2))=0;
 
