@@ -17,7 +17,7 @@ whichstat = 'statResp';%statCvsN statICvsN
         dat = cat(2,tmp.stat);
         n   = size(dat,2);
         for m = 1:n
-            dat(:,m+n) = nanmean(dat(:,m));
+            dat(:,m+n) = zeros(size((dat(:,m))));
         end
         
         design   = [ones(1,n) ones(1,n)*2;1:n 1:n];
