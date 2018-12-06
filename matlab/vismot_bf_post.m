@@ -92,12 +92,12 @@ cfg.dics.keepfilter = 'no';
 s     = keepfields(tmpsource, {'freq' 'tri' 'inside' 'pos' 'dim'});
 
 % same response hand contrast congruent minus incongruent
-stat13 = makesourcecontrast(freq, filter, s, [1 3], true);
-stat42 = makesourcecontrast(freq, filter, s, [4 2], true);
+stat13 = makesourcecontrast(freq, filter, s, [1 3], false);
+stat42 = makesourcecontrast(freq, filter, s, [4 2], false);
 
 % same hemifield contrast congruent minus incongruent
-stat12 = makesourcecontrast(freq, filter, s, [1 2], true);
-stat43 = makesourcecontrast(freq, filter, s, [4 3], true);
+stat12 = makesourcecontrast(freq, filter, s, [1 2], false);
+stat43 = makesourcecontrast(freq, filter, s, [4 3], false);
 
 % vs neutral condition (don't stratify RT)
 stat15 = makesourcecontrast(freq, filter, s, [1 5], false);
