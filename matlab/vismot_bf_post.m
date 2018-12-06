@@ -1,4 +1,4 @@
-function [source, stat13, stat42, stat12, stat43] = vismot_bf_post(subject,varargin)
+function [source, stat13, stat42, stat12, stat43, stat15, stat25, stat35, stat45] = vismot_bf_post(subject,varargin)
 
 %function [source, filter, freq] = vismot_bf_post(subject,varargin)
 
@@ -98,6 +98,12 @@ stat42 = makesourcecontrast(freq, filter, s, [4 2], true);
 % same hemifield contrast congruent minus incongruent
 stat12 = makesourcecontrast(freq, filter, s, [1 2], true);
 stat43 = makesourcecontrast(freq, filter, s, [4 3], true);
+
+% vs neutral condition (don't stratify RT)
+stat15 = makesourcecontrast(freq, filter, s, [1 5], false);
+stat25 = makesourcecontrast(freq, filter, s, [2 5], false);
+stat35 = makesourcecontrast(freq, filter, s, [3 5], false);
+stat45 = makesourcecontrast(freq, filter, s, [4 5], false);
 
 % compute condition specific power, this is without stratification for RT
 for k = 1:5
