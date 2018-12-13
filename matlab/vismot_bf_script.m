@@ -51,10 +51,10 @@ end
 % hemifield.
 statResp = stat13;
 statResp.stat = (statResp.stat + stat42.stat)/2;
-statResp.statsmooth = (statResp.statsmooth + stat42.statsmooth)/2;
+%statResp.statsmooth = (statResp.statsmooth + stat42.statsmooth)/2;
 statHemi = stat12;
 statHemi.stat = (statHemi.stat + stat43.stat)/2;
-statHemi.statsmooth = (statHemi.statsmooth + stat43.statsmooth)/2;
+%statHemi.statsmooth = (statHemi.statsmooth + stat43.statsmooth)/2;
 
 save(filename, 'stat13', 'stat42','stat12', 'stat43', 'statResp', 'statHemi', 'smoothing');
 
