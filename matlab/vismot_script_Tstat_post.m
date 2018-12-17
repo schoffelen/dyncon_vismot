@@ -1,7 +1,9 @@
-datadir = '/project/3011085.03/analysis/source';
 load standard_sourcemodel3d4mm;
 mri = ft_read_mri('single_subj_T1_1mm.nii');
 vismot_subjinfo;
+alldir = '/project/3011085.03/';
+datadir = fullfile([alldir, 'analysis/source/']);
+load list;
 
 whichstat = 'statResp';
 frequency = [6 10 16 24 26 58 62 78 82];%[10 16 24 26 48:4:92];%[4:2:30 40:4:100];
@@ -9,9 +11,9 @@ n=19;
 dat = zeros(74784, numel(frequency), n);
 cnt = 0;
 for k = frequency
-  d = dir(fullfile(datadir,sprintf('*3d4mm*post_%03d.mat',k)));
-  for m = 1:numel(d)
-    dum = load(fullfile(d(m).folder,d(m).name),whichstat);
+  for m = 1:n
+    d = fullfile([datadir, sprintf('%ssource3d4mm_post_%03d.mat', list{m}, k)]);
+    dum = load(d, whichstat);
     tmp(m) = dum.(whichstat);
   end
   dat(:, cnt+1,1:n) = cat(2,tmp.stat);
@@ -66,7 +68,7 @@ source.dimord = 'pos_freq';
 cfg=[];
 cfg.parameter = {'stat', 'mask', 'avg'};
 source_int = ft_sourceinterpolate(cfg, source, mri);
-
+%%
 cmap = flipud(brewermap(64,'RdBu'));
 cfgp=[];
 cfgp.funcolormap = cmap;
@@ -75,14 +77,14 @@ cfgp.method     = 'slice';
 cfgp.nslices    =  30;
 cfgp.slicerange =  [40 150];
 cfgp.funparameter = 'stat';
-cfgp.maskparameter = 'stat';
+cfgp.maskparameter = 'mask'; %mask
 for k=1:numel(frequency)
     cfgp.frequency = frequency(k);
     ft_sourceplot(cfgp, source_int)
 end
 
-filename = fullfile(['project/3011085.03/', 'analysis', 'source', 'post_cue_pow_stat.m']);
-save(filename, 'source_int', 'source', 'stat', 'frequency','foi');
+% filename = fullfile(['project/3011085.03/', 'analysis', 'source', 'post_cue_pow_stat.m']);
+% save(filename, 'source_int', 'source', 'stat', 'frequency','foi');
 %% Define ROI's by browsing through Ortho Maps
 source = ft_convert_units(source, 'mm');
 
