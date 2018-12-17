@@ -100,3 +100,42 @@ cfgp.location='max';
 ft_sourceplot(cfgp, source);
 
 
+%% Make tval bar graph of defined ROIs and FOIs
+load('/project/3011085.03/analysis/source/roi.mat', 'ROI');
+filename = fullfile(['project/3011085.03/', 'analysis', 'source', 'post_cue_pow_stat.m']);
+load(filename, 'source_int', 'source', 'stat', 'frequency','foi');
+
+
+
+for k=1:3
+    idx_left(k) = find_dipoleindex(source, ROI{k,2});
+    idx_right(k) = find_dipoleindex(source, ROI{k,3});
+end
+
+
+figure;
+% occipital
+subplot(1,3,1);
+y = [source.stat(idx_left(1),2), source.stat(idx_left(1),5); source.stat(idx_right(1),2), source.stat(idx_right(1),5)]; 
+bar(y);
+set(gca,'xticklabel',{'left', 'right'});
+legend({'alpha', 'gamma1'}, 'location', 'northwest')
+title('occipital')
+
+% parietal
+subplot(1,3,2);
+y = [source.stat(idx_left(2),2), source.stat(idx_left(2),5) source.stat(idx_left(2),6); source.stat(idx_right(2),2), source.stat(idx_right(2),5) source.stat(idx_right(2),6)]; 
+bar(y);
+set(gca,'xticklabel',{'left', 'right'});
+legend({'alpha', 'gamma1', 'gamma2'}, 'location', 'northwest')
+title('parietal')
+
+% motor
+subplot(1,3,3);
+y = [source.stat(idx_left(3),4), source.stat(idx_left(3),6); source.stat(idx_right(3),4), source.stat(idx_right(3),6)]; 
+bar(y);
+set(gca,'xticklabel',{'left', 'right'});
+legend({'beta2', 'gamma2'}, 'location', 'northwest')
+title('motor')
+
+
