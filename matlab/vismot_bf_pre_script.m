@@ -43,7 +43,6 @@ stat35 = stat.stat35;
 stat45 = stat.stat45;
 
 % hemiflip right handed response/ right hemifield
-if isfield(stat42, 'tri')
   if isfield(stat42, 'statsmooth')
     parameter = {'stat', 'statsmooth'};
   else
@@ -53,12 +52,7 @@ if isfield(stat42, 'tri')
   stat43 = hemiflip(stat43, parameter);
   stat25 = hemiflip(stat25, parameter);
   stat45 = hemiflip(stat45, parameter);
-elseif isfield(stat42, 'dim')
-  stat42.stat = reshape(flip(reshape(stat42.stat,stat42.dim),1),[],1);
-  stat43.stat = reshape(flip(reshape(stat43.stat,stat43.dim),1),[],1);
-  %stat42.statsmooth = reshape(flip(reshape(stat42.statsmooth,stat42.dim),1),[],1);
-  %stat43.statsmooth = reshape(flip(reshape(stat42.statsmooth,stat42.dim),1),[],1);
-end
+
 
 % treat as if everything is left handed response / cue presented in left
 % hemifield.
