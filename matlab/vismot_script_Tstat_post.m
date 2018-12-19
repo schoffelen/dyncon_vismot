@@ -52,7 +52,7 @@ cfgs.design = [ones(1,n) ones(1,n)*2;1:n 1:n];
 cfgs.correctm = 'cluster';
 cfgs.numrandomization = 1000;
 cfgs.clusteralpha = 0.01;
-cfgs.correcttail = 'prob';
+cfgs.correcttail = 'no';
 for k=1:size(foi,1)
     cfgs.frequency = source.freq(k);
     stat{k} = ft_sourcestatistics(cfgs, source, nul);
@@ -104,8 +104,6 @@ ft_sourceplot(cfgp, source);
 load('/project/3011085.03/analysis/source/roi.mat', 'ROI');
 filename = fullfile(['project/3011085.03/', 'analysis', 'source', 'post_cue_pow_stat.m']);
 load(filename, 'source_int', 'source', 'stat', 'frequency','foi');
-
-
 
 for k=1:3
     idx_left(k) = find_dipoleindex(source, ROI{k,2});
