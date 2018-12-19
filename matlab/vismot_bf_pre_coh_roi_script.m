@@ -1,13 +1,35 @@
 if ~exist('roi', 'var') && ~exist('refindx', 'var')
   % as Nx3 matrix, in the same units as the sourcemodel
-  error('roi or refindx should be defined')
+  %error('roi or refindx should be defined')
+  
+  % use the rois defined in the file, at present with hard coded path
+  % (suboptimal)
+  load('/project/3011085.03/analysis/source/roi.mat');
+  if iscell(ROI)
+    roi = zeros(size(ROI,1)*2,3);
+    for m = 1:size(ROI,1)
+      roi((m-1)*2+1,:) = ROI{m,2};
+      roi((m-1)*2+2,:) = ROI{m,3};
+    end
+  end
+  roi = roi./10; % assume that the values were in mm, convert to cm
+  
+  load standard_sourcemodel3d4mm;
+  insidepos = sourcemodel.pos(sourcemodel.inside,:);
+  if islogical(sourcemodel.inside)
+    insidevec = find(sourcemodel.inside);
+  else
+    insidevec = sourcemodel.inside;
+  end
+  refindx = nan(size(roi,1),1);
+  for m = 1:size(roi,1)
+    [~,refindx(m)] = min( sum((insidepos-roi(m,:)).^2,2) );
+  end
 end
 
 if ~exist('frequency', 'var')
     error('frequency should be defined');
 end
-
-
 
 if ~exist('nrand', 'var')
   nrand = 100;
