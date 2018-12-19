@@ -146,14 +146,15 @@ for k = refindx(:)'
   cnt = cnt+1;
   if mod(k,100)==0, fprintf('computing coherence etc. for voxel %d/%d\n',k,ninside); end
   
-  % precompute the diagonals
-  lfClf_diag   = diag(lfClf);
-  lfCClfC_diag = diag(lfCClfC);
-  lfClfC_diag  = diag(lfClfC);
   
   % coherence computation
   switch memory
     case 'high'
+      % precompute the diagonals
+      lfClf_diag   = diag(lfClf);
+      lfCClfC_diag = diag(lfCClfC);
+      lfClfC_diag  = diag(lfClfC);
+  
       % use pre-computed diagonal matrices for speed up
       denom = inv2x2(convertsquareto2x2(lfClf, k, lfClf_diag));
       denom(:,:,k) = 1./lfClf(k,k);
