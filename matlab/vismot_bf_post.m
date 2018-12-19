@@ -1,4 +1,4 @@
-function [source, stat13, stat42, stat12, stat43, stat15, stat25, stat35, stat45] = vismot_bf_post(subject,varargin)
+function [source, stat13, stat42, stat12, stat43, stat15, stat25, stat35, stat45, statCvsIC] = vismot_bf_post(subject,varargin)
 
 %function [source, filter, freq] = vismot_bf_post(subject,varargin)
 
@@ -91,19 +91,21 @@ cfg.dics.keepfilter = 'no';
 
 s     = keepfields(tmpsource, {'freq' 'tri' 'inside' 'pos' 'dim'});
 
+statCvsIC = makesourcecontrast(freq, filter, s, [1 3], [4 2], false, false);
+
 % same response hand contrast congruent minus incongruent
-stat13 = makesourcecontrast(freq, filter, s, [1 3], false);
-stat42 = makesourcecontrast(freq, filter, s, [4 2], false);
+stat13 = makesourcecontrast(freq, filter, s, [1 3], [], false, false);
+stat42 = makesourcecontrast(freq, filter, s, [4 2], [], false, false);
 
 % same hemifield contrast congruent minus incongruent
-stat12 = makesourcecontrast(freq, filter, s, [1 2], false);
-stat43 = makesourcecontrast(freq, filter, s, [4 3], false);
+stat12 = makesourcecontrast(freq, filter, s, [1 2], [], false, false);
+stat43 = makesourcecontrast(freq, filter, s, [4 3], [], false, false);
 
 % vs neutral condition (don't stratify RT)
-stat15 = makesourcecontrast(freq, filter, s, [1 5], false);
-stat25 = makesourcecontrast(freq, filter, s, [2 5], false);
-stat35 = makesourcecontrast(freq, filter, s, [3 5], false);
-stat45 = makesourcecontrast(freq, filter, s, [4 5], false);
+stat15 = makesourcecontrast(freq, filter, s, [1 5], [], false, false);
+stat25 = makesourcecontrast(freq, filter, s, [2 5], [], false, false);
+stat35 = makesourcecontrast(freq, filter, s, [3 5], [], false, false);
+stat45 = makesourcecontrast(freq, filter, s, [4 5], [], false, false);
 
 % compute condition specific power, this is without stratification for RT
 for k = 1:5
@@ -152,7 +154,7 @@ end
 %%condition 4: cue right, response right
 %%condition 5: catch trial
 
-function stat = makesourcecontrast(freq, filter, s, contrast, stratifyflag)
+function stat = makesourcecontrast(freq, filter, s, contrast, whichflip, stratifyflag, poolhemi)
 
 % compute contrasts as a yuen-welch T value
 cfgs        = [];
@@ -163,11 +165,18 @@ cfgs.statistic        = 'statfun_yuenTtest'; % This statistics function
 %cfgs.statistic       = 'indepsamplesT';
 
 tmpcfg            = [];
-tmpcfg.trials     = find(ismember(freq.trialinfo(:,1),contrast) & freq.trialinfo(:,end)==2); % for the pst trials only
+tmpcfg.trials     = find(ismember(freq.trialinfo(:,1),[contrast whichflip]) & freq.trialinfo(:,end)==2); % for the pst trials only
 tmpfreq           = ft_selectdata(tmpcfg, freq);
 s.pow             = zeros(numel(s.inside), numel(tmpcfg.trials));
 s.pow(s.inside,:) = fourier2pow(cat(3, filter{:}), tmpfreq.fourierspctrm, tmpfreq.cumtapcnt);  
 s.trialinfo       = tmpfreq.trialinfo;
+
+if ~isempty(whichflip)
+    s = fliphemitrials(s, 'pow', 1, [whichflip], [contrast]);
+end
+if poolhemi
+   s = poolhemispheres(s, 'pow', 'left', [1 -1]);
+end
 
 if stratifyflag
   % stratify the trials based on the RTs
