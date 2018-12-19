@@ -91,7 +91,7 @@ cfg.dics.keepfilter = 'no';
 
 s     = keepfields(tmpsource, {'freq' 'tri' 'inside' 'pos' 'dim'});
 
-statCvsIC = makesourcecontrast(freq, filter, s, [1 3], [4 2], false, false);
+statCvsIC = makesourcecontrast(freq, filter, s, [1 3], [4 2], false, true);
 
 % same response hand contrast congruent minus incongruent
 stat13 = makesourcecontrast(freq, filter, s, [1 3], [], false, false);
@@ -175,7 +175,8 @@ if ~isempty(whichflip)
     s = fliphemitrials(s, 'pow', 1, [whichflip], [contrast]);
 end
 if poolhemi
-   s = poolhemispheres(s, 'pow', 'left', [1 -1]);
+    load standard_sourcemodel3d4mm;
+    s = poolhemispheres(s, 'pow', 'left', [1 -1], sourcemodel);
 end
 
 if stratifyflag

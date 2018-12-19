@@ -1,30 +1,39 @@
-function dataout = poolhemispheres(datain, parameter, basehemi, hemisign)
+function dataout = poolhemispheres(datain, parameter, basehemi, hemisign, template)
 % pool the left and right hemispheres of source data. basehemi ('left', or
 % 'right' determines whether the .pos info of the left or right hemisphere
 % will be used. hemisign [+/-1 +/-1] determines how the data will be
 % combined. NOTE: only works for structures with pos info, where -x is
 % considered left hemisphere, and +x right hemisphere
 % FIXME: unclear how to combine pos and dim information
-error('not yet implemented')
+
 if ~isfield(datain, 'pos')
     error('poolhemispheres only works on source structures with pos info')
 end
 
+template = ft_convert_units(template, 'mm');
+
 % find rows that belong to left and right hemispheres, respectively.
-left = find(datain.pos(:,1)<0);
-right = find(datain.pos(:,1)>0);
+left = find(template.pos(:,1)<0);
+leftpos = template.pos(left,:);
+right = find(template.pos(:,1)>0);
+rightpos = template.pos(right,:);
 
+% order the right hemisphere positions according to the mirror position in
+% the left hemisphere
+[~, tmpidx] = ismember(rightpos, [-1 1 1].*leftpos, 'rows');
+right = right(tmpidx);
+
+% take the mean over mirror locations of the left and right hemisphere
 dataout=datain;
-% first pool parameter data
-dataout.(parameter)(left,:) = hemisign(1)*dataout.(parameter)(left,:);
-dataout.(parameter)(right,:) = hemisign(2)*dataout.(parameter)(right,:);
+dataout.(parameter)(left,:) = (hemisign(1)*datain.(parameter)(left,:) + hemisign(2)*datain.(parameter)(right,:))/2;
+dataout.(parameter)(right,:) = dataout.(parameter)(left,:);
 
-% now change pos information (test whether source structure is still
-% functional if it has multiples of the same pos).
+% convert one hemisphere's inside to zeros.
+dataout = datain;
 if strcmp(basehemi, 'left')
-    dataout.pos(right,1) = -dataout.pos(right,1);
-elseif strcmp(basehemi, 'right')
-    dataout.pos(left,1) = -dataout.pos(left,1);
+    dataout.inside(right)=0;
+elseif strcmp(basehmi, 'right')
+    dataout.inside(left)=0;
 end
 
 end
