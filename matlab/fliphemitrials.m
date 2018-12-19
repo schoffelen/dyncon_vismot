@@ -21,5 +21,5 @@ for k=1:numel(flip_from)
     after(before==flip_from(k)) = flip_to(k);
 end
 
-dataout.trialinfo = after;
+dataout.trialinfo(:, trlinfo_column) = after;
 end
