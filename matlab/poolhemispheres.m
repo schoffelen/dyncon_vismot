@@ -29,7 +29,6 @@ dataout.(parameter)(left,:) = (hemisign(1)*datain.(parameter)(left,:) + hemisign
 dataout.(parameter)(right,:) = dataout.(parameter)(left,:);
 
 % convert one hemisphere's inside to zeros.
-dataout = datain;
 if strcmp(basehemi, 'left')
     dataout.inside(right)=0;
 elseif strcmp(basehmi, 'right')

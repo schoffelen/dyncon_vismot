@@ -2,24 +2,24 @@
 % data, and divides pre and post cue onset intervals per condition
 
 if ~exist('frequency', 'var')
-  error('frequency should be defined');
+    error('frequency should be defined');
 end
 
 if ~exist('subjectname', 'var')
-  error('subjectname needs to be defined');
+    error('subjectname needs to be defined');
 end
 if ~exist('smoothing', 'var')
-  smoothing = [];
+    smoothing = [];
 end
 if isempty(smoothing)
-  if frequency < 30
-    smoothing = 4;
-  else
-    smoothing = 8;
-  end
+    if frequency < 30
+        smoothing = 4;
+    else
+        smoothing = 8;
+    end
 end
 if ~exist('conditions', 'var')
-  conditions = 'previous';
+    conditions = 'previous';
 end
 
 subject = vismot_subjinfo(subjectname);
@@ -30,8 +30,8 @@ filename = fullfile(subject.pathname,'source',[subject.name,'source3d4mm_pre_',n
 
 % scrub the headmodel and grid from the output cfg
 for k = 1:numel(source)
-  try,source(k).cfg = rmfield(source(k).cfg, {'grid' 'headmodel'}); end
-  try,source(k).cfg.callinfo.usercfg = rmfield(source(k).cfg.callinfo.usercfg, {'grid' 'headmodel'}); end
+    try,source(k).cfg = rmfield(source(k).cfg, {'grid' 'headmodel'}); end
+    try,source(k).cfg.callinfo.usercfg = rmfield(source(k).cfg.callinfo.usercfg, {'grid' 'headmodel'}); end
 end
 stat13 = stat.stat13;
 stat42 = stat.stat42;
@@ -43,15 +43,15 @@ stat35 = stat.stat35;
 stat45 = stat.stat45;
 
 % hemiflip right handed response/ right hemifield
-  if isfield(stat42, 'statsmooth')
+if isfield(stat42, 'statsmooth')
     parameter = {'stat', 'statsmooth'};
-  else
+else
     parameter = 'stat';
-  end
-  stat42 = hemiflip(stat42, parameter);
-  stat43 = hemiflip(stat43, parameter);
-  stat25 = hemiflip(stat25, parameter);
-  stat45 = hemiflip(stat45, parameter);
+end
+stat42 = hemiflip(stat42, parameter);
+stat43 = hemiflip(stat43, parameter);
+stat25 = hemiflip(stat25, parameter);
+stat45 = hemiflip(stat45, parameter);
 
 
 % treat as if everything is left handed response / cue presented in left

@@ -34,7 +34,7 @@ for k = 1:numel(fd)
   
   cfg           = [];
   cfg.toilim    = [-0.5 0-1/256];
-  cfg.minlength = 0.25;
+  cfg.minlength = 0.5;
   datapre       = ft_redefinetrial(cfg, data);
   clear data;
   

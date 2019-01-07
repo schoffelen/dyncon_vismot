@@ -42,10 +42,10 @@ cfgs.alpha = 0.05;
 cfgs.ivar = 1;
 cfgs.uvar = 2;
 cfgs.design = [ones(1,n) ones(1,n)*2;1:n 1:n];
-cfgs.correctm = 'no';
+cfgs.correctm = 'cluster';
 cfgs.numrandomization = 1000;
-cfgs.clusteralpha = 0.05;
-cfgs.correcttail = 'prob';
+cfgs.clusteralpha = 0.01;
+cfgs.correcttail = 'no';
 source.inside(:)=0;
 source.inside([idx_left, idx_right]) = 1;
 nul=source;
@@ -54,13 +54,14 @@ stat = ft_sourcestatistics(cfgs, source, nul);
 
 stat_left = stat.stat(idx_left,:);
 stat_right = stat.stat(idx_right,:);
-figure; subplot(1,3,1);
-plot(frequency, stat_left(1,:)); hold on; plot(frequency, stat_right(1,:));
-title('occipital'); xlabel('frequency'); ylabel('T-value');
-subplot(1,3,2)
-plot(frequency, stat_left(2,:)); hold on; plot(frequency, stat_right(2,:));
-title('parietal'); xlabel('frequency');
+% figure; 
 subplot(1,3,3);
-plot(frequency, stat_left(3,:)); hold on; plot(frequency, stat_right(3,:));
-title('motor'); xlabel('frequency'); ylabel('T-value');
-subplot(1,3,2); legend({'left', 'right'}, 'location', 'south')
+plot(frequency, stat_left(1,:),'b'); %hold on; plot(frequency, stat_right(1,:));
+title('occipital'); xlabel('frequency'); ylabel('T-value');ylim([-8 8])
+% subplot(1,3,2)
+% plot(frequency, stat_left(2,:)); hold on; plot(frequency, stat_right(2,:));
+% title('parietal'); xlabel('frequency');
+% subplot(1,3,3);
+% plot(frequency, stat_left(3,:)); hold on; plot(frequency, stat_right(3,:));
+% title('motor'); xlabel('frequency'); ylabel('T-value');
+% subplot(1,3,2); legend({'left', 'right'}, 'location', 'south')

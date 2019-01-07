@@ -6,7 +6,7 @@ datadir = fullfile([alldir, 'analysis/source/']);
 load list;
 
 whichstat = 'statResp';
-frequency = [6 10 16 24 26 58 62 78 82];%[10 16 24 26 48:4:92];%[4:2:30 40:4:100];
+frequency = [6 10 16 24 26 48 52 58 62 78 82];%[10 16 24 26 48:4:92];%[4:2:30 40:4:100];
 n=19;
 dat = zeros(74784, numel(frequency), n);
 cnt = 0;
@@ -24,18 +24,20 @@ foi = {'theta', 6, 6
         'alpha', 10, 10
         'beta1', 16, 16
         'beta2', [24 26], 25
-        'gamma1', [58 62], 60
-        'gamma2', [78 82], 80};
-frequency = [6 10 16 25 60 80];
+        'gamma1', [58 62], 50
+        'gamma2', [78 82], 60
+        'gamma3', [48 52], 80};
+frequency = [6 10 16 25 50 60 80];
     
 dat = permute(dat, [3,1,2]);
 source = sourcemodel;
 source.dimord = 'rpt_pos_freq';
-source.freq = [6 10 16 25 60 80];
+source.freq = frequency;
 source.stat(:,:,1:3) = dat(:,:,1:3);
 source.stat(:,:,4) = nanmean(dat(:,:,4:5),3);
 source.stat(:,:,5) = nanmean(dat(:,:,6:7),3);
 source.stat(:,:,6) = nanmean(dat(:,:,8:9),3);
+source.stat(:,:,7) = nanmean(dat(:,:,10:11),3);
 nul = source;
 nul.stat(:)=0;
 source_avg = rmfield(source, {'stat'});
@@ -59,7 +61,7 @@ for k=1:size(foi,1)
 end
 
 source = rmfield(source, 'stat');
-for k=1:6
+for k=1:7
     source.stat(:,k) = stat{k}.stat;
     source.mask(:,k) = stat{k}.mask;
 end
@@ -77,7 +79,7 @@ cfgp.method     = 'slice';
 cfgp.nslices    =  30;
 cfgp.slicerange =  [40 150];
 cfgp.funparameter = 'stat';
-cfgp.maskparameter = 'mask'; %mask
+cfgp.maskparameter = 'stat'; %mask
 for k=1:numel(frequency)
     cfgp.frequency = frequency(k);
     ft_sourceplot(cfgp, source_int)
@@ -95,14 +97,14 @@ cfgp.method     = 'ortho';
 cfgp.funparameter = 'stat';
 cfgp.maskparameter = 'stat';
 
-cfgp.frequency = frequency(1);
+cfgp.frequency = 50%frequency(1);
 cfgp.location='max';
 ft_sourceplot(cfgp, source);
 
 
 %% Make tval bar graph of defined ROIs and FOIs
 load('/project/3011085.03/analysis/source/roi.mat', 'ROI');
-filename = fullfile(['project/3011085.03/', 'analysis', 'source', 'post_cue_pow_stat.m']);
+filename = fullfile(['/project/3011085.03/', 'analysis/', 'freq/', 'post_cue_pow_stat.mat']);
 load(filename, 'source_int', 'source', 'stat', 'frequency','foi');
 
 for k=1:3
@@ -113,12 +115,12 @@ end
 
 figure;
 % occipital
-subplot(1,3,1);
+subplot(1,2,1);
 y = [source.stat(idx_left(1),2), source.stat(idx_left(1),5); source.stat(idx_right(1),2), source.stat(idx_right(1),5)]; 
 bar(y);
 set(gca,'xticklabel',{'left', 'right'});
 legend({'alpha', 'gamma1'}, 'location', 'northwest')
-title('occipital')
+title('40-60 Hz')
 
 % parietal
 subplot(1,3,2);

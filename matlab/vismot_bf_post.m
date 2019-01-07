@@ -92,6 +92,8 @@ cfg.dics.keepfilter = 'no';
 s     = keepfields(tmpsource, {'freq' 'tri' 'inside' 'pos' 'dim'});
 
 statCvsIC = makesourcecontrast(freq, filter, s, [1 3], [4 2], false, true);
+statCvsIC2 = makesourcecontrast(freq, filter, s, [1 3], [4 2], false, false);
+
 
 % same response hand contrast congruent minus incongruent
 stat13 = makesourcecontrast(freq, filter, s, [1 3], [], false, false);
