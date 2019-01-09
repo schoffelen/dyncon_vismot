@@ -23,7 +23,7 @@ if ~exist('roi', 'var') && ~exist('refindx', 'var')
   end
   refindx = nan(size(roi,1),1);
   for m = 1:size(roi,1)
-    [~,refindx(m)] = min( sum((insidepos-roi(m,:)).^2,2) );
+    [~,refindx(m)] = min( sum((insidepos-roi(m,:)).^2,2) ); % find the index of each ROI in insidepos.
   end
 end
 
@@ -45,5 +45,5 @@ subject = vismot_subjinfo(subjectname);
 load(fullfile(subject.pathname,'grid',sprintf('%s_sourcemodel3d4mm',subject.name)),'sourcemodel');
 [coh,zx13,zx42,looptime] = vismot_bf_pre_coh_roi(subject,'sourcemodel',sourcemodel,'frequency',frequency,'smoothing',smoothing,'nrand',nrand, 'refindx', refindx);
 
-filename = fullfile(subject.pathname,'source',[subject.name,'coh6d4mm_roi_',num2str(frequency)]);
+filename = fullfile(subject.pathname,'source',[subject.name,'coh6d4mm_roi_',sprintf('%03d', num2str(frequency))]);
 save(filename, 'zx13', 'zx42', 'coh');
