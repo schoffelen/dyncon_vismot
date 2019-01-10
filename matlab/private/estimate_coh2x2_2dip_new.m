@@ -70,8 +70,8 @@ end
 if ~isempty(lambda) && ischar(lambda) && lambda(end)=='%'
   ratio = sscanf(lambda, '%f%%');
   ratio = ratio/100;
-  lambda = ratio * trace(Cf)/size(Cf,1);
-else
+  lambda = ratio * trace(C)/size(C,1);
+elseif isempty(lambda)
   lambda = 0;
 end
 
