@@ -120,27 +120,30 @@ s = ft_sourcestatistics(cfgs, s, nul);
 % for FOIs
 figure;
 % occipital
-subplot(1,3,1);
-y = [s.stat(idx_left(1),find(s.freq==10)), nanmean(s.stat(idx_left(1),[find(s.freq==58) find(s.freq==62)])); s.stat(idx_right(1),find(s.freq==10)), nanmean(s.stat(idx_right(1),[find(s.freq==58) find(s.freq==62)]))]; 
+k=1;
+subplot(1,3,k);
+y = [nanmean(s.stat(idx_left(k), find(s.freq==10))), nanmean(s.stat(idx_left(k),[find(s.freq==24) find(s.freq==26)])), nanmean(s.stat(idx_left(k), find(s.freq==42))), nanmean(s.stat(idx_left(k),[find(s.freq==58) find(s.freq==62)])), nanmean(s.stat(idx_left(k),[find(s.freq==78) find(s.freq==82)])); nanmean(s.stat(idx_right(k), find(s.freq==10))), nanmean(s.stat(idx_right(k),[find(s.freq==24) find(s.freq==26)])), nanmean(s.stat(idx_right(k), find(s.freq==42))), nanmean(s.stat(idx_right(k),[find(s.freq==58) find(s.freq==62)])), nanmean(s.stat(idx_right(k),[find(s.freq==78) find(s.freq==82)]))]; 
 bar(y);
 set(gca,'xticklabel',{'left', 'right'});
-legend({'alpha', 'gamma1'}, 'location', 'northwest')
+% legend({'alpha', 'beta 20-30', 'gamma 42', 'gamma 50-70', 'gamma 70-90'})
 title('occipital')
 
 % parietal
-subplot(1,3,2);
-y = [s.stat(idx_left(2),find(s.freq==10)), nanmean(s.stat(idx_left(2),[find(s.freq==58) find(s.freq==62)])); s.stat(idx_right(2),find(s.freq==10)), nanmean(s.stat(idx_right(2),[find(s.freq==58) find(s.freq==62)]))]; 
+k=2;
+subplot(1,3,k);
+y = [nanmean(s.stat(idx_left(k), find(s.freq==10))), nanmean(s.stat(idx_left(k),[find(s.freq==24) find(s.freq==26)])), nanmean(s.stat(idx_left(k), find(s.freq==42))), nanmean(s.stat(idx_left(k),[find(s.freq==58) find(s.freq==62)])), nanmean(s.stat(idx_left(k),[find(s.freq==78) find(s.freq==82)])); nanmean(s.stat(idx_right(k), find(s.freq==10))), nanmean(s.stat(idx_right(k),[find(s.freq==24) find(s.freq==26)])), nanmean(s.stat(idx_right(k), find(s.freq==42))), nanmean(s.stat(idx_right(k),[find(s.freq==58) find(s.freq==62)])), nanmean(s.stat(idx_right(k),[find(s.freq==78) find(s.freq==82)]))]; 
 bar(y);
 set(gca,'xticklabel',{'left', 'right'});
-legend({'alpha', 'gamma1'}, 'location', 'northwest')
+legend({'alpha', 'beta 20-30', 'gamma 42', 'gamma 50-70', 'gamma 70-90'}, 'location', 'northwest')
 title('parietal')
 
 % motor
-subplot(1,3,3);
-y = [nanmean(s.stat(idx_left(3),[find(s.freq==24) find(s.freq==26)])), nanmean(s.stat(idx_left(3),[find(s.freq==78) find(s.freq==82)])); nanmean(s.stat(idx_right(3),[find(s.freq==24) find(s.freq==26)])), nanmean(s.stat(idx_right(3),[find(s.freq==78) find(s.freq==82)]))]; 
+k=3;
+subplot(1,3,k);
+y = [nanmean(s.stat(idx_left(k), find(s.freq==10))), nanmean(s.stat(idx_left(k),[find(s.freq==24) find(s.freq==26)])), nanmean(s.stat(idx_left(k), find(s.freq==42))), nanmean(s.stat(idx_left(k),[find(s.freq==58) find(s.freq==62)])), nanmean(s.stat(idx_left(k),[find(s.freq==78) find(s.freq==82)])); nanmean(s.stat(idx_right(k), find(s.freq==10))), nanmean(s.stat(idx_right(k),[find(s.freq==24) find(s.freq==26)])), nanmean(s.stat(idx_right(k), find(s.freq==42))), nanmean(s.stat(idx_right(k),[find(s.freq==58) find(s.freq==62)])), nanmean(s.stat(idx_right(k),[find(s.freq==78) find(s.freq==82)]))]; 
 bar(y);
 set(gca,'xticklabel',{'left', 'right'});
-legend({'beta2', 'gamma2'}, 'location', 'northwest')
+% legend({'alpha', 'beta 20-30', 'gamma 42', 'gamma 50-70', 'gamma 70-90'})
 title('motor')
 
 
