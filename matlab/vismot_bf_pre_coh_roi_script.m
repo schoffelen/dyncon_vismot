@@ -1,3 +1,4 @@
+if ~exist('include_neighb', 'var'); include_neighb=true; end
 if ~exist('roi', 'var') && ~exist('refindx', 'var')
   % as Nx3 matrix, in the same units as the sourcemodel
   %error('roi or refindx should be defined')
@@ -13,8 +14,15 @@ if ~exist('roi', 'var') && ~exist('refindx', 'var')
     end
   end
   roi = roi./10; % assume that the values were in mm, convert to cm
+end
+if ~exist('refindx', 'var')
   
   load standard_sourcemodel3d4mm;
+  %add neighbors to roi.
+  if include_neighb
+    roi = find_neighbors(roi, sourcemodel);
+  end
+  
   insidepos = sourcemodel.pos(sourcemodel.inside,:);
   if islogical(sourcemodel.inside)
     insidevec = find(sourcemodel.inside);
@@ -43,7 +51,7 @@ if ~exist('smoothing', 'var')
 end
 subject = vismot_subjinfo(subjectname);
 load(fullfile(subject.pathname,'grid',sprintf('%s_sourcemodel3d4mm',subject.name)),'sourcemodel');
-[coh,zx13,zx42,looptime] = vismot_bf_pre_coh_roi(subject,'sourcemodel',sourcemodel,'frequency',frequency,'smoothing',smoothing,'nrand',nrand, 'refindx', refindx);
+[coh,zx13,zx42,looptime] = vismot_bf_pre_coh_roi(subject,'sourcemodel',sourcemodel,'frequency',frequency,'smoothing',smoothing,'nrand',nrand, 'refindx', refindx, 'include_neighb', include_neighb);
 
-filename = fullfile(subject.pathname,'source',[subject.name,'coh6d4mm_roi_',sprintf('%03d', num2str(frequency))]);
+filename = fullfile(subject.pathname,'source', [subject.name,'coh6d4mm_roi_',sprintf('%03d', frequency)]);
 save(filename, 'zx13', 'zx42', 'coh');
