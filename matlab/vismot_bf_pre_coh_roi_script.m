@@ -21,7 +21,7 @@ if ~exist('refindx', 'var')
   %add neighbors to roi.
   if include_neighb
     roi = find_neighbors(roi, sourcemodel);
-    roi = reshape(permute(tmp,[3,1,2]), [size(roi,1)*size(roi,3),3]);
+    roi = reshape(permute(roi,[3,1,2]), [size(roi,1)*size(roi,3),3]);
   end
   
   insidepos = sourcemodel.pos(sourcemodel.inside,:);
