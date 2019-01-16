@@ -70,6 +70,25 @@ zx = (zx13+zx42)/2;
       % average over subjects
       zx_avg = squeeze(nanmean(zx,1));
       
+% average over neighbours
+allneighb = find_neighbors(insidepos, sourcemodel);
+allneighb = reshape(permute(allneighb,[3,1,2]), [size(allneighb,1)*size(allneighb,3),3]);
+  neighb_refindx = nan(size(allneighb,1),1);
+  
+  for m = 1:size(allneighb,1)
+    [~,neighb_refindx(m)] = min( sum((insidepos-allneighb(m,:)).^2,2) ); % find the index of each ROI in insidepos.
+  end
+  tmp = reshape(neighb_refindx, [7, size(insidepos,1)])';
+  zx_neighb = zeros(size(zx_avg));
+  for k=1:size(insidepos,1)
+      zx_neighb(:,k,:) = nanmean(zx_avg(:,tmp(k,:),:),2);
+  end
+  for k=1:numel(refindx)
+      zx_neighb(:,refindx(k),k)=0;
+  end
+  
+  zx_avg=zx_neighb;
+      
 % take only ROIs
 zxref=zx_avg;
 zxref(:,setdiff(1:size(zxref,2), refindx),:)=[];
@@ -129,12 +148,12 @@ cfgp.nslices    =  30;
 cfgp.slicerange =  [40 150];
 cfgp.funparameter = 'coh';
 cfgp.maskparameter = 'coh'; %mask
+cfgp.visible = 'off';
 region = {'occ', 'par', 'mot'};
 side = {'ipsi', 'contra'};
 for k=1:6
     for m=1:5
-        ft_sourceplot(cfgp, z_int(k,m));
-        title(sprintf('%s_%s_%d.png',region{mod(k+2,3)+1}, side{mod(k+1,2)+1}, foi(m)), 'Interpreter', 'none')
+        ft_sourceplot(cfgp, z_int(k,m));        title(sprintf('%s_%s_%d.png',region{mod(k+2,3)+1}, side{mod(k+1,2)+1}, foi(m)), 'Interpreter', 'none')
         saveas(gcf, sprintf('%s_%s_%d.png',region{mod(k+2,3)+1}, side{mod(k+1,2)+1}, foi(m)))
     end
 end
