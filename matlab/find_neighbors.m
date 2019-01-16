@@ -8,14 +8,13 @@ if size(seed,2)==1
     % assume seed are indices, covert to x,y,z pos
     seed = sourcemodel.pos(seed,:);
 end
-
-output=[];
-for k=1:size(seed,1)
-    output(end+1,:) = seed(k,:);
-    output(end+1,:) = seed(k,:) + [-1 0 0]*resolution;
-    output(end+1,:) = seed(k,:) + [1 0 0]*resolution;
-    output(end+1,:) = seed(k,:) + [0 -1 0]*resolution;
-    output(end+1,:) = seed(k,:) + [0 1 0]*resolution;
-    output(end+1,:) = seed(k,:) + [0 0 -1]*resolution;
-    output(end+1,:) = seed(k,:) + [0 0 1]*resolution;
+[a, b] = size(seed);
+output=zeros(a,b,7);
+output(:,:,1) = seed;
+output(:,:,2) = seed + repmat([-1 0 0], [a,1])*resolution;
+output(:,:,3) = seed + repmat([1 0 0], [a,1])*resolution;
+output(:,:,4) = seed + repmat([0 -1 0], [a,1])*resolution;
+output(:,:,5) = seed + repmat([0 1 0], [a,1])*resolution;
+output(:,:,6) = seed + repmat([0 0 -1], [a,1])*resolution;
+output(:,:,7) = seed + repmat([0 0 1], [a,1])*resolution;
 end
