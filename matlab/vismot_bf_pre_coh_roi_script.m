@@ -34,6 +34,9 @@ if ~exist('refindx', 'var')
   for m = 1:size(roi,1)
     [~,refindx(m)] = min( sum((insidepos-roi(m,:)).^2,2) ); % find the index of each ROI in insidepos.
   end
+  % FIXME Now nearest neighbors are used, even if they're not direct
+  % neighbors.
+% refindx = find_dipoleindex(sourcemodel, roi); % Does not work yet.
 end
 
 if ~exist('frequency', 'var')
