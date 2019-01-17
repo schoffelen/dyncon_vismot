@@ -18,7 +18,7 @@
     cnt = 1;
     for k = frequency
       for m = 1:n
-        d = fullfile([datadir, sprintf('%scoh6d4mm_roi_%03d.mat', list{m}, k)]);
+        d = fullfile([datadir, sprintf('%scoh6d4mm_roi_%03d_resamp.mat', list{m}, k)]);
         dum = load(d);
         zx13(m,cnt,:,:) = dum.zx13;
         zx42(m,cnt,:,:) = dum.zx42;
@@ -73,7 +73,7 @@ zx = (zx13+zx42)/2;
 % average over neighbours
 allneighb = find_neighbors(insidepos, sourcemodel);
 allneighb = reshape(permute(allneighb,[3,1,2]), [size(allneighb,1)*size(allneighb,3),3]);
-  neighb_refindx = nan(size(allneighb,1),1);
+neighb_refindx = nan(size(allneighb,1),1);
   
   for m = 1:size(allneighb,1)
     [~,neighb_refindx(m)] = min( sum((insidepos-allneighb(m,:)).^2,2) ); % find the index of each ROI in insidepos.
@@ -113,6 +113,7 @@ for k=1:numel(foi)
     tmp=abs(squeeze(zxref(k,:,:)));
     tmp = max(tmp(:));
     caxis([-tmp tmp])
+    saveas(gcf, sprintf('coh_avg_roi_%d.png',foi(m)));
 end
 
 % look at full topography.
