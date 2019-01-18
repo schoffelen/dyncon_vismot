@@ -4,7 +4,7 @@
     [~, idx]=ismember(insidepos, sourcemodel.pos, 'rows');
     s=sourcemodel;
 
-    
+    toi = input('pre or post?');
     mri = ft_read_mri('single_subj_T1_1mm.nii');
     vismot_subjinfo;
     alldir = '/project/3011085.03/';
@@ -18,7 +18,7 @@
     cnt = 1;
     for k = frequency
       for m = 1:n
-        d = fullfile([datadir, sprintf('%scoh6d4mm_roi_%03d_resamp.mat', list{m}, k)]);
+        d = fullfile([datadir, sprintf('%s_coh6d4mm_%s_roi_%03d.mat', list{m},toi, k)]);
         dum = load(d);
         zx13(m,cnt,:,:) = dum.zx13;
         zx42(m,cnt,:,:) = dum.zx42;

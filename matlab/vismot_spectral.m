@@ -1,16 +1,17 @@
-function [freqpre, tlckpre] = vismot_spectral_pre(subject,varargin)
+function [freq, tlck] = vismot_spectral(subject,varargin)
 
 % This function is based on doFreqanalysisMtmfft in the matlab_old folder
 %
 % do mtmfft analysis on data stratified for RT and balanced number of samples
 % stimulus locked
-
-smoothing = ft_getopt(varargin, 'smoothing', 4);
-foilim    = ft_getopt(varargin, 'foilim', 'all');
-output    = ft_getopt(varargin, 'output', 'pow');
-doplanar  = ft_getopt(varargin, 'doplanar', 0);
+toi        = ft_getopt(varargin, 'toi', 'post');
+smoothing  = ft_getopt(varargin, 'smoothing', 4);
+foilim     = ft_getopt(varargin, 'foilim', 'all');
+output     = ft_getopt(varargin, 'output', 'pow');
+doplanar   = ft_getopt(varargin, 'doplanar', 0);
 conditions = ft_getopt(varargin, 'conditions', 'previous');
 nrand      = ft_getopt(varargin, 'nrand', 100);
+
 
 if smoothing==0
   taper = 'hanning';
@@ -28,21 +29,28 @@ if ischar(foilim) && strcmp(foilim, 'all')
 end
 
 fd = fieldnames(alldata);
-pre = cell(1,numel(fd));
+data_short = cell(1,numel(fd));
+if strcmp(toi, 'post')
+    toilim = [0 0.5-1/256];
+elseif strcmp(toi, 'pre')
+    toilim = [-0.5 0-1/256];
+else
+    error('please specificy toi as *pre* or *post')
+end
 for k = 1:numel(fd)
   data = alldata.(fd{k});
   
   cfg           = [];
-  cfg.toilim    = [-0.5 0-1/256];
+  cfg.toilim    = toilim;
   cfg.minlength = 0.5;
-  datapre       = ft_redefinetrial(cfg, data);
+  data_tmp    = ft_redefinetrial(cfg, data);
   clear data;
   
   cfg         = [];
   cfg.detrend = 'yes';
-  datapre     = ft_preprocessing(cfg, datapre);
-  pre{k}    = datapre;
-  clear datapre;
+  data_tmp     = ft_preprocessing(cfg, data_tmp);
+  data_short{k}    = data_tmp;
+  clear data_tmp;
 end
 
 if strcmp(output,'csd') 
@@ -61,7 +69,7 @@ if dospectral
 cfg         = [];
 cfg.method  = 'mtmfft';
 cfg.output  = output;
-cfg.pad     = 600./pre{1}.fsample; %explicitly make nfft 600
+cfg.pad     = 600./data_short{1}.fsample; %explicitly make nfft 600
 cfg.foilim  = foilim;
 cfg.taper   = taper;
 cfg.tapsmofrq = smoothing;
@@ -77,38 +85,38 @@ if doplanar
   cfgp = [];
   cfgp.method = 'sincos';
   cfgp.neighbours = neighbours;
-  for k = 1:numel(pre)
-    pre{k} = ft_megplanar(cfgp, pre{k});
+  for k = 1:numel(data_short)
+    data_short{k} = ft_megplanar(cfgp, data_short{k});
   end
 end
 
-for k = 1:numel(pre)
-  tmp = ft_freqanalysis(cfg, pre{k});
+for k = 1:numel(data_short)
+  tmp = ft_freqanalysis(cfg, data_short{k});
   if docsd
 		ntap = sum(tmp.cumtapcnt);
 		tmp  = ft_checkdata(tmp, 'cmbrepresentation', 'fullfast');
 	  tmp.ntap = ntap;
 	end
-	freqpre(k) = tmp;
+	freq(k) = tmp;
 end
 
 % combine planar gradients
 if doplanar
-  for k = 1:numel(pre)
-    freqpre(k) = ft_combineplanar([], freqpre(k));
+  for k = 1:numel(data_short)
+    freq(k) = ft_combineplanar([], freq(k));
   end
 end
 
 else
-  freqpre = [];	
+  freq = [];	
 end
 
 % also compute the covariance matrix for lcmv
 cfg = [];
 cfg.covariance = 'yes';
 cfg.vartrllength = 2;
-for k = 1:numel(pre)
-	tlckpre(k) = ft_timelockanalysis(cfg, pre{k});
+for k = 1:numel(data_short)
+	tlck(k) = ft_timelockanalysis(cfg, data_short{k});
 end
 
 

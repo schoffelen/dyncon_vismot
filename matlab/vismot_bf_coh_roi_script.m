@@ -1,3 +1,4 @@
+if ~exist('toi', 'var'); toi='pre'; end
 if ~exist('include_neighb', 'var'); include_neighb=true; end
 if ~exist('roi', 'var') && ~exist('refindx', 'var')
   % as Nx3 matrix, in the same units as the sourcemodel
@@ -55,10 +56,10 @@ if ~exist('smoothing', 'var')
 end
 subject = vismot_subjinfo(subjectname);
 load(fullfile(subject.pathname,'grid',sprintf('%s_sourcemodel3d4mm',subject.name)),'sourcemodel');
-[coh,zx13,zx42,looptime] = vismot_bf_pre_coh_roi(subject,'sourcemodel',sourcemodel,'frequency',frequency,'smoothing',smoothing,'nrand',nrand, 'refindx', refindx, 'include_neighb', include_neighb);
+[coh,zx13,zx42,looptime] = vismot_bf_coh_roi(subject,'toi', toi, 'sourcemodel',sourcemodel,'frequency',frequency,'smoothing',smoothing,'nrand',nrand, 'refindx', refindx, 'include_neighb', include_neighb);
 if nrand>0
-    filename = fullfile(subject.pathname,'source', [subject.name,'coh6d4mm_roi_',sprintf('%03d', frequency), '_resamp'] );
+    filename = fullfile(subject.pathname,'source', [subject.name, '_coh6d4mm_', sprintf('%s_', toi), 'roi_',sprintf('%03d', frequency), '_resamp'] );
 else
-    filename = fullfile(subject.pathname,'source', [subject.name,'coh6d4mm_roi_',sprintf('%03d', frequency)] );
+    filename = fullfile(subject.pathname,'source', [subject.name, '_coh6d4mm_', sprintf('%s_', toi), 'roi_',sprintf('%03d', frequency)] );
 end
 save(filename, 'zx13', 'zx42', 'coh');
