@@ -31,7 +31,7 @@ end
 fd = fieldnames(alldata);
 data_short = cell(1,numel(fd));
 if strcmp(toi, 'post')
-    toilim = [0 0.5-1/256];
+    toilim = [0.2 0.7-1/256];
 elseif strcmp(toi, 'pre')
     toilim = [-0.5 0-1/256];
 else
