@@ -1,5 +1,8 @@
-function [output, seed] = find_neighbors(seed, sourcemodel)
-%assume seed and sourcemodel in same units
+function [output, seed, resolution] = find_neighbors(seed, sourcemodel)
+% from a number of seeds (can be indexnumbers or positions), determine
+% direct neighbors.
+
+% assume seed and sourcemodel in same units
 % determine resolution
 xpos = sourcemodel.pos(:,1);
 resolution = mode(diff(unique(xpos))); % in same units as sourcemodel
