@@ -21,7 +21,7 @@ if ~exist('refindx', 'var')
   load standard_sourcemodel3d4mm;
   %add neighbors to roi.
   if include_neighb
-    roi = find_neighbors(roi, sourcemodel);
+    [roi, roi_orig, resolution] = find_neighbors(roi, sourcemodel);
     roi = reshape(permute(roi,[3,1,2]), [size(roi,1)*size(roi,3),3]);
   end
   
@@ -35,9 +35,15 @@ if ~exist('refindx', 'var')
   for m = 1:size(roi,1)
     [~,refindx(m)] = min( sum((insidepos-roi(m,:)).^2,2) ); % find the index of each ROI in insidepos.
   end
-  % FIXME Now nearest neighbors are used, even if they're not direct
-  % neighbors.
-% refindx = find_dipoleindex(sourcemodel, roi); % Does not work yet.
+  
+  if include_neighb
+  % exclude neighbors multiple copies of same neighbors and non-direct
+  % neighbors
+  [refindx, n_neighbors] = revise_neighbors(refindx, insidepos, resolution);
+  else
+      n_neighbors = 0; % no neigbors
+  end
+  % refindx = find_dipoleindex(sourcemodel, roi); % Does not work yet.
 end
 
 if ~exist('frequency', 'var')
