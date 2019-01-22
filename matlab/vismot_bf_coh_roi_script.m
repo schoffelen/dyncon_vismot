@@ -39,10 +39,13 @@ if ~exist('refindx', 'var')
   if include_neighb
   % exclude neighbors multiple copies of same neighbors and non-direct
   % neighbors
-  [refindx, n_neighbors] = revise_neighbors(refindx, insidepos, resolution);
+  [refindx, n_neighbors, index_orig_seed] = revise_neighbors(refindx, insidepos, resolution);
   else
       n_neighbors = 0; % no neigbors
   end
+  ref.refindx = refindx;
+  ref.n_neighbors = n_neighbors;
+  ref.index_orig_seed = index_orig_seed;
   % refindx = find_dipoleindex(sourcemodel, roi); % Does not work yet.
 end
 
@@ -65,7 +68,7 @@ if ~exist('smoothing', 'var')
 end
 subject = vismot_subjinfo(subjectname);
 load(fullfile(subject.pathname,'grid',sprintf('%s_sourcemodel3d4mm',subject.name)),'sourcemodel');
-[coh,zx13,zx42,looptime] = vismot_bf_coh_roi(subject,'toi', toi,'conditions', conditions, 'sourcemodel',sourcemodel,'frequency',frequency,'smoothing',smoothing,'nrand',nrand, 'refindx', refindx, 'include_neighb', include_neighb);
+[coh,zx13,zx42,looptime] = vismot_bf_coh_roi(subject,'toi', toi,'conditions', conditions, 'sourcemodel',sourcemodel,'frequency',frequency,'smoothing',smoothing,'nrand',nrand, 'ref', ref, 'include_neighb', include_neighb);
 
 filename = fullfile(subject.pathname,'source', [subject.name, '_coh6d4mm_', sprintf('%s_', toi), 'roi_',sprintf('%03d', frequency)] );
 if include_neighb

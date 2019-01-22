@@ -8,19 +8,25 @@ smoothing      = ft_getopt(varargin, 'smoothing', []);
 sourcemodel    = ft_getopt(varargin, 'sourcemodel');
 nrand          = ft_getopt(varargin, 'nrand', 100); % number of randomization for sensor subsampling
 roi            = ft_getopt(varargin, 'roi', []);
-refindx        = ft_getopt(varargin, 'refindx', []);
+ref            = ft_getopt(varargin, 'ref', []);
 include_neighb = ft_getopt(varargin, 'include_neighb', false);
 
-if isempty(roi) && isempty(refindx)
+if isempty(roi) && isempty(ref)
     error('roi or refindx required');
 end
 insidepos = sourcemodel.pos(sourcemodel.inside,:);
-if isempty(refindx)
+if isempty(ref)
+    % FIXME: Current implementation does not allow for including neighbors
+    % in determining refindx from roi.
     for k = 1:size(roi)
         % ASSUME ROI UNITS AND COORDINATE SYSTEM TO BE THE SAME AS SOURCEMODEL POS
         dpos = insidepos-roi(k,:);
         [~,refindx(k,1)] = min(sum(dpos.^2,2));
     end
+else
+    refindx = ref.refindx;
+    n_neighbors = ref.n_neighbors;
+    index_orig_seed = ref.index_orig_seed;
 end
 
 if isempty(smoothing)
@@ -93,13 +99,17 @@ end
 
 allcoh = estimate_coh2x2_2dip_new(leadfield,allfreq,'memory',memreq,'lambda',lambda, 'outputflags', [1 0 0 0], 'refindx', refindx);
 if include_neighb
-    tmp = allcoh.coh;
-    tmp = reshape(tmp, [size(tmp,1), numel(refindx)/7, 7]);
-    allcoh.coh = nanmean(tmp,3);
-    % manually set coherence at refindx to one.
-    orig_refindx = refindx(1:7:end,1);
-    for m=1:numel(refindx)/7
-        allcoh.coh(orig_refindx(m),m) = 1;
+    tmp1 = allcoh.coh;
+    tmp2 = zeros(size(tmp1,1), numel(n_neighbors));
+    index=1;
+    for m=1:numel(n_neighbors)
+        tmp2(:,m) = nanmean(tmp1(:,index:index+n_neighbors(m)), 2);
+        index = (index+n_neighbors(m))+1;
+    end
+    allcoh.coh = tmp2;
+    % manually set coherence at original refindx to one.
+    for m=1:numel(index_orig_seed)
+        allcoh.coh(refindx(index_orig_seed(m)),m) = 1;
     end
 end
 
@@ -116,12 +126,17 @@ leadfield_scalar = rmfield(leadfield_scalar, 'v');
 for k = 1:5
     coh(k) = estimate_coh2x2_2dip_new(leadfield_scalar,freq(k),'memory',memreq,'lambda',lambda, 'outputflags', [1 0 0 0], 'refindx', refindx);
     if include_neighb
-        tmp = coh(k).coh;
-        tmp = reshape(tmp, [size(tmp,1), numel(refindx)/7, 7]);
-        coh(k).coh = nanmean(tmp,3);
-        % manually set coherence at refindx to one.
-        for m=1:numel(refindx)/7
-            coh(k).coh(orig_refindx(m),m) = 1;
+        tmp1 = coh(k).coh;
+        tmp2 = zeros(size(tmp1,1), numel(n_neighbors));
+        index=1;
+        for m=1:numel(n_neighbors)
+            tmp2(:,m) = nanmean(tmp1(:,index:index+n_neighbors(m)), 2);
+            index = (index+n_neighbors(m))+1;
+        end
+        coh(k).coh = tmp2;
+        % manually set coherence at original refindx to one.
+        for m=1:numel(index_orig_seed)
+            coh(k).coh(refindx(index_orig_seed(m)),m) = 1;
         end
     end
 end
@@ -143,12 +158,17 @@ for k = 1:nrand
     tmplambda = 0.1.*trace(tmpfreq.crsspctrm)./numel(tmpfreq.label);
     tmpcoh  = estimate_coh2x2_2dip_new(tmpleadfield,tmpfreq,'memory',memreq,'lambda',tmplambda, 'outputflags', [1 0 0 0], 'refindx', refindx);
     if include_neighb
-        tmp = tmpcoh.coh;
-        tmp = reshape(tmp, [size(tmp,1), numel(refindx)/7, 7]);
-        tmpcoh.coh = nanmean(tmp,3);
-        % manually set coherence at refindx to one.
-        for m=1:numel(refindx)/7
-            tmpcoh.coh(orig_refindx(m),m) = 1;
+        tmp1 = tmpcoh.coh;
+        tmp2 = zeros(size(tmp1,1), numel(n_neighbors));
+        index=1;
+        for m=1:numel(n_neighbors)
+            tmp2(:,m) = nanmean(tmp1(:,index:index+n_neighbors(m)), 2);
+            index = (index+n_neighbors(m))+1;
+        end
+        tmpcoh.coh = tmp2;
+        % manually set coherence at original refindx to one.
+        for m=1:numel(index_orig_seed)
+            tmpcoh.coh(refindx(index_orig_seed(m)),m) = 1;
         end
     end
     tmpleadfield_scalar = tmpleadfield;
@@ -163,13 +183,17 @@ for k = 1:nrand
         tmpfreq = ft_selectdata(tmpcfg, freq(m));
         tmpcoh(m)  = estimate_coh2x2_2dip_new(tmpleadfield_scalar,tmpfreq,'memory',memreq,'lambda',tmplambda, 'outputflags', [1 0 0 0], 'refindx', refindx);
         if include_neighb
-            tmp = tmpcoh(m).coh;
-            tmp = reshape(tmp, [size(tmp,1), numel(refindx)/7, 7]);
-            tmpcoh(m).coh = nanmean(tmp,3);
-            % manually set coherence at refindx to one.
-            orig_refindx = refindx(1:7:end,1);
-            for n=1:numel(refindx)/7
-                tmpcoh(m).coh(orig_refindx(n),n) = 1;
+            tmp1 = tmpcoh(m).coh;
+            tmp2 = zeros(size(tmp1,1), numel(n_neighbors));
+            index=1;
+            for l=1:numel(n_neighbors)
+                tmp2(:,l) = nanmean(tmp1(:,index:index+n_neighbors(l)), 2);
+                index = (index+n_neighbors(l))+1;
+            end
+            tmpcoh(m).coh = tmp2;
+            % manually set coherence at original refindx to one.
+            for l=1:numel(index_orig_seed)
+                tmpcoh(m).coh(refindx(index_orig_seed(l)),l) = 1;
             end
         end
     end
