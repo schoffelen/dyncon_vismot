@@ -1,7 +1,8 @@
 function [coh,zx13,zx42,looptime] = vismot_bf_coh_roi(subject,varargin)
 
 %function [source, filter, freq] = vismot_bf_post(subject,varargin)
-toi        = ft_getopt(varargin, 'toi', 'post');
+toi            = ft_getopt(varargin, 'toi', 'post');
+conditions     = ft_getopt(varargin, 'conditions', 'current');
 frequency      = ft_getopt(varargin, 'frequency', 20);
 smoothing      = ft_getopt(varargin, 'smoothing', []);
 sourcemodel    = ft_getopt(varargin, 'sourcemodel');
@@ -30,7 +31,7 @@ if isempty(smoothing)
     end
 end
 
-[freq, tlck] =  vismot_spectral(subject,'toi', toi, 'output','csd','conditions','previous', 'foilim', [frequency frequency], 'smoothing', smoothing);
+[freq, tlck] =  vismot_spectral(subject,'toi', toi, 'conditions', conditions, 'output','csd', 'foilim', [frequency frequency], 'smoothing', smoothing);
 
 
 % load in the head model and the source model.

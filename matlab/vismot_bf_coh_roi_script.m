@@ -51,12 +51,15 @@ end
 if ~exist('subjectname', 'var')
     error('subjectname needs to be defined');
 end
+if ~exist('conditions', 'var')
+    error('conditions need to be specified (current, previous, or current_previous')
+end
 if ~exist('smoothing', 'var')
     smoothing = 4;
 end
 subject = vismot_subjinfo(subjectname);
 load(fullfile(subject.pathname,'grid',sprintf('%s_sourcemodel3d4mm',subject.name)),'sourcemodel');
-[coh,zx13,zx42,looptime] = vismot_bf_coh_roi(subject,'toi', toi, 'sourcemodel',sourcemodel,'frequency',frequency,'smoothing',smoothing,'nrand',nrand, 'refindx', refindx, 'include_neighb', include_neighb);
+[coh,zx13,zx42,looptime] = vismot_bf_coh_roi(subject,'toi', toi,'conditions', conditions, 'sourcemodel',sourcemodel,'frequency',frequency,'smoothing',smoothing,'nrand',nrand, 'refindx', refindx, 'include_neighb', include_neighb);
 if nrand>0
     filename = fullfile(subject.pathname,'source', [subject.name, '_coh6d4mm_', sprintf('%s_', toi), 'roi_',sprintf('%03d', frequency), '_resamp'] );
 else

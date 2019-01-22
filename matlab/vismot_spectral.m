@@ -5,14 +5,17 @@ function [freq, tlck] = vismot_spectral(subject,varargin)
 % do mtmfft analysis on data stratified for RT and balanced number of samples
 % stimulus locked
 toi        = ft_getopt(varargin, 'toi', 'post');
+conditions = ft_getopt(varargin, 'conditions', []);
 smoothing  = ft_getopt(varargin, 'smoothing', 4);
 foilim     = ft_getopt(varargin, 'foilim', 'all');
 output     = ft_getopt(varargin, 'output', 'pow');
 doplanar   = ft_getopt(varargin, 'doplanar', 0);
-conditions = ft_getopt(varargin, 'conditions', 'previous');
 nrand      = ft_getopt(varargin, 'nrand', 100);
 
-
+if isempty(conditions)
+    if strcmp(toi, 'post'); conditions = 'current';
+    elseif strcmp(toi, 'pre'); conditions = 'previous'; end
+end
 if smoothing==0
   taper = 'hanning';
   smoothing = 4;
