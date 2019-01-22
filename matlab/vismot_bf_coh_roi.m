@@ -1,8 +1,8 @@
 function [coh,zx13,zx42,looptime] = vismot_bf_coh_roi(subject,varargin)
 
 %function [source, filter, freq] = vismot_bf_post(subject,varargin)
-toi            = ft_getopt(varargin, 'toi', 'post');
-conditions     = ft_getopt(varargin, 'conditions', 'current');
+toi            = ft_getopt(varargin, 'toi', 'pre');
+conditions     = ft_getopt(varargin, 'conditions', 'previous');
 frequency      = ft_getopt(varargin, 'frequency', 20);
 smoothing      = ft_getopt(varargin, 'smoothing', []);
 sourcemodel    = ft_getopt(varargin, 'sourcemodel');
