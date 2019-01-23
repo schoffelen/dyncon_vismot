@@ -12,7 +12,7 @@ function [new_refindx, n_neighbors, index_orig_seed] = revise_neighbors(refindx,
       tmp = refindx(l:l+6);
       tmp(nondirect_neighb+1) = []; % exclude non-direct neighbors
       tmp = unique(tmp, 'stable'); % exclude multiple copies of same neighbor.
+      index_orig_seed = [index_orig_seed; numel(new_refindx)+1];
       new_refindx = [new_refindx; tmp];
-      index_orig_seed = [index_orig_seed; find(new_refindx==seed_orig)];
       n_neighbors = [n_neighbors; numel(tmp)-1];   % determine the amount of valid neighbors per roi
     end
