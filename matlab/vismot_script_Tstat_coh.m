@@ -4,7 +4,7 @@ if ~exist('include_neighb', 'var'); include_neighb = true; end
 if ~exist('resamp', 'var'); resamp = false; end
 if ~exist('spatsmooth_preT', 'var'); spatsmooth_preT=false; end
 if ~exist('spatsmooth_postT', 'var'); spatsmooth_postT=false; end
-if ~exist('compute_var', 'var'); compute_var = 'T'; end % can be 'avg'
+if ~exist('compute_var', 'var'); compute_var = 'Tstat'; end % can be 'avg'
 if ~exist('doplot', 'var'); doplot=false; end
 load standard_sourcemodel3d4mm
 
@@ -154,7 +154,7 @@ end
 
 
 %% T-statistic
-if strcmp('compute_var', 'T')
+if strcmp('compute_var', 'Tstat')
     [a,b,c,d] = size(zx13);
     % make FT structures, one for every ROI
     for k=1:size(zx13,4)
@@ -168,8 +168,8 @@ if strcmp('compute_var', 'T')
         coh(k).coh42 = zeros(a,c,numel(foi));
         coh(k).inside=ones(c,1);
         coh(k).pos = coh(k).pos(sourcemodel.inside==1,:);
-        coh(k).coh13 = squeeze(coh(k).coh13);
-        coh(k).coh42 = squeeze(coh(k).coh42);
+        coh(k).coh13 = permute(squeeze(zx13(:,:,:,k)), [1 3 2]);
+        coh(k).coh42 = permute(squeeze(zx42(:,:,:,k)), [1 3 2]);
     end
     
     nul=coh(1);
@@ -189,7 +189,7 @@ if strcmp('compute_var', 'T')
     cfgs.numrandomization = 1000;
     cfgs.clusteralpha = 0.05;
     cfgs.correcttail = 'prob';
-    for k=1:size(zx13,4)
+    for k=1:d
         cfgs.parameter = 'coh13';
         stat13(k) = ft_sourcestatistics(cfgs, coh(k), nul);
         cfgs.parameter = 'coh42';
@@ -198,7 +198,9 @@ if strcmp('compute_var', 'T')
     
     for k=1:d
         s13(k,:,:) = stat13(k).stat;
+        s13ref(k,:,:) = stat13(k).stat(refindx,:);
         s42(k,:,:) = stat42(k).stat;
+        s42ref(k,:,:) = stat42(k).stat(refindx,:);
     end
     s13 = permute(s13, [3 2 1]);
     s42 = permute(s42, [3 2 1]);
@@ -255,7 +257,7 @@ if doplot
         coh42ref = zx42ref;
         coh13 = zx13_avg;
         coh42 = zx42_avg;
-    elseif strcmp(compute_var, 'T')
+    elseif strcmp(compute_var, 'Tstat')
         coh13ref = s13ref;
         coh42ref = s42ref;
         coh13 = s13;
@@ -320,12 +322,16 @@ if doplot
         cfgp.funparameter = 'coh';
         cfgp.maskparameter = 'coh'; %mask
         cfgp.visible = 'off';
-        region = {'occ', 'par', 'mot'};
-        side = {'ipsi', 'contra'};
+        region = {'occ', 'occ', 'par', 'par', 'mot', 'mot'};
+        if strcmp(resphand, 'left')
+            side = {'ipsi', 'contra', 'ipsi', 'contra', 'ipsi', 'contra'};
+        elseif strcmp(resphand, 'right')
+            side = {'contra', 'ipsi', 'contra', 'ipsi', 'contra', 'ipsi',};
+        end
         for k=1:6
             for m=1:5
-                ft_sourceplot(cfgp, z_int(k,m));        title(sprintf('%s_%s_%d.png',region{mod(k+2,3)+1}, side{mod(k+1,2)+1}, foi(m)), 'Interpreter', 'none')
-                saveas(gcf, sprintf('coh_%s_%s_%s_%d_%sresp.png', compute_var, region{mod(k+2,3)+1}, side{mod(k+1,2)+1}, foi(m)), resphand)
+                ft_sourceplot(cfgp, z_int(k,m));        title(sprintf('%s_%s_%d.png',region{k}, side{k}, foi(m)), 'Interpreter', 'none')
+                saveas(gcf, sprintf('coh_%s_%s_%s_%d_%sresp.png', compute_var, region{k}, side{k}, foi(m), resphand))
             end
         end
     end
