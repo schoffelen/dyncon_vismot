@@ -2,8 +2,7 @@ if ~exist('fliphemi', 'var'); fliphemi = false; end % not yet implemented. look 
 if ~exist('toi', 'var'); toi = 'pre'; end
 if ~exist('include_neighb', 'var'); include_neighb = true; end
 if ~exist('resamp', 'var'); resamp = false; end
-if ~exist('spatsmooth_preT', 'var'); spatsmooth_preT=false; end
-if ~exist('spatsmooth_postT', 'var'); spatsmooth_postT=false; end
+if ~exist('spatsmooth_preT', 'var'); spatsmooth=false; end
 if ~exist('compute_var', 'var'); compute_var = 'Tstat'; end % can be 'avg'
 if ~exist('doplot', 'var'); doplot=false; end
 load standard_sourcemodel3d4mm
@@ -88,7 +87,7 @@ for m = 1:size(roi,1)
 end
 
 %% spatial smoothing: average over neighbours (before tstat)
-if spatsmooth_preT
+if spatsmooth
     [allneighb, seed, resolution] = find_neighbors(insidepos, sourcemodel);
     allneighb = reshape(permute(allneighb,[3,1,2]), [size(allneighb,1)*size(allneighb,3),3]);
     neighb_refindx = nan(size(allneighb,1),1);
@@ -204,45 +203,7 @@ if strcmp('compute_var', 'Tstat')
     end
     s13 = permute(s13, [3 2 1]);
     s42 = permute(s42, [3 2 1]);
-    
-    %% spatial smoothing: average over neighbours (after tstat)
-    if spatsmooth_postT
-        [allneighb, seed, resolution] = find_neighbors(insidepos, sourcemodel);
-        allneighb = reshape(permute(allneighb,[3,1,2]), [size(allneighb,1)*size(allneighb,3),3]);
-        neighb_refindx = nan(size(allneighb,1),1);
-        
-        for m = 1:size(allneighb,1)
-            [~,neighb_refindx(m)] = min( sum((insidepos-allneighb(m,:)).^2,2) ); % find the index of each ROI in insidepos.
-        end
-        [neighb_refindx, n_neighbors] = revise_neighbors(neighb_refindx, insidepos, resolution);
-        
-        tmp1 = s13;
-        tmp2 = zeros(size(s13));
-        index=1;
-        for m=1:numel(n_neighbors)
-            tmp2(:,m,:) = nanmean(tmp1(:,neighb_refindx(index:index+n_neighbors(m)),:), 2);
-            index = (index+n_neighbors(m))+1;
-        end
-        s13 = tmp2;
-        % manually set coherence at original refindx to zero (because of contrast).
-        for m=1:numel(refindx)
-            s13(:,refindx(m),m) = 0;
-        end
-        
-        tmp1 = s42;
-        tmp2 = zeros(size(s42));
-        index=1;
-        for m=1:numel(n_neighbors)
-            tmp2(:,m,:) = nanmean(tmp1(:,neighb_refindx(index:index+n_neighbors(m)),:), 2);
-            index = (index+n_neighbors(m))+1;
-        end
-        s42 = tmp2;
-        % manually set coherence at original refindx to zero (because of contrast).
-        for m=1:numel(refindx)
-            s42(:,refindx(m),m) = 0;
-        end
-    end
-    
+   
     % hemiswap right hand responses
     % s42 = s42(:,[2 1 4 3 6 5],[2 1 4 3 6 5]);
     % % average between conditions
