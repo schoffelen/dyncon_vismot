@@ -42,6 +42,7 @@ if ~exist('refindx', 'var')
   [refindx, n_neighbors, index_orig_seed] = revise_neighbors(refindx, insidepos, resolution);
   else
       n_neighbors = 0; % no neigbors
+      index_orig_seed = 1:numel(refindx);
   end
   ref.refindx = refindx;
   ref.n_neighbors = n_neighbors;
@@ -76,7 +77,5 @@ if include_neighb
 end
 if nrand>0
     filename = fullfile([filename, '_resamp']);
-else
-    
 end
 save(filename, 'zx13', 'zx42', 'coh');
