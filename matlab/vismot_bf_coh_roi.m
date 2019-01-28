@@ -118,7 +118,7 @@ for k = 1:5
     end
 end
 
-N     = 150;
+N     = 70;
 
 dcoh13 = single(zeros(size(coh(1).coh)));
 dcoh42 = dcoh13;
