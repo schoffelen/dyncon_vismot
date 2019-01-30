@@ -20,4 +20,4 @@ load(fullfile(subject.pathname,'grid',sprintf('%s_sourcemodel3d8mm',subject.name
 [coh,zx13,zx42,looptime] = vismot_bf_pre_coh(subject,'sourcemodel',sourcemodel,'frequency',frequency,'smoothing',smoothing,'nrand',nrand);
 
 filename = fullfile(subject.pathname,'source',[subject.name,'coh6d8mm_',num2str(frequency)]);
-save(filename, 'zx13', 'zx42');
+save(filename, 'zx13', 'zx42', 'coh');
