@@ -10,6 +10,7 @@ nrand          = ft_getopt(varargin, 'nrand', 100); % number of randomization fo
 roi            = ft_getopt(varargin, 'roi', []);
 ref            = ft_getopt(varargin, 'ref', []);
 include_neighb = ft_getopt(varargin, 'include_neighb', false);
+lambda         = ft_getopt(varargin, 'lambda', '10%');
 
 if isempty(roi) && isempty(ref)
     error('roi or refindx required');
@@ -89,8 +90,6 @@ end
 allfreq = freq(1);
 allfreq.crsspctrm = mean(cat(3,freq.crsspctrm),3);
 
-lambda = 0.1.*trace(allfreq.crsspctrm)./numel(allfreq.label);
-
 if sum(leadfield.inside)>6000
     memreq = 'low';
 else
@@ -119,7 +118,7 @@ for k = 1:5
     end
 end
 
-N     = 150;
+N     = 70;
 
 dcoh13 = single(zeros(size(coh(1).coh)));
 dcoh42 = dcoh13;

@@ -1,8 +1,8 @@
 if ~exist('fliphemi', 'var'); fliphemi = false; end % not yet implemented. look at left and right hand resp trials seperately.
 if ~exist('toi', 'var'); toi = 'pre'; end
-if ~exist('include_neighb', 'var'); include_neighb = true; end
+if ~exist('include_neighb', 'var'); include_neighb = false; end
 if ~exist('resamp', 'var'); resamp = false; end
-if ~exist('spatsmooth_preT', 'var'); spatsmooth=false; end
+if ~exist('spatsmooth', 'var'); spatsmooth=false; end
 if ~exist('compute_var', 'var'); compute_var = 'Tstat'; end % can be 'avg'
 if ~exist('doplot', 'var'); doplot=false; end
 load standard_sourcemodel3d4mm
@@ -127,7 +127,7 @@ end
 if strcmp(compute_var, 'avg')
     % average over subjects
     zx13_avg = squeeze(nanmean(zx13,1));
-    zx42_avg = squeeze(nanmean(zx13,1));
+    zx42_avg = squeeze(nanmean(zx42,1));
     
     % take only ROIs
     zx13ref=zx13_avg;
@@ -153,7 +153,7 @@ end
 
 
 %% T-statistic
-if strcmp('compute_var', 'Tstat')
+if strcmp(compute_var, 'Tstat')
     [a,b,c,d] = size(zx13);
     % make FT structures, one for every ROI
     for k=1:size(zx13,4)
@@ -204,12 +204,26 @@ if strcmp('compute_var', 'Tstat')
     s13 = permute(s13, [3 2 1]);
     s42 = permute(s42, [3 2 1]);
    
+    s13ref = permute(s13ref, [3 1 2]);
+    s42ref = permute(s42ref, [3 1 2]);
+    s13ref = s13ref(:,[find(roi(:,1)<0); find(roi(:,1)>0)],[find(roi(:,1)<0); find(roi(:,1)>0)]);
+    s42ref = s42ref(:,[find(roi(:,1)<0); find(roi(:,1)>0)],[find(roi(:,1)<0); find(roi(:,1)>0)]);
+
     % hemiswap right hand responses
     % s42 = s42(:,[2 1 4 3 6 5],[2 1 4 3 6 5]);
     % % average between conditions
     % s = (s13+s42)/2;
     % make first three items in 2nd/3rd dimension left, 5-6th items right hemisphere
     % zx=zx(:,[find(roi(:,1)<0); find(roi(:,1)>0)],[find(roi(:,1)<0); find(roi(:,1)>0)]);
+    if include_neighb; wh = 'seedneighb'; else wh='seed'; end
+    filename = sprintf('/project/3011085.03/analysis/source/coh_Tstat_%s', wh);
+    if spatsmooth
+        filename = fullfile([filename '_spatsmooth']);
+    end
+    if resamp
+        filename = fullfile([filename, '_resamp']);
+    end
+    save(filename, 'stat13', 'stat42', 'refindx', 'roi', 'zx13', 'zx42')
 end
 
 if doplot
@@ -225,6 +239,7 @@ if doplot
         coh42 = s42;
     end
     % plot coherence between ROIs
+
     for k=1:numel(foi)
         figure(k);
         tmp=[abs(squeeze(coh13ref(k,:,:))), abs(squeeze(coh42ref(k,:,:)));];
@@ -232,13 +247,13 @@ if doplot
         
         subplot(1,2,1);
         imagesc(squeeze(coh13ref(k,:,:)));
-        title('left hand response'); colorbar; caxis([-tmp tmp])
+        title('left hand response'); caxis([-tmp tmp]); colorbar; pause(0.01)
         subplot(1,2,2);
         imagesc(squeeze(coh42ref(k,:,:)));
-        title('right hand response'); colorbar; caxis([-tmp tmp])
+        title('right hand response'); caxis([-tmp tmp]); colorbar; pause(0.01)
         
         suptitle(sprintf('%d Hz', foi(k))); pause(0.001);
-        saveas(gcf, sprintf('coh_%s_roi_%d.png',compute_var, foi(m)));
+        saveas(gcf, sprintf('coh_%s_roi_%d.png',compute_var, foi(k)));
     end
     
     % look at full topography from ROIs to full brain.
