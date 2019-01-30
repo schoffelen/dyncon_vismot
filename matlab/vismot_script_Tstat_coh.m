@@ -1,6 +1,6 @@
 if ~exist('fliphemi', 'var'); fliphemi = false; end % not yet implemented. look at left and right hand resp trials seperately.
 if ~exist('toi', 'var'); toi = 'pre'; end
-if ~exist('include_neighb', 'var'); include_neighb = true; end
+if ~exist('include_neighb', 'var'); include_neighb = false; end
 if ~exist('resamp', 'var'); resamp = false; end
 if ~exist('spatsmooth', 'var'); spatsmooth=false; end
 if ~exist('compute_var', 'var'); compute_var = 'Tstat'; end % can be 'avg'
@@ -218,10 +218,10 @@ if strcmp(compute_var, 'Tstat')
     if include_neighb; wh = 'seedneighb'; else wh='seed'; end
     filename = sprintf('/project/3011085.03/analysis/source/coh_Tstat_%s', wh);
     if spatsmooth
-        filename = fullfile([filename 'spatsmooth']);
+        filename = fullfile([filename '_spatsmooth']);
     end
     if resamp
-        filename = fullfile([filename, 'resamp']);
+        filename = fullfile([filename, '_resamp']);
     end
     save(filename, 'stat13', 'stat42', 'refindx', 'roi', 'zx13', 'zx42')
 end
@@ -247,10 +247,10 @@ if doplot
         
         subplot(1,2,1);
         imagesc(squeeze(coh13ref(k,:,:)));
-        title('left hand response'); caxis([-tmp tmp]); colorbar;
+        title('left hand response'); caxis([-tmp tmp]); colorbar; pause(0.01)
         subplot(1,2,2);
         imagesc(squeeze(coh42ref(k,:,:)));
-        title('right hand response'); caxis([-tmp tmp]); colorbar;
+        title('right hand response'); caxis([-tmp tmp]); colorbar; pause(0.01)
         
         suptitle(sprintf('%d Hz', foi(k))); pause(0.001);
         saveas(gcf, sprintf('coh_%s_roi_%d.png',compute_var, foi(k)));
