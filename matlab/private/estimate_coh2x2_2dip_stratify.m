@@ -76,14 +76,16 @@ end
 if ~isempty(lambda) && ischar(lambda) && lambda(end)=='%'
   ratio = sscanf(lambda, '%f%%');
   ratio = ratio/100;
-  lambda = ratio * trace(C)/size(C,1);
+  regu = ratio * trace(C)/size(C,1);
 elseif isempty(lambda)
-  lambda = 0;
+  regu = 0;
+else
+  regu = lambda;
 end
 
 % get a temporary copy for real part, and regularize
 rC    = real(C);
-rCreg = rC + eye(size(C,1))*lambda;
+rCreg = rC + eye(size(C,1))*regu;
 
 fprintf('computing some preliminary matrices\n');
 lfC     = lf'/rCreg; % lf'*inv(rCreg);
@@ -119,7 +121,88 @@ elseif nori==1
   ori = ones(size(lf,2),1);
 end
 
-% recompute some stuff, now the orientation has been fixed
+if stratflag>0
+  lfC     = lf'/rCreg; % lf'*inv(rCreg);
+  sumlfClf = sum(lfC.*lf',2); %denominator for single dipole formulation
+
+  % single dipole model spatial filters
+  w = spdiags(1./sumlfClf,0,ninside,ninside)*lfC;
+  
+  fprintf('computing single trial power\n');
+  [pow, n, P] = getpow(freq, w(refindx,:)); % this is done in a subfunction
+  pow = log10(pow);
+  
+  % stratify for power
+  powindx = dostratification(pow,n, 10);
+  
+  
+  if stratflag==1
+    % these variables will be used below
+    powindx1 = sparse(double(       powindx(:,1:n(1))))*P(       1:n(1),1:sum(freq{1}.cumtapcnt)); % indexes the rows in the fourier matrix
+    powindx2 = sparse(double(powindx(:,n(1)+(1:n(2)))))*P(n(1)+(1:n(2)),(sum(freq{1}.cumtapcnt)+1):end);
+  elseif stratflag==2
+    n1 = n(1);
+    n2 = n(2);
+    
+    while n1~=n2
+      rr = sum(powindx)./size(powindx,1);
+      if n1<n2
+        % we may want to equalize the number of trials, by throwing out data
+        % from condition 2
+        rr(1:n(1)) = nan;
+        rr(rr==0) = nan;
+        [~,ix] = nanmin(rr);
+        
+      elseif n2<n1
+        % we may want to equalize the number of trials, by throwing out data
+        % from condition 1
+        rr(n(1)+(1:n(2))) = nan;
+        rr(rr==0) = nan;
+        [~,ix] = nanmin(rr);
+        
+      end
+      pow(:,ix) = nan;
+      powindx   = dostratification(pow,n, 10);
+      
+      n1 = n(1)-double(sum(sum(powindx(:,1:n(1)))==0));
+      n2 = n(2)-double(sum(sum(powindx(:,n(1)+(1:n(2))))==0));
+    end
+    
+    rr   = sum(powindx)./size(powindx,1);
+    sel1 = find(rr(1:n(1))~=0);
+    sel2 = find(rr(n(1)+(1:n(2)))~=0);
+    
+    cfg = [];
+    cfg.trials = sel1; 
+    freq{1} = ft_selectdata(cfg, freq{1});
+    cfg.trials = sel2;
+    freq{2} = ft_selectdata(cfg, freq{2});
+    
+    [C,n] = freq2C(freq);
+    C1    = freq2C(freq{1});
+    C2    = freq2C(freq{2});
+        
+    % it is difficult to give a quantitative estimate of lambda, therefore also
+    % support relative (percentage) measure that can be specified as string (e.g. '10%')
+    if ~isempty(lambda) && ischar(lambda) && lambda(end)=='%'
+      ratio = sscanf(lambda, '%f%%');
+      ratio = ratio/100;
+      regu = ratio * trace(C)/size(C,1);
+    elseif isempty(lambda)
+      regu = 0;
+    else
+      regu = lambda;
+    end
+    
+    % get a temporary copy for real part, and regularize
+    rC    = real(C);
+    rCreg = rC + eye(size(C,1))*regu;
+
+  end
+end
+
+% recompute some stuff, now the orientation has been fixed, and possibly
+% the number of trials stratified (stratflag==2)
 fprintf('recomputing some preliminary matrices\n');
 lfC     = lf'/rCreg; % lf'*inv(rCreg);
 switch memory
@@ -130,7 +213,7 @@ switch memory
     %lflf    = lf'*lf;
     sumlfClf = sum(lfC.*lf',2); %denominator for single dipole formulation
     
-    if ~stratflag
+    if stratflag~=1
       lfCC1lfC = lfC*C1*lfC';
       lfCC2lfC = lfC*C2*lfC';
     end
@@ -140,7 +223,7 @@ switch memory
     lfCClfC_diag = diag(lfCClfC);
     lfClfC_diag  = diag(lfClfC);
     
-    if ~stratflag
+    if stratflag~=1
       lfCC1lfC_diag = diag(lfCC1lfC);
       lfCC2lfC_diag = diag(lfCC2lfC);
     end
@@ -156,30 +239,6 @@ switch memory
       sumlfCC1lfC = sum(lfCC1.*conj(lfC),2);
       sumlfCC2lfC = sum(lfCC2.*conj(lfC),2);
     end
-end
-
-
-if stratflag,
-  % single dipole model spatial filters
-  w = spdiags(1./sumlfClf,0,ninside,ninside)*lfC;
-  
-  fprintf('computing single trial power\n');
-  [pow, n, P] = getpow(freq, w(refindx,:)); % this is done in a subfunction
-  pow = log10(pow);
-  
-  % stratify for power
-  cfgx = [];
-  cfgx.numbin = 10;
-  cfgx.equalbinavg = 'no';
-  powindx = pow>0;
-  fprintf('performing the stratification\n');
-  for k = 1:size(pow,1)
-    out = stratify(cfgx,pow(k,1:n(1)),pow(k,n(1)+(1:n(2))));
-    powindx(k,:) = [isfinite(out{1}) isfinite(out{2})];
-  end
-  
-  powindx1 = sparse(double(       powindx(:,1:n(1))))*P(       1:n(1),1:sum(freq{1}.cumtapcnt)); % indexes the rows in the fourier matrix
-  powindx2 = sparse(double(powindx(:,n(1)+(1:n(2)))))*P(n(1)+(1:n(2)),(sum(freq{1}.cumtapcnt)+1):end);
 end
 
 coh  = zeros(ninside,numel(refindx));
@@ -201,7 +260,7 @@ for k = refindx(:)'
   switch memory
     case 'high'
       
-      if stratflag, error('this does not deal with stratification yet'); end
+      if stratflag==1, error('this does not deal with type1 stratification yet'); end
      
       % use pre-computed diagonal matrices for speed up
       denom = inv2x2(convertsquareto2x2(lfClf, k, lfClf_diag));
@@ -209,10 +268,8 @@ for k = refindx(:)'
       numer = convertsquareto2x2(lfCClfC, k, lfCClfC_diag);
       lfClfCtmp = convertsquareto2x2(lfClfC, k, lfClfC_diag);
     
-      if ~stratflag
-        numer1 = convertsquareto2x2(lfCC1lfC, k, lfCC1lfC_diag);
-        numer2 = convertsquareto2x2(lfCC2lfC, k, lfCC2lfC_diag);
-      end
+      numer1 = convertsquareto2x2(lfCC1lfC, k, lfCC1lfC_diag);
+      numer2 = convertsquareto2x2(lfCC2lfC, k, lfCC2lfC_diag);
       
     case 'low'
       
@@ -243,7 +300,7 @@ for k = refindx(:)'
       % create the condition specific numerators based on the stratified
       % power. Note that the spatial filters are implicitly computed using the
       % unstratified data
-      if stratflag
+      if stratflag==1
         F1 = transpose(freq{1}.fourierspctrm(powindx1(cnt,:)>0,:));
         F2 = transpose(freq{2}.fourierspctrm(powindx2(cnt,:)>0,:));
         n1 = sum(powindx(cnt,1:n(1)));
@@ -394,6 +451,18 @@ if nargout>2
 end
 
 
+function powindx = dostratification(pow, n, numbin)
+
+cfgx = [];
+cfgx.numbin = numbin;
+cfgx.equalbinavg = 'no';
+powindx = pow>0;
+fprintf('performing the stratification\n');
+for k = 1:size(pow,1)
+  out = stratify(cfgx,pow(k,1:n(1)),pow(k,n(1)+(1:n(2))));
+  powindx(k,:) = [isfinite(out{1}) isfinite(out{2})];
+end
+  
 function [pow, n, P] = getpow(freq, w)
 
 n(1) = numel(freq{1}.cumtapcnt);
