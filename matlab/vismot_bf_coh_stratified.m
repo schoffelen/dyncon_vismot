@@ -8,12 +8,9 @@ smoothing      = ft_getopt(varargin, 'smoothing', []);
 sourcemodel    = ft_getopt(varargin, 'sourcemodel');
 nrand          = ft_getopt(varargin, 'nrand', 100); % number of randomization for sensor subsampling
 refindx        = ft_getopt(varargin, 'refindx', []);
-include_neighb = ft_getopt(varargin, 'include_neighb', false);
 stratflag      = ft_getopt(varargin, 'stratflag', true);
-
-%if isempty(ref)
-%  error('ref should be defined');
-%end
+N              = ft_getopt(varargin, 'N', 75);
+lambda         = ft_getopt(varargin, 'lambda', '10%');
 
 if isempty(smoothing)
   if frequency < 30
@@ -59,20 +56,16 @@ for k = find(leadfield.inside')
   leadfield.v{k} = v(:,1:2);
 end
 
-%lambda = 0.1.*trace(allfreq.crsspctrm)./numel(allfreq.label);
-lambda = '10%';
-
-%if sum(leadfield.inside)>6000
-%  memreq = 'low';
-%else
+if sum(leadfield.inside)>6000
+  memreq = 'low';
+else
   memreq = 'high';
-%end
+end
 
 coh13 = estimate_coh2x2_2dip_stratify(leadfield,{freq(1) freq(3)},'memory',memreq,'lambda',lambda, 'outputflags', [1 0 0 0], 'refindx', refindx, 'stratflag', stratflag);
 coh42 = estimate_coh2x2_2dip_stratify(leadfield,{freq(4) freq(2)},'memory',memreq,'lambda',lambda, 'outputflags', [1 0 0 0], 'refindx', refindx, 'stratflag', stratflag);
 
 
-N     = 75;
 
 dcoh13 = single(zeros(size(coh13.coh)));
 dcoh42 = dcoh13;
@@ -90,7 +83,6 @@ for k = 1:nrand
   for m = 1:numel(freq)
     tmpfreq(m) = ft_selectdata(tmpcfg, freq(m));
   end
-  tmplambda = lambda;
   
   tmpcoh13 = estimate_coh2x2_2dip_stratify(tmpleadfield,{tmpfreq(1) tmpfreq(3)},'memory',memreq,'lambda',lambda, 'outputflags', [1 0 0 0], 'refindx', refindx, 'stratflag', stratflag);
   tmpcoh42 = estimate_coh2x2_2dip_stratify(tmpleadfield,{tmpfreq(4) tmpfreq(2)},'memory',memreq,'lambda',lambda, 'outputflags', [1 0 0 0], 'refindx', refindx, 'stratflag', stratflag);
@@ -112,8 +104,8 @@ if nrand>0
   sx42 = sqrt((dcoh42sq-(dcoh42.^2)./nrand)./nrand);
   zx42 = mx42./sx42;
 else
-  zx13 = abs(coh(1).coh)-abs(coh(3).coh);
-  zx42 = abs(coh(4).coh)-abs(coh(2).coh);
+  zx13 = abs(coh13.coh_1)-abs(coh13.coh_2);
+  zx42 = abs(coh42.coh_1)-abs(coh42.coh_2);
 end
 
 if ~exist('looptime', 'var'), looptime = nan; end
