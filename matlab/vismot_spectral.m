@@ -46,7 +46,7 @@ for k = 1:numel(fd)
   cfg           = [];
   cfg.toilim    = toilim;
   cfg.minlength = 0.5;
-  data_tmp    = ft_redefinetrial(cfg, data);
+  data_tmp    = ft_redefinetrial(cfg, data); % note: this should actually use ft_selectdata, but for some reason this does not work robustly, due to rounding issues of time axes or so
   clear data;
   
   cfg         = [];
