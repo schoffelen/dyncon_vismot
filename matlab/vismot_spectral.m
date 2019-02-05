@@ -34,11 +34,11 @@ end
 fd = fieldnames(alldata);
 data_short = cell(1,numel(fd));
 if strcmp(toi, 'post')
-    toilim = [0.2 0.7-1/256];
+  toilim = [0.2 0.7-1/300];
 elseif strcmp(toi, 'pre')
-    toilim = [-0.5 0-1/256];
+  toilim = [-0.5 0-1/300]; % don't see a reason to use 1/256 if the resample fs is 300
 else
-    error('please specificy toi as *pre* or *post')
+  error('please specificy toi as *pre* or *post')
 end
 for k = 1:numel(fd)
   data = alldata.(fd{k});
