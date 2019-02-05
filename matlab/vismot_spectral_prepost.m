@@ -9,7 +9,6 @@ smoothing = ft_getopt(varargin, 'smoothing', 4);
 foilim    = ft_getopt(varargin, 'foilim', [0 80]);
 output    = ft_getopt(varargin, 'output', 'pow');
 doplanar  = istrue(ft_getopt(varargin, 'doplanar', false));
-doprewhiten = istrue(ft_getopt(varargin, 'prewhiten', false));
 
 if smoothing==0
   taper = 'hanning';
