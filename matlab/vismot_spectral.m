@@ -3,57 +3,72 @@ function [freq, tlck] = vismot_spectral(subject,varargin)
 % This function is based on doFreqanalysisMtmfft in the matlab_old folder
 %
 % do mtmfft analysis on data stratified for RT and balanced number of samples
-% stimulus locked
+% stimulus locked: Note that this functionality had disappeared in the
+% reorganization, so it hasn't been used for a while. It is back now (Feb
+% 05, 2019)
+
 toi        = ft_getopt(varargin, 'toi', 'post');
 conditions = ft_getopt(varargin, 'conditions', []);
 smoothing  = ft_getopt(varargin, 'smoothing', 4);
 foilim     = ft_getopt(varargin, 'foilim', 'all');
 output     = ft_getopt(varargin, 'output', 'pow');
-doplanar   = ft_getopt(varargin, 'doplanar', 0);
-nrand      = ft_getopt(varargin, 'nrand', 100);
+doplanar    = istrue(ft_getopt(varargin, 'doplanar',  false));
+doprewhiten = istrue(ft_getopt(varargin, 'prewhiten', false));
 
+% this determines whether the trials are going to be divided into
+% structures according to the condition of the current, or previous trial
 if isempty(conditions)
-    if strcmp(toi, 'post'); conditions = 'current';
-    elseif strcmp(toi, 'pre'); conditions = 'previous'; end
+  if strcmp(toi, 'post')
+    conditions = 'current';
+  elseif strcmp(toi, 'pre')
+    conditions = 'previous';
+  end
 end
+
 if smoothing==0
   taper = 'hanning';
-  smoothing = 4;
 else
   taper = 'dpss';
 end
 
-% load the data, this is the data ordered according to the conditions
+% load the data, this is the data ordered according to the condition of the
+% current trial
 alldata = load(fullfile(subject.pathname,'data',[subject.name,'data']));
+
+% reorder if needed
 alldata = vismot_data_reorder(alldata, conditions);
 
 if ischar(foilim) && strcmp(foilim, 'all')
   foilim = [0 alldata.data1.fsample./2];
 end
 
-fd = fieldnames(alldata);
-data_short = cell(1,numel(fd));
 if strcmp(toi, 'post')
   toilim = [0.2 0.7-1/300];
 elseif strcmp(toi, 'pre')
   toilim = [-0.5 0-1/300]; % don't see a reason to use 1/256 if the resample fs is 300
+elseif strcmp(toi, 'prepost')
+  toilim = [0.2 0.7-1/300; -0.5 0-1/300];
 else
-  error('please specificy toi as *pre* or *post')
+  error('please specificy toi as *pre* or *post*, or *prepost*')
 end
+
+fd         = fieldnames(alldata);
+data_short = cell(size(toilim,1),numel(fd));
 for k = 1:numel(fd)
   data = alldata.(fd{k});
   
-  cfg           = [];
-  cfg.toilim    = toilim;
-  cfg.minlength = 0.5;
-  data_tmp    = ft_redefinetrial(cfg, data); % note: this should actually use ft_selectdata, but for some reason this does not work robustly, due to rounding issues of time axes or so
-  clear data;
-  
-  cfg         = [];
-  cfg.detrend = 'yes';
-  data_tmp     = ft_preprocessing(cfg, data_tmp);
-  data_short{k}    = data_tmp;
-  clear data_tmp;
+  for m = 1:size(toilim,1)
+    cfg           = [];
+    cfg.toilim    = toilim(m,:);
+    cfg.minlength = 0.5;
+    data          = ft_redefinetrial(cfg, data); % note: this should actually use ft_selectdata, but for some reason this does not work robustly, due to rounding issues of time axes or so
+    
+    cfg           = [];
+    cfg.detrend   = 'yes';
+    data          = ft_preprocessing(cfg, data);
+    data_short{m,k} = data;
+    clear data;
+  end
 end
 
 if strcmp(output,'csd') 
@@ -61,54 +76,77 @@ if strcmp(output,'csd')
 	docsd  = true;
   dospectral = true;
 elseif strcmp(output, 'tlck')
-	docsd = false;
+	docsd      = false;
 	dospectral = false;
 else
-	docsd = false;
+	docsd      = false;
 	dospectral = true;
 end
 
 if dospectral
-cfg         = [];
-cfg.method  = 'mtmfft';
-cfg.output  = output;
-cfg.pad     = 600./data_short{1}.fsample; %explicitly make nfft 600
-cfg.foilim  = foilim;
-cfg.taper   = taper;
-cfg.tapsmofrq = smoothing;
-%cfg.channel = 'MEG';
-
-% convert to synthetic planar gradient
-if doplanar
-  cfgn = [];
-  cfgn.method   = 'template';
-  cfgn.template = 'bti248_neighb.mat';
-  neighbours = ft_prepare_neighbours(cfgn);
+  cfg         = [];
+  cfg.method  = 'mtmfft';
+  cfg.output  = output;
+  cfg.pad     = 600./data_short{1}.fsample; %explicitly make nfft 600
+  cfg.foilim  = foilim;
+  cfg.taper   = taper;
+  cfg.tapsmofrq = smoothing;
   
-  cfgp = [];
-  cfgp.method = 'sincos';
-  cfgp.neighbours = neighbours;
-  for k = 1:numel(data_short)
-    data_short{k} = ft_megplanar(cfgp, data_short{k});
+  if doprewhiten
+    load(fullfile(subject.pathname,'data',[subject.name,'emptyroom']));
+    
+    cfgr        = [];
+    cfgr.length = 0.5;
+    noise       = ft_redefinetrial(cfgr, data);
+    clear data;
+    
+    cfgd         = [];
+    cfgd.detrend = 'yes';
+    noise        = ft_preprocessing(cfgd, noise);
   end
-end
-
-for k = 1:numel(data_short)
-  tmp = ft_freqanalysis(cfg, data_short{k});
-  if docsd
-		ntap = sum(tmp.cumtapcnt);
-		tmp  = ft_checkdata(tmp, 'cmbrepresentation', 'fullfast');
-	  tmp.ntap = ntap;
-	end
-	freq(k) = tmp;
-end
-
-% combine planar gradients
-if doplanar
-  for k = 1:numel(data_short)
-    freq(k) = ft_combineplanar([], freq(k));
+  
+  if doplanar
+    % convert to synthetic planar gradient
+    cfgn          = [];
+    cfgn.method   = 'template';
+    cfgn.template = 'bti248_neighb.mat';
+    neighbours    = ft_prepare_neighbours(cfgn);
+    
+    cfgp            = [];
+    cfgp.method     = 'sincos';
+    cfgp.neighbours = neighbours;
+    for k = 1:numel(data_short)
+      data_short{k} = ft_megplanar(cfgp, data_short{k});
+    end
+    if doprewhiten
+      noise = ft_megplanar(cfgp, noise);
+    end
   end
-end
+  
+  if doprewhiten
+    noise = ft_freqanalysis(cfg, noise);
+    noise = ft_checkdata(noise, 'cmbrepresentation', 'fullfast');
+  end
+
+  for k = 1:numel(data_short)
+    tmp = ft_freqanalysis(cfg, data_short{k});
+    if doprewhiten
+      tmp = ft_denoise_prewhiten([], tmp, noise);
+    end
+    if docsd
+      ntap = sum(tmp.cumtapcnt);
+      tmp  = ft_checkdata(tmp, 'cmbrepresentation', 'fullfast');
+      tmp.ntap = ntap;
+    end
+    freq(k) = tmp;
+  end
+
+  % combine planar gradients
+  if doplanar
+    for k = 1:numel(data_short)
+      freq(k) = ft_combineplanar([], freq(k));
+    end
+  end
 
 else
   freq = [];	

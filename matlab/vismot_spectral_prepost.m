@@ -8,11 +8,11 @@ function [freqpre,freqpst] = vismot_spectral_prepost(subject,varargin)
 smoothing = ft_getopt(varargin, 'smoothing', 4);
 foilim    = ft_getopt(varargin, 'foilim', [0 80]);
 output    = ft_getopt(varargin, 'output', 'pow');
-doplanar  = ft_getopt(varargin, 'doplanar', 0);
+doplanar  = istrue(ft_getopt(varargin, 'doplanar', false));
+doprewhiten = istrue(ft_getopt(varargin, 'prewhiten', false));
 
-if smoothing==0,
+if smoothing==0
   taper = 'hanning';
-  smoothing = 4;
 else
   taper = 'dpss';
 end
@@ -23,15 +23,15 @@ load(fullfile(subject.pathname,'data',[subject.name,'data']));
 pre = cell(1,5);
 pst = cell(1,5);
 for k = 1:5
-  if k==1,
+  if k==1
     data = data1;
-  elseif k==2,
+  elseif k==2
     data = data2;
-  elseif k==3,
+  elseif k==3
     data = data3;
-  elseif k==4,
+  elseif k==4
     data = data4;
-  elseif k==5,
+  elseif k==5
     data = data5;
   end
   
@@ -39,7 +39,7 @@ for k = 1:5
   cfg.toilim    = [0.2 0.7-1./data.fsample];
   cfg.minlength = 0.25;
   datapst       = ft_redefinetrial(cfg, data);
-  cfg.toilim    = [-0.5 0-1/256];
+  cfg.toilim    = [-0.5 0-1./data.fsample];
   datapre       = ft_redefinetrial(cfg, data);
   clear data;
   
@@ -76,13 +76,13 @@ for k = 1:length(indx1)
   tmptime1{1,k}  = (pst{1}.time{indx1(k)}(1:nsmp1(k)));
   tmptime2{1,k}  = (pst{3}.time{indx2(k)}(1:nsmp2(k)));
   
-  try,
+  try
     b1             = min([size(pre{1}.trial{indx1(k)},2),nsmp1(k)]);
     tmptrial3{1,k} = ft_preproc_baselinecorrect(pre{1}.trial{indx1(k)}(:,1:b1));
     tmptime3{1,k}  = (pre{1}.time{indx1(k)}(1:b1));
     sel1(k) = true;
   end
-  try,
+  try
     b2             = min([size(pre{3}.trial{indx2(k)},2),nsmp2(k)]);
     tmptrial4{1,k} = ft_preproc_baselinecorrect(pre{3}.trial{indx2(k)}(:,1:b2));
     tmptime4{1,k}  = (pre{3}.time{indx2(k)}(1:b2));
@@ -125,13 +125,13 @@ for k = 1:length(indx1)
   tmptime1{1,k}  = (pst{2}.time{indx1(k)}(1:nsmp1(k)));
   tmptime2{1,k}  = (pst{4}.time{indx2(k)}(1:nsmp2(k)));
   
-  try,
+  try
     b1 = min([size(pre{2}.trial{indx1(k)},2),nsmp1(k)]);
     tmptrial3{1,k} = ft_preproc_baselinecorrect(pre{2}.trial{indx1(k)}(:,1:b1));
     tmptime3{1,k}  = (pre{2}.time{indx1(k)}(1:b1));
     sel1(k) = true;
   end
-  try,
+  try
     b2 = min([size(pre{4}.trial{indx2(k)},2),nsmp2(k)]);
     tmptrial4{1,k} = ft_preproc_baselinecorrect(pre{4}.trial{indx2(k)}(:,1:b2));
     tmptime4{1,k}  = (pre{4}.time{indx2(k)}(1:b2));
@@ -163,9 +163,6 @@ cfg.taper   = taper;
 cfg.tapsmofrq = smoothing;
 cfg.channel   = pre{1}.label;
 cfg.keeptrials = 'yes';
-%cfg.channel = 'MEG';
-%freqpre = cell(1,5);
-%freqpst = cell(1,5);
 
 % convert to synthetic planar gradient
 if doplanar

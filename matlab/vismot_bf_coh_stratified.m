@@ -11,6 +11,7 @@ refindx        = ft_getopt(varargin, 'refindx', []);
 stratflag      = ft_getopt(varargin, 'stratflag', true);
 N              = ft_getopt(varargin, 'N', 75);
 lambda         = ft_getopt(varargin, 'lambda', '10%');
+prewhiten      = ft_getopt(varargin, 'prewhiten', false);
 
 if isempty(smoothing)
   if frequency < 30
@@ -20,7 +21,7 @@ if isempty(smoothing)
   end
 end
 
-[freq, tlck] =  vismot_spectral(subject,'toi', toi, 'conditions', conditions, 'output','fourier', 'foilim', [frequency frequency], 'smoothing', smoothing);
+[freq, tlck] =  vismot_spectral(subject,'toi', toi, 'conditions', conditions, 'output','fourier', 'foilim', [frequency frequency], 'smoothing', smoothing, 'prewhiten', prewhiten);
 
 
 % load in the head model and the source model.
