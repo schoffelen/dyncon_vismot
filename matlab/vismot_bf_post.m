@@ -5,6 +5,7 @@ function [source, stat13, stat42, stat12, stat43, stat15, stat25, stat35, stat45
 frequency = ft_getopt(varargin, 'frequency', 10);
 smoothing = ft_getopt(varargin, 'smoothing', []);
 sourcemodel = ft_getopt(varargin, 'sourcemodel');
+prewhiten = istrue(ft_getopt(varargin, 'prewhiten', false));
 
 if isempty(smoothing)
   if frequency < 30
@@ -14,7 +15,13 @@ if isempty(smoothing)
   end
 end
 
-[freqpre,freqpst] = vismot_spectral_prepost(subject,'foilim',[frequency frequency],'smoothing',smoothing,'output','fourier');
+%this is the old version of the spectral function
+%[freqpre,freqpst] = vismot_spectral_prepost(subject,'foilim',[frequency frequency],'smoothing',smoothing,'output','fourier');
+
+freq    = vismot_spectral(subject, 'foilim', [frequency frequency], 'toi', 'prepost', 'balance', true, 'smoothing', smoothing, 'output', 'fourier', 'prewhiten', prewhiten);
+freqpre = freq(1,:);
+freqpst = freq(2,:);
+clear freq;
 
 for k = 1:5
   % add marker for pre/pst
@@ -55,7 +62,7 @@ else
   end
 end
 
-% compute beamformer common spatial filters
+% compute leadfields and beamformer common spatial filters
 cfg           = [];
 cfg.grad      = freq.grad;
 cfg.headmodel = headmodel;
@@ -76,22 +83,9 @@ cfg.dics.realfilter = 'yes';
 tmpsource = ft_sourceanalysis(cfg, freq);
 filter    = tmpsource.avg.filter;
 
-tmpcfg             = [];
-tmpcfg.fwhm        = 'yes';
-if ~isfield(sourcemodel, 'dim')
-  tmpcfg.fwhmmethod  = 'gaussfit';
-  tmpcfg.fwhmmaxdist = 0.02;
-end
-fwhm             = ft_sourcedescriptives(tmpcfg, tmpsource);
-fwhm             = fwhm.fwhm;
-
-cfg.grid.filter     = filter;
-cfg.dics.keepfilter = 'no';
-
-
 s     = keepfields(tmpsource, {'freq' 'tri' 'inside' 'pos' 'dim'});
 
-statCvsIC = makesourcecontrast(freq, filter, s, [1 3], [4 2], false, true);
+statCvsIC  = makesourcecontrast(freq, filter, s, [1 3], [4 2], false, true);
 statCvsIC2 = makesourcecontrast(freq, filter, s, [1 3], [4 2], false, false);
 
 
@@ -110,45 +104,12 @@ stat35 = makesourcecontrast(freq, filter, s, [3 5], [], false, false);
 stat45 = makesourcecontrast(freq, filter, s, [4 5], [], false, false);
 
 % compute condition specific power, this is without stratification for RT
+cfg.grid.filter     = filter;
+cfg.dics.keepfilter = 'no';
 for k = 1:5
   tmpcfg.trials = find(freq.trialinfo(:,1)==k & freq.trialinfo(:,end)==2); % for the pst trials only
-  tmp         = ft_sourceanalysis(cfg, ft_selectdata(tmpcfg, freq));
-%   %try
-%     tmp.fwhm    = fwhm;
-%     tmp.inside  = tmp.inside & isfinite(fwhm);
-%     tmp         = smooth_source(tmp, 'parameter', 'pow', 'maxdist', 0.025);
-%   %catch
-%   %  tmp = removefields(tmp, 'fwhm');
-%   %end
-  source(k)   = tmp;
+  source(k)     = ft_sourceanalysis(cfg, ft_selectdata(tmpcfg, freq));
 end
-
-% % smooth contrasts
-% % same response hand:
-% tmp         = stat13;
-% tmp.fwhm    = fwhm;
-% tmp.inside  = tmp.inside&isfinite(fwhm);
-% tmp         = smooth_source(tmp, 'parameter', 'stat', 'maxdist', 0.025);
-% stat13      = tmp;
-% 
-% tmp         = stat42;
-% tmp.fwhm    = fwhm;
-% tmp.inside  = tmp.inside&isfinite(fwhm);
-% tmp         = smooth_source(tmp, 'parameter', 'stat', 'maxdist', 0.025);
-% stat42         = tmp;
-% 
-% % same hemifield
-% tmp         = stat12;
-% tmp.fwhm    = fwhm;
-% tmp.inside  = tmp.inside&isfinite(fwhm);
-% tmp         = smooth_source(tmp, 'parameter', 'stat', 'maxdist', 0.025);
-% stat12      = tmp;
-% 
-% tmp         = stat43;
-% tmp.fwhm    = fwhm;
-% tmp.inside  = tmp.inside&isfinite(fwhm);
-% tmp         = smooth_source(tmp, 'parameter', 'stat', 'maxdist', 0.025);
-% stat43      = tmp;
 
 %%condition 1: cue left, response left
 %%condition 2: cue left, response right
@@ -162,8 +123,7 @@ function stat = makesourcecontrast(freq, filter, s, contrast, whichflip, stratif
 cfgs        = [];
 cfgs.method = 'montecarlo';
 cfgs.numrandomization = 0;
-cfgs.statistic        = 'statfun_yuenTtest'; % This statistics function
-% is not available.
+cfgs.statistic        = 'statfun_yuenTtest'; 
 %cfgs.statistic       = 'indepsamplesT';
 
 tmpcfg            = [];
@@ -174,11 +134,11 @@ s.pow(s.inside,:) = fourier2pow(cat(3, filter{:}), tmpfreq.fourierspctrm, tmpfre
 s.trialinfo       = tmpfreq.trialinfo;
 
 if ~isempty(whichflip)
-    s = fliphemitrials(s, 'pow', 1, [whichflip], [contrast]);
+  s = fliphemitrials(s, 'pow', 1, whichflip, contrast);
 end
 if poolhemi
-    load standard_sourcemodel3d4mm;
-    s = poolhemispheres(s, 'pow', 'left', [1 -1], sourcemodel);
+  load standard_sourcemodel3d4mm; %FIXME this hardcoded assumes a 4mm sourcemodel!
+  s = poolhemispheres(s, 'pow', 'left', [1 -1], sourcemodel);
 end
 
 if stratifyflag

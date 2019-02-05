@@ -14,7 +14,7 @@ foilim      = ft_getopt(varargin,        'foilim',     'all');
 output      = ft_getopt(varargin,        'output',     'pow');
 doplanar    = istrue(ft_getopt(varargin, 'doplanar',   false));
 doprewhiten = istrue(ft_getopt(varargin, 'prewhiten',  false));
-dobalance   = istrue(ft_getopt(varargin, 'balance',    true)); %balance the number of trials + number of samples
+dobalance   = istrue(ft_getopt(varargin, 'balance',    false)); %balance the number of trials + number of samples
 
 dospectral = true;
 docsd      = false;
