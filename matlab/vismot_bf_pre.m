@@ -5,9 +5,8 @@ function [source, stat] = vismot_bf_pre(subject,varargin)
 frequency   = ft_getopt(varargin, 'frequency', 20);
 smoothing   = ft_getopt(varargin, 'smoothing', []);
 sourcemodel = ft_getopt(varargin, 'sourcemodel');
-nrand       = ft_getopt(varargin, 'nrand', 100); % number of randomization for sensor subsampling
 conditions  = ft_getopt(varargin, 'conditions', 'previous');
-
+prewhiten   = ft_getopt(varargin, 'prewhiten', false);
 if isempty(smoothing)
   if frequency < 30
     smoothing = 4;
@@ -16,7 +15,7 @@ if isempty(smoothing)
   end
 end
 
-[freq, tlckpre] =  vismot_spectral_pre(subject,'output','fourier','conditions',conditions, 'foilim', [frequency frequency], 'smoothing', smoothing);
+[freq, tlckpre] =  vismot_spectral(subject,'output','fourier','conditions',conditions, 'foilim', [frequency frequency], 'smoothing', smoothing, 'prewhiten', prewhiten);
 for k = 1:numel(freq)
   if ~isfield(freq(k),'trialinfo')
     freq(k).trialinfo = ones(numel(freq(k).cumtapcnt),1).*k;

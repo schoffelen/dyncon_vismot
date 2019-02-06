@@ -50,16 +50,32 @@ stat45 = hemiflip(stat45, parameter);
 % treat as if everything is left handed response
 statResp = stat13;
 statResp.stat = (statResp.stat + stat42.stat)/2;
-% statResp.statsmooth = (statResp.statsmooth + stat42.statsmooth)/2;
+
 % treat as if cue presented in left hemifield
 statHemi = stat12;
 statHemi.stat = (statHemi.stat + stat43.stat)/2;
-% statHemi.statsmooth = (statHemi.statsmooth + stat43.statsmooth)/2;
 
-statCvsN = stat15;
-statCvsN.stat = (statCvsN.stat + stat45.stat)/2;
-statICvsN = stat35;
+statCvsN       = stat15;
+statCvsN.stat  = (statCvsN.stat + stat45.stat)/2;
+statICvsN      = stat35;
 statICvsN.stat = (statICvsN.stat + stat25.stat)/2;
 
-save(filename, 'source', 'stat13', 'stat42','stat12', 'stat43','stat15','stat25','stat35','stat45', 'statResp', 'statHemi', 'statCvsN', 'statICvsN', 'statCvsIC', 'smoothing');
+%save(filename, 'source', 'stat13', 'stat42','stat12', 'stat43','stat15','stat25','stat35','stat45', 'statResp', 'statHemi', 'statCvsN', 'statICvsN', 'statCvsIC', 'smoothing');
+
+stat = rmfield(stat13,'stat');
+stat.stat13 = stat13.stat;
+stat.stat42 = stat42.stat;
+stat.stat12 = stat12.stat;
+stat.stat43 = stat43.stat;
+stat.stat15 = stat15.stat;
+stat.stat25 = stat25.stat;
+stat.stat35 = stat35.stat;
+stat.stat45 = stat45.stat;
+stat.statResp = statResp.stat;
+stat.statHemi = statHemi.stat;
+stat.statCvsN = statCvsN.stat;
+stat.statICvsN = statICvsN.stat;
+stat.statCvsIC = statCvsIC.stat;
+
+save(filename, 'stat', 'smoothing');
 
