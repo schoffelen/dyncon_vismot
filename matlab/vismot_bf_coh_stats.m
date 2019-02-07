@@ -11,7 +11,7 @@ design = [ones(1,n) ones(1,n)*2;1:n 1:n];
 
 cfg2.dim    = sourcemodel.dim;
 cfg2.inside = find(sourcemodel.inside);
-cfg2.threshold = 3.5;
+cfg2.threshold = 4;
 
 dum = zeros(prod(sourcemodel.dim));
 inside = find(sourcemodel.inside);

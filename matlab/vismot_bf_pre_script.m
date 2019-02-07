@@ -27,7 +27,7 @@ end
 
 subject = vismot_subjinfo(subjectname);
 load(fullfile(subject.pathname,'grid',sprintf('%s_sourcemodel3d4mm',subject.name)),'sourcemodel');
-[source, stat] = vismot_bf_pre(subject,'sourcemodel',sourcemodel,'toi', 'pre', 'frequency',frequency,'smoothing',smoothing, 'conditions', conditions, 'prewhiten', prewhiten);
+[source, stat] = vismot_bf_pre(subject,'sourcemodel',sourcemodel,'frequency',frequency,'smoothing',smoothing, 'conditions', conditions, 'prewhiten', prewhiten);
 filename = fullfile(subject.pathname,'source',sprintf('%s_source3d4mm_pre_%03d',subject.name,frequency));
 if istrue(prewhiten)
   filename = [filename '_prewhitened'];

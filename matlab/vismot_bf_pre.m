@@ -7,6 +7,7 @@ smoothing   = ft_getopt(varargin, 'smoothing', []);
 sourcemodel = ft_getopt(varargin, 'sourcemodel');
 conditions  = ft_getopt(varargin, 'conditions', 'previous');
 prewhiten   = ft_getopt(varargin, 'prewhiten', false);
+
 if isempty(smoothing)
   if frequency < 30
     smoothing = 4;
@@ -15,7 +16,7 @@ if isempty(smoothing)
   end
 end
 
-[freq, tlckpre] =  vismot_spectral(subject,'output','fourier','conditions',conditions, 'foilim', [frequency frequency], 'smoothing', smoothing, 'prewhiten', prewhiten);
+freq =  vismot_spectral(subject,'output','fourier','toi', 'pre', 'conditions',conditions, 'foilim', [frequency frequency], 'smoothing', smoothing, 'prewhiten', prewhiten);
 for k = 1:numel(freq)
   if ~isfield(freq(k),'trialinfo')
     freq(k).trialinfo = ones(numel(freq(k).cumtapcnt),1).*k;
