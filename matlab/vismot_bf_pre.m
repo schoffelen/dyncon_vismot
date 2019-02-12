@@ -7,6 +7,7 @@ smoothing   = ft_getopt(varargin, 'smoothing', []);
 sourcemodel = ft_getopt(varargin, 'sourcemodel');
 conditions  = ft_getopt(varargin, 'conditions', 'previous');
 prewhiten   = ft_getopt(varargin, 'prewhiten', false);
+lambda      = ft_getopt(varargin, 'lambda', '100%');
 
 if isempty(smoothing)
   if frequency < 30
@@ -84,7 +85,7 @@ cfg.grid            = leadfield;
 cfg.headmodel       = headmodel;
 cfg.method          = 'dics';
 cfg.keeptrials      = 'yes';
-cfg.dics.lambda     = '100%';
+cfg.dics.lambda     = lambda;
 cfg.dics.fixedori   = 'yes';
 cfg.dics.keepfilter = 'yes';
 cfg.dics.realfilter = 'yes';
