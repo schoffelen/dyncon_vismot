@@ -1,11 +1,10 @@
-function [source, parcellation, filter_avgpos, filter_lfsvd] = vismot_bf_lcmv_pre(subject, varargin)
+function [source, parcellation, filter_avgpos, filter_lfsvd] = vismot_bf_lcmv_pre(subject, tlckpre, varargin)
 
 truncate   = ft_getopt(varargin, 'truncate', []);
 
 if ischar(subject)
 	subject = vismot_subjinfo(subject);
 end
-[~,tlckpre] = vismot_spectral_pre(subject,'output','tlck');
 
 % load in the head model and the source model.
 sourcemodel = vismot_anatomy_sourcemodel2d(subject);
@@ -27,10 +26,7 @@ sourcemodel = ft_convert_units(sourcemodel, 'm');
 if ~isfield(sourcemodel, 'inside')
   sourcemodel.inside = true(size(sourcemodel.pnt,1),1);
 end
-
-%sourcemodel.inside(11:end)=false;
-
-[leadfield, leadfieldorig] = vismot_forward_parcellate(subject);
+[leadfield, leadfieldorig] = vismot_forward_parcellate(subject, tlckpre);
 	
 for k = 1:size(leadfield.pos,1)
   if ~isempty(truncate)

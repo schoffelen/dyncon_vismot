@@ -1,35 +1,47 @@
-function [granger, parcellation] = vismot_granger_pre(subject, reverseflag, split, conditions)
+function [granger, parcellation] = vismot_granger_pre(subject, varargin)
 
-%explicitly add this path to circumvent some unresolved path issue when
-%deploying through torque
-%addpath('/opt/matlab/R2014b/toolbox/signal/signal');
+doprewhiten = istrue(ft_getopt(varargin, 'prewhiten',  false));
+conditions  = ft_getopt(varargin, 'conditions', 1:5);
+reverseflag = ft_getopt(varargin, 'reverseflag', 0);
+split       = istrue(ft_getopt(varargin, 'split', false)); % compute individual conditions if true
+label       = ft_getopt(varargin, 'label', 'all');
 
-if nargin < 2 || isempty(reverseflag),
-	reverseflag = 0;
-end
-
-if nargin < 3 || isempty(split),
-  split = 0;
-end
-
-if nargin < 4 || isempty(conditions),
-  conditions = 1:5;
-end
-
-if ischar(subject),
+if ischar(subject)
 	subject = vismot_subjinfo(subject);
 end
 
-[source, parcellation] = vismot_bf_lcmv_pre(subject);
-if ~split
-  [freqpre,tlckpre]      = vismot_spectral_pre(subject,'output','csd');
-elseif split==1,
-  % split data according to condition of previous trial, and compute
-  % condition specific granger
-  [freqpre,tlckpre]      =  vismot_spectral_pre(subject,'output','csd','conditions','previous');
-elseif split>1,
-  error('not supported');
+[freqpre,tlckpre]      = vismot_spectral(subject,'output','fourier','conditions','previous','toi','pre');
+if doprewhiten
+  load(fullfile(subject.pathname,'data',[subject.name,'emptyroom']));
+  
+  cfgr        = [];
+  cfgr.length = 0.5;
+  noise       = ft_redefinetrial(cfgr, data);
+  clear data;
+  
+  cfgd         = [];
+  cfgd.detrend = 'yes';
+  noise        = ft_preprocessing(cfgd, noise);
+  
+  cfg = [];
+  cfg.covariance = 'yes';
+  noise = ft_timelockanalysis(cfg, noise);
+
+  for k = 1:numel(freqpre) 
+    tmp1(k) = ft_denoise_prewhiten([], tlckpre(k), noise);
+    tmp2(k) = ft_denoise_prewhiten([], freqpre(k), noise);
+  end
+  tlckpre = tmp1;
+  freqpre = tmp2;
+  clear tmp1 tmp2;
 end
+
+[source, parcellation] = vismot_bf_lcmv_pre(subject, tlckpre, 'truncate', 5);
+
+for k = 1:numel(freqpre)
+  tmp1(k) = ft_checkdata(freqpre(k), 'cmbrepresentation', 'fullfast');
+end
+freqpre = tmp1; clear tmp1;
 
 if ~split
   % combine the crsspctrm
@@ -39,13 +51,24 @@ else
   freq           = freqpre(conditions);
 end
 
+if ischar(label) && strcmp(label, 'all')
+  % do nothing
+else
+  [a,b] = match_str(parcellation.label, label);
+  parcellation.filter = parcellation.filter(a);
+  parcellation.label = parcellation.label(a);
+  parcellation.s = parcellation.s(a);
+  parcellation.u = parcellation.u(a);
+end
+
+
 for k = 1:numel(freq)
   granger(k) = compute_granger(freq(k), parcellation, reverseflag);
 end
 
 function granger = compute_granger(freq, parcellation, reverseflag)
 
-if reverseflag,
+if reverseflag
 	freq.crsspctrm = conj(freq.crsspctrm);
 end
 
@@ -60,10 +83,10 @@ chunk    = [(0:80:n) n];
 begchunk = chunk(1:end-1)+1;
 endchunk = chunk(2:end);
 
-if 0,
+if 0
   % for testing
   begchunk = 1;
-  endchunk = 5;
+  endchunk = 50;
 end
 
 warning off;
@@ -86,7 +109,7 @@ for k = 1:numel(begchunk)
 		
 		for p = 1:n2
 		  tic;
-			fprintf('computing Granger for chunks %d/%d and %d/%d with reference %d/%d\n',k,numel(begchunk),m,numel(begchunk),p,n2);
+			fprintf('computing Granger for chunks %d/%d and %d/%d with reference parcel %d/%d\n',k,numel(begchunk),m,numel(begchunk),p,n2);
 			cmbindx = [1:2:n1*2;2:2:n1*2]';
 			cmbindx(:,3) = n1*2+p*2-1;
 			cmbindx(:,4) = n1*2+p*2;
