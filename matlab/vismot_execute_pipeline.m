@@ -18,7 +18,7 @@ function vismot_execute_pipeline(pipelinename, subjectname, varargin)
 
 if numel(varargin)>0
   for k = 1:numel(varargin)
-    eval([varargin{k}{1},'=varargin{k}{2}']);
+    eval([varargin{k }{1},'=varargin{k}{2}']);
   end
 end
 eval(pipelinename);

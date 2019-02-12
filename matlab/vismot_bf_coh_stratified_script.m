@@ -25,6 +25,9 @@ end
 if ~exist('prewhiten', 'var')
   prewhiten = false;
 end
+if ~exist('stratflag', 'var')
+  stratflag = 2;
+end
 
 subject = vismot_subjinfo(subjectname);
 load(fullfile(subject.pathname,'grid',sprintf('%s_sourcemodel3d10mm',subject.name)),'sourcemodel');
@@ -46,14 +49,14 @@ dum = double(dum)+double(dum2);
 sourcemodel.inside(:) = dum==2;
 
 
-stratflag = 2;
+rng('default');
 [coh13,coh42,zx13,zx42,looptime] = vismot_bf_coh_stratified(subject,'sourcemodel',sourcemodel,'nrand',nrand,'stratflag', stratflag, 'N', N, 'lambda', lambda, 'prewhiten', prewhiten);
 
 coh13 = rmfield(coh13, 'coh');
 coh42 = rmfield(coh42, 'coh');
 
-coh13.dcoh = coh13.coh_1-coh13.coh_2;
-coh42.dcoh = coh42.coh_1-coh42.coh_2;
+coh13.dcoh = abs(coh13.coh_1)-abs(coh13.coh_2);
+coh42.dcoh = abs(coh42.coh_1)-abs(coh42.coh_2);
 
 coh13 = rmfield(coh13, {'coh_1', 'coh_2'});
 coh42 = rmfield(coh42, {'coh_1', 'coh_2'});
