@@ -109,7 +109,7 @@ for k = 1:numel(begchunk)
 		
 		for p = 1:n2
 		  tic;
-			fprintf('computing Granger for chunks %d/%d and %d/%d with reference parcel %d/%d\n',k,numel(begchunk),m,numel(begchunk),p,n2);
+			fprintf('computing Granger for chunks %d/%d and %d/%d with reference parcel %d/%d\n',k,numel(begchunk)-1,m,numel(begchunk)-1,p,n2);
 			cmbindx = [1:2:n1*2;2:2:n1*2]';
 			cmbindx(:,3) = n1*2+p*2-1;
 			cmbindx(:,4) = n1*2+p*2;
