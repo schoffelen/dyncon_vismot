@@ -9,26 +9,33 @@ if ~exist('condition', 'var'),
 end
 subject = vismot_subjinfo(subjectname);
 
-if 0,
-	[granger, parcellation] = vismot_granger_pre(subject);
+load(fullfile('/project/3011085.03/analysis/mri/Conte69_32k/atlas_subparc374_8k'));
+label = atlas.parcellationlabel;
+sel   = contains(label, '_1_');
+sel   = sel|contains(label, '_2_');
+sel   = sel|contains(label, '_3_');
+sel   = sel|contains(label, '_4_');
+sel   = sel|contains(label, '_5_');
+sel   = sel|contains(label, '_6_');
+sel   = sel|contains(label, '_7_');
+sel   = sel|contains(label, '_17_');
+sel   = sel|contains(label, '_18_');
+sel   = sel|contains(label, '_19_');
+label = label(sel);
+
+if 1
+	[granger, parcellation] = vismot_granger_pre(subject,'prewhiten',true,'label',label);
 	filename = fullfile(subject.pathname,'granger',[subject.name,'_granger_pre']);
 	
 	granger = ft_struct2single(granger);
 	save(filename, 'granger', 'parcellation');
 	clear granger parcellation
 end
-if 0,
+
+if 1
 	% do time-reversed granger
-	[granger, parcellation] = vismot_granger_pre(subject, 1);
+	[granger, parcellation] = vismot_granger_pre(subject, 'prewhiten',true,'label',label,'reverseflag', true);
 	filename = fullfile(subject.pathname,'granger',[subject.name,'_granger_pre_timereversed']);
-	
-	granger = ft_struct2single(granger);
-	save(filename, 'granger', 'parcellation');
-	clear granger parcellation
-end
-if 1,
-	[granger, parcellation] = vismot_granger_pre(subject,0,1,condition);
-	filename = fullfile(subject.pathname,'granger',[subject.name,'_granger_pre_conditionprev',num2str(condition)]);
 	
 	granger = ft_struct2single(granger);
 	save(filename, 'granger');
