@@ -28,6 +28,9 @@ else
     addpath /project/3011085.03/scripts/IoSR-Surrey-MatlabToolbox-4bff1bb/
         
     cd('/project/3011085.03/scripts/dyncon_vismot/matlab/');
+    home_dir = '/project/3011085.03/scripts/dyncon_vismot/matlab/';
+    load list;
+    cmap = flipud(brewermap(64,'RdBu'));
 end
 ft_defaults
 
