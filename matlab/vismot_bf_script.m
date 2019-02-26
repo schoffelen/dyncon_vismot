@@ -27,8 +27,7 @@ subject = vismot_subjinfo(subjectname);
 
 load(fullfile(subject.pathname,'grid',sprintf('%s_sourcemodel3d4mm',subject.name)),'sourcemodel');
 [source, stat13, stat42, stat12, stat43, stat15, stat25, stat35, stat45, statCvsIC] = vismot_bf_post(subject,'frequency',frequency,'sourcemodel',sourcemodel,'prewhiten',prewhiten, 'lambda', lambda);
-%filename = fullfile(subject.pathname,'source',[subject.name,'source3d4mm_post_',num2str(frequency,'%03d'), '_pool']);
-filename = fullfile(subject.pathname,'source',sprintf('%s_source3d4mm_post_%03d',subject.name,frequency));
+filename = fullfile(subject.pathname,'source',[subject.name,'source3d4mm_post_',num2str(frequency,'%03d')]);
 if istrue(prewhiten)
   filename = [filename '_prewhitened'];
 end
@@ -80,5 +79,5 @@ stat.statCvsN = statCvsN.stat;
 stat.statICvsN = statICvsN.stat;
 stat.statCvsIC = statCvsIC.stat;
 
-save(filename, 'stat', 'smoothing');
+save(filename, 'stat', 'smoothing', 'lambda');
 
