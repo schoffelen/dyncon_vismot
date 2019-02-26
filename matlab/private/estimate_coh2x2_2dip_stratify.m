@@ -428,7 +428,7 @@ x = abs(x);
 y = abs(y);
 
 %[t1, t2] = percthreshold(x, 0.5, 1, 0);
-t1  = prctile(x, 95);
+t1  = prctile(x, 90);
 sel = x>t1;
 
 x  = x(sel);

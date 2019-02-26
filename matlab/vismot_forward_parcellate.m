@@ -1,9 +1,8 @@
-function [leadfield, leadfieldorig] = vismot_forward_parcellate(subject, varargin)
+function [leadfield, leadfieldorig] = vismot_forward_parcellate(subject, tlckpre, varargin)
 
 if ischar(subject)
 	subject = vismot_subjinfo(subject);
 end
-[~,tlckpre] = vismot_spectral_pre(subject,'output','tlck');
 
 % load in the head model and the source model.
 sourcemodel = vismot_anatomy_sourcemodel2d(subject);
@@ -35,6 +34,7 @@ cfg.headmodel = headmodel;
 cfg.grid = sourcemodel;
 cfg.channel = tlckpre(1).label;
 cfg.backproject = 'no';
+cfg.singleshell.batchsize = 2000;
 leadfieldorig = ft_prepare_leadfield(cfg);
 
 load(fullfile('/project/3011085.03/analysis/mri/Conte69_32k/atlas_subparc374_8k'));
