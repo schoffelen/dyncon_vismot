@@ -17,7 +17,7 @@ if ~exist('lambda', 'var')
   lambda = [];
 end
 if ~exist('nrand', 'var')
-  nrand = 100;
+  nrand = 0;
 end
 if isempty(smoothing)
   if frequency < 30
@@ -29,10 +29,13 @@ end
 subject = vismot_subjinfo(subjectname);
 
 load(fullfile(subject.pathname,'grid',sprintf('%s_sourcemodel3d4mm',subject.name)),'sourcemodel');
-[source, stat13, stat42, stat12, stat43, stat15, stat25, stat35, stat45, statCvsIC] = vismot_bf_post(subject,'frequency',frequency,'sourcemodel',sourcemodel,'prewhiten',prewhiten, 'lambda', lambda, 'nrand', nrand);
+[source, stat13, stat42, stat12, stat43, stat15, stat25, stat35, stat45, statCvsIC, zx13, zx42] = vismot_bf_post(subject,'frequency',frequency,'sourcemodel',sourcemodel,'prewhiten',prewhiten, 'lambda', lambda, 'nrand', nrand);
 filename = fullfile(subject.pathname,'source',[subject.name,'source3d4mm_post_',num2str(frequency,'%03d')]);
 if istrue(prewhiten)
   filename = [filename '_prewhitened'];
+end
+if nrand>0
+  filename = [filename, '_resamp'];
 end
 
 % scrub the headmodel and grid from the output cfg
@@ -51,6 +54,12 @@ stat42 = hemiflip(stat42, parameter);
 stat43 = hemiflip(stat43, parameter);
 stat25 = hemiflip(stat25, parameter);
 stat45 = hemiflip(stat45, parameter);
+
+stat_resamp.zx13 = zx13;
+stat_resamp.zx42 = zx42;
+stat_resamp = hemiflip(stat_resamp, 'zx42');
+stat_resamp.statResp = rmfield(stat13, 'stat');
+stat_resamp.statResp.stat = (stat_resamp.zx13 + stat_resamp.zx42)./2;
 
 % treat as if everything is left handed response
 statResp = stat13;
@@ -82,5 +91,5 @@ stat.statCvsN = statCvsN.stat;
 stat.statICvsN = statICvsN.stat;
 stat.statCvsIC = statCvsIC.stat;
 
-save(filename, 'stat', 'smoothing', 'lambda');
+save(filename, 'stat', 'smoothing', 'lambda', 'stat_resamp', 'nrand');
 

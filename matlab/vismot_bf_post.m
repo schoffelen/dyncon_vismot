@@ -1,4 +1,4 @@
-function [source, stat13, stat42, stat12, stat43, stat15, stat25, stat35, stat45, statCvsIC] = vismot_bf_post(subject,varargin)
+function [source, stat13, stat42, stat12, stat43, stat15, stat25, stat35, stat45, statCvsIC, zx13, zx42] = vismot_bf_post(subject,varargin)
 
 %function [source, filter, freq] = vismot_bf_post(subject,varargin)
 
@@ -7,6 +7,9 @@ smoothing = ft_getopt(varargin, 'smoothing', []);
 sourcemodel = ft_getopt(varargin, 'sourcemodel');
 prewhiten = istrue(ft_getopt(varargin, 'prewhiten', false));
 lambda = ft_getopt(varargin, 'lambda', ' 100%');
+nrand          = ft_getopt(varargin, 'nrand', 0); % number of randomization for sensor subsampling
+N              = ft_getopt(varargin, 'N', 90);
+
 
 if isempty(smoothing)
   if frequency < 30
@@ -72,6 +75,52 @@ cfg.channel   = freq.label;
 cfg.singleshell.batchsize = 2000;
 leadfield     = ft_prepare_leadfield(cfg);
 
+[source, stat13, stat42, stat12, stat43, stat15, stat25, stat35, stat45, statCvsIC] = sourcepow_post(freq, headmodel, leadfield, lambda);
+
+dpow13 = single(zeros(size(stat13.stat)));
+dpow42 = dpow13;
+dpow13sq = dpow13;
+dpow42sq = dpow42;
+
+for k=1:nrand
+  tic;
+  indx = sort(randperm(numel(freq(1).label),N)); % keep it sorted!! -> subsampling of sensors
+  tmpleadfield = leadfield;
+  tmpleadfield.leadfield(tmpleadfield.inside) = cellrowselect(tmpleadfield.leadfield(tmpleadfield.inside),indx);
+  
+  tmpcfg = [];
+  tmpcfg.channel = freq(1).label(indx);
+  for m = 1:numel(freq)
+    tmpfreq(m) = ft_selectdata(tmpcfg, freq(m));
+  end
+  tmpleadfield.label = tmpfreq(1).label;
+  
+  [~, tmppow13, tmppow42] = sourcepow_post(tmpfreq, headmodel, tmpleadfield, lambda, true);
+  
+  dpow13   = dpow13   + tmppow13.stat;
+  dpow13sq = dpow13sq + tmppow13.stat.^2;
+  dpow42   = dpow42   + tmppow42.stat;
+  dpow42sq = dpow42sq + tmppow42.stat.^2;
+  looptime(k) = toc;
+end
+
+if nrand>0
+  mx13 = dpow13./nrand;
+  sx13 = sqrt((dpow13sq-(dpow13.^2)./nrand)./nrand);
+  zx13 = mx13./sx13;
+  
+  mx42 = dpow42./nrand;
+  sx42 = sqrt((dpow42sq-(dpow42.^2)./nrand)./nrand);
+  zx42 = mx42./sx42;
+else
+  zx13 = [];
+  zx42 = [];
+end
+
+
+function [source, stat13, stat42, stat12, stat43, stat15, stat25, stat35, stat45, statCvsIC] = sourcepow_post(freq, headmodel, leadfield, lambda, onlycompute_stat13_42)
+if ~exist('onlycompute_stat13_42', 'var'); onlycompute_stat13_42=false; end
+
 cfg                 = [];
 cfg.grid            = leadfield;
 cfg.headmodel       = headmodel;
@@ -86,13 +135,14 @@ filter    = tmpsource.avg.filter;
 
 s     = keepfields(tmpsource, {'freq' 'tri' 'inside' 'pos' 'dim'});
 
-statCvsIC  = makesourcecontrast(freq, filter, s, [1 3], [4 2], false, true);
-statCvsIC2 = makesourcecontrast(freq, filter, s, [1 3], [4 2], false, false);
-
 
 % same response hand contrast congruent minus incongruent
 stat13 = makesourcecontrast(freq, filter, s, [1 3], [], false, false);
 stat42 = makesourcecontrast(freq, filter, s, [4 2], [], false, false);
+
+if ~onlycompute_stat13_42
+statCvsIC  = makesourcecontrast(freq, filter, s, [1 3], [4 2], false, true);
+statCvsIC2 = makesourcecontrast(freq, filter, s, [1 3], [4 2], false, false);
 
 % same hemifield contrast congruent minus incongruent
 stat12 = makesourcecontrast(freq, filter, s, [1 2], [], false, false);
@@ -111,12 +161,16 @@ for k = 1:5
   tmpcfg.trials = find(freq.trialinfo(:,1)==k & freq.trialinfo(:,end)==2); % for the pst trials only
   source(k)     = ft_sourceanalysis(cfg, ft_selectdata(tmpcfg, freq));
 end
+else
+  statCvsIC=[];
+  stat15 = [];
+  stat25 = [];
+  stat35 = [];
+  stat45 = [];
+  source = [];
+end
 
-%%condition 1: cue left, response left
-%%condition 2: cue left, response right
-%%condition 3: cue right, response left
-%%condition 4: cue right, response right
-%%condition 5: catch trial
+
 
 function stat = makesourcecontrast(freq, filter, s, contrast, whichflip, stratifyflag, poolhemi)
 
