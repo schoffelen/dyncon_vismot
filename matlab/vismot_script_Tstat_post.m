@@ -6,41 +6,40 @@ datadir = fullfile([alldir, 'analysis/source/']);
 load list;
 
 whichstat = 'statResp';
-frequency = [6 10 16 24 26 48 52 58 62 78 82];%[10 16 24 26 48:4:92];%[4:2:30 40:4:100];
+frequency = [10 22 38 42 58 62 78 82];%[10 16 24 26 48:4:92];%[4:2:30 40:4:100];
 n=19;
-dat = zeros(74784, numel(frequency), n);
+dat = zeros(numel(sourcemodel.inside), numel(frequency), n);
 cnt = 0;
 for k = frequency
   for m = 1:n
-    d = fullfile([datadir, sprintf('%ssource3d4mm_post_%03d.mat', list{m}, k)]);
-    dum = load(d, whichstat);
-    tmp(m) = dum.(whichstat);
+    d = fullfile([datadir, sprintf('%s_source3d4mm_post_%03d_prewhitened.mat', list{m}, k)]);
+    dum = load(d, 'stat');
+    dat(:,cnt+1, m) = dum.stat.(whichstat);
   end
-  dat(:, cnt+1,1:n) = cat(2,tmp.stat);
-  clear tmp dum
+  clear dum
   cnt=cnt+1;
 end
-foi = {'theta', 6, 6
-        'alpha', 10, 10
-        'beta1', 16, 16
-        'beta2', [24 26], 25
-        'gamma1', [58 62], 50
-        'gamma2', [78 82], 60
-        'gamma3', [48 52], 80};
-frequency = [6 10 16 25 50 60 80];
-    
+foi = { 'alpha', 10, 10
+        'beta', 22, 22
+        'gamma1', [38 42], 40
+        'gamma2', [58 62], 60
+        'gamma3', [78 82], 80};
+
 dat = permute(dat, [3,1,2]);
 source = sourcemodel;
 source.dimord = 'rpt_pos_freq';
-source.freq = frequency;
-source.stat(:,:,1:3) = dat(:,:,1:3);
-source.stat(:,:,4) = nanmean(dat(:,:,4:5),3);
-source.stat(:,:,5) = nanmean(dat(:,:,6:7),3);
-source.stat(:,:,6) = nanmean(dat(:,:,8:9),3);
-source.stat(:,:,7) = nanmean(dat(:,:,10:11),3);
+source.freq = cat(2,foi{:,end});
+l=0;
+for k=1:size(foi,1)
+  freqidx = find(ismember(foi{k,2}, frequency));
+  lmin = l+1;
+  l = max([l+freqidx]);
+  freqidx = freqidx+(lmin-1);
+  source.stat(:,:,k) = nanmean(dat(:,:,freqidx),3);
+end
+
 nul = source;
 nul.stat(:)=0;
-source_avg = rmfield(source, {'stat'});
 source.avg = squeeze(nanmean(source.stat,1));
 
 cfgs=[];
@@ -53,51 +52,46 @@ cfgs.uvar = 2;
 cfgs.design = [ones(1,n) ones(1,n)*2;1:n 1:n];
 cfgs.correctm = 'cluster';
 cfgs.numrandomization = 1000;
-cfgs.clusteralpha = 0.01;
-cfgs.correcttail = 'no';
-for k=1:size(foi,1)
-    cfgs.frequency = source.freq(k);
-    stat{k} = ft_sourcestatistics(cfgs, source, nul);
+cfgs.clusteralpha = 0.025;
+cfgs.correcttail = 'prob';
+stat = ft_sourcestatistics(cfgs, source, nul);
+
+save(fullfile([alldir, 'analysis/stat_bf_post.mat']), 'stat', 'source', 'sourcemodel', 'foi')
+
+stat_semhemi = stat;
+for k=1:numel(stat.freq)
+  tmpx=stat.stat(:,k);
+  dum=nan(sourcemodel.dim);
+  dum=reshape(tmpx,sourcemodel.dim);
+  dum(~sourcemodel.inside)=nan;
+  dum=dum-flip(dum,1);
+  stat_semhemi.stat(:,k) = dum(:)/2;
+  clear dum tmpx
 end
 
-source = rmfield(source, 'stat');
-for k=1:7
-    source.stat(:,k) = stat{k}.stat;
-    source.mask(:,k) = stat{k}.mask;
-end
-source.dimord = 'pos_freq';
-
-cfg=[];
-cfg.parameter = {'stat', 'mask', 'avg'};
-source_int = ft_sourceinterpolate(cfg, source, mri);
-%%
 cmap = flipud(brewermap(64,'RdBu'));
 cfgp=[];
 cfgp.funcolormap = cmap;
-cfgp.maskstyle  = 'colormix';
-cfgp.method     = 'slice';
-cfgp.nslices    =  30;
-cfgp.slicerange =  [40 150];
+cfgp.method     = 'ortho';
 cfgp.funparameter = 'stat';
-cfgp.maskparameter = 'stat'; %mask
-for k=1:numel(frequency)
-    cfgp.frequency = frequency(k);
-    ft_sourceplot(cfgp, source_int)
+cfgp.location = 'max';
+for k=1:numel(stat_semhemi.freq)
+    cfgp.frequency = stat.freq(k);
+    ft_sourceplot(cfgp, stat_semhemi)
 end
 
-% filename = fullfile(['project/3011085.03/', 'analysis', 'source', 'post_cue_pow_stat.m']);
-% save(filename, 'source_int', 'source', 'stat', 'frequency','foi');
+
 %% Define ROI's by browsing through Ortho Maps
 source = ft_convert_units(source, 'mm');
 
 cfgp=[];
 cfgp.funcolormap = cmap;
-cfgp.maskstyle  = 'colormix';
+cfgp.maskstyle = 'colormix';
 cfgp.method     = 'ortho';
 cfgp.funparameter = 'stat';
 cfgp.maskparameter = 'stat';
 
-cfgp.frequency = 50%frequency(1);
+cfgp.frequency = frequency(1);
 cfgp.location='max';
 ft_sourceplot(cfgp, source);
 
@@ -137,5 +131,3 @@ bar(y);
 set(gca,'xticklabel',{'left', 'right'});
 legend({'beta2', 'gamma2'}, 'location', 'northwest')
 title('motor')
-
-
