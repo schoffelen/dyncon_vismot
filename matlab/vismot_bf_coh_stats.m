@@ -44,7 +44,7 @@ stat.stat = squareform(stat.stat);
 C         = vismot_cluster6D(cfg2,stat.stat);
 
 curr_dir = pwd;
-cd ~/matlab/fieldtrip/private
+cd /project/3011085.03/scripts/fieldtrip/private
 cfg3 = [];
 cfg3.numrandomization = 500;
 cfg3.ivar = 1;
