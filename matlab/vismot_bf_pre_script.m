@@ -87,5 +87,5 @@ stat.statCvsN = statCvsN.stat;
 stat.statICvsN = statICvsN.stat;
 
 %save(filename, 'stat13', 'stat42','stat12', 'stat43', 'statResp', 'statHemi', 'statCvsN', 'statICvsN', 'stat15', 'stat25', 'stat35', 'stat45', 'smoothing');
-save(filename, 'stat', 'smoothing');
+save(filename, 'stat', 'smoothing', 'lambda');
 
