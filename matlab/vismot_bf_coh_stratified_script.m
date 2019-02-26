@@ -59,9 +59,8 @@ coh42.dcoh = coh42.coh_1-coh42.coh_2;
 
 coh13 = rmfield(coh13, {'coh_1', 'coh_2'});
 coh42 = rmfield(coh42, {'coh_1', 'coh_2'});
-% filename = fullfile(subject.pathname,'source','lambda', sprintf('%s%/', lambda), [subject.name, '_coh6d10mm_',sprintf('%03d_nostratification', frequency)] );
 
-filename = fullfile(subject.pathname,'source','resamp/nrand250', sprintf('%d/', N), [subject.name, '_coh6d10mm_',sprintf('%03d', frequency)] );
+filename = fullfile(subject.pathname,'source', sprintf('%d/', N), [subject.name, '_coh6d10mm_',sprintf('%03d', frequency)] );
 if istrue(prewhiten)
   filename = [filename '_prewhitened'];
 end
