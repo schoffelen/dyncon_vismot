@@ -2,7 +2,7 @@ function [source, stat] = vismot_bf_pre(subject,varargin)
 
 %function [source, filter, freq] = vismot_bf_post(subject,varargin)
 
-frequency   = ft_getopt(varargin, 'frequency', 20);
+frequency   = ft_getopt(varargin, 'frequency', 10);
 smoothing   = ft_getopt(varargin, 'smoothing', []);
 sourcemodel = ft_getopt(varargin, 'sourcemodel');
 conditions  = ft_getopt(varargin, 'conditions', 'previous');
@@ -69,8 +69,6 @@ else
   end
 end
 
-%sourcemodel.inside(11:end)=false;
-
 % compute beamformer common spatial filters
 cfg           = [];
 cfg.grad      = freq.grad;
@@ -79,6 +77,14 @@ cfg.grid      = sourcemodel;
 cfg.channel   = freq.label;
 cfg.singleshell.batchsize = 2000;
 leadfield     = ft_prepare_leadfield(cfg);
+
+[source, stat13, stat42, stat12, stat43, stat15, stat25, stat35, stat45, statCvsIC] = sourcepow_pre(freq, headmodel, leadfield, lambda);
+
+%%%%%% FIXME %%%%%%
+%%%%%% then implement resampling %%%%%
+
+function [source, stat13, stat42, stat12, stat43, stat15, stat25, stat35, stat45, statCvsIC] = sourcepow_pre(freq, headmodel, leadfield, lambda)
+if ~exist('onlycompute_stat13_42', 'var'); onlycompute_stat13_42=false; end
 
 cfg                 = [];
 cfg.grid            = leadfield;
@@ -101,341 +107,112 @@ end
 fwhm             = ft_sourcedescriptives(cfg2, tmpsource);
 fwhm             = fwhm.fwhm;
 
-cfg.grid.filter     = filter;
-cfg.dics.keepfilter = 'no';
-
-
-
-% compute condition specific power
-for k = 1:nconditions
-  cfg2.trials = find(freq.trialinfo(:,end)==k);
-  tmp         = ft_sourceanalysis(cfg, ft_selectdata(cfg2, freq));
-  %   %try
-  %     tmp.fwhm    = fwhm;
-  %     tmp.inside  = tmp.inside & isfinite(fwhm);
-  %     tmp         = smooth_source(tmp, 'parameter', 'pow', 'maxdist', 0.025);
-  %   %catch
-  %   %  tmp = removefields(tmp, 'fwhm');
-  %   %end
-  source(k)   = tmp;
+s     = keepfields(tmpsource,{'freq' 'tri' 'inside' 'pos' 'dim'});
+if ~strcmp(conditions, 'current_previous')
+  % same response hand contrast congruent minus incongruent
+  stat13 = makesourcecontrast(freq, filter, s, [1 3], [], false, false, conditions);
+  stat42 = makesourcecontrast(freq, filter, s, [4 2], [], false, false, conditions);
+  
+  if ~onlycompute_stat13_42
+    statCvsIC  = makesourcecontrast(freq, filter, s, [1 3], [4 2], false, true, conditions);
+    statCvsIC2 = makesourcecontrast(freq, filter, s, [1 3], [4 2], false, false, conditions);
+    
+    % same hemifield contrast congruent minus incongruent
+    stat12 = makesourcecontrast(freq, filter, s, [1 2], [], false, false, conditions);
+    stat43 = makesourcecontrast(freq, filter, s, [4 3], [], false, false, conditions);
+    
+    % vs neutral condition (don't stratify RT)
+    stat15 = makesourcecontrast(freq, filter, s, [1 5], [], false, false, conditions);
+    stat25 = makesourcecontrast(freq, filter, s, [2 5], [], false, false, conditions);
+    stat35 = makesourcecontrast(freq, filter, s, [3 5], [], false, false, conditions);
+    stat45 = makesourcecontrast(freq, filter, s, [4 5], [], false, false, conditions);
+    
+    % compute condition specific power
+    cfg.grid.filter     = filter;
+    cfg.dics.keepfilter = 'no';
+    for k = 1:nconditions
+      cfg2.trials = find(freq.trialinfo(:,end)==k);
+      tmp         = ft_sourceanalysis(cfg, ft_selectdata(cfg2, freq));
+      source(k)   = tmp;
+    end
+  end
+else % not yet working FIXME
+  % left response
+  stat1_12 = makesourcecontrast(freq, filter, s, [1 1 2], [], false, false, conditions); % current C, previous C vs IC
+  stat1_13 = makesourcecontrast(freq, filter, s, [1 1 3], [], false, false, conditions); % current C, previous C vs N
+  stat3_45 = makesourcecontrast(freq, filter, s, [3 4 5], [], false, false, conditions); % current IC, previous IC vs C
+  stat3_56 = makesourcecontrast(freq, filter, s, [3 5 6], [], false, false, conditions); % current IC, previous IC vs N
+  % right response
+  stat4_12 = makesourcecontrast(freq, filter, s, [4 1 2], [], false, false, conditions); % current C, previous C vs IC
+  stat4_13 = makesourcecontrast(freq, filter, s, [4 1 3], [], false, false, conditions); % current C, previous C vs N
+  stat2_45 = makesourcecontrast(freq, filter, s, [2 4 5], [], false, false, conditions); % current IC, previous IC vs C
+  stat2_56 = makesourcecontrast(freq, filter, s, [2 5 6], [], false, false, conditions); % current IC, previous IC vs N
 end
 
 
+function stat = makesourcecontrast(freq, filter, s, contrast, whichflip, stratifyflag, poolhemi, conditions)
 
 % compute contrasts as a yuen-welch T value
-cd /project/3011085.03/scripts/dyncon_vismot/matlab/private/
 cfgs        = [];
 cfgs.method = 'montecarlo';
 cfgs.numrandomization = 0;
-cfgs.statistic        = 'statfun_yuenTtest'; % This statistics function
-% is not available.
-%cfgs.statistic       = 'indepsamplesT';
-
-s     = keepfields(tmpsource,{'freq' 'tri' 'inside' 'pos' 'dim'});
+cfgs.statistic        = 'statfun_yuenTtest';
 
 switch conditions
   case 'previous'
     % same response hand contrast
     % left hand response, C vs neutral
-    cfg2              = [];
-    cfg2.trials       = find(ismember(freq.trialinfo(:,end),[1 5]));
-    tmpfreq           = ft_selectdata(cfg2, freq);
-    s.pow = zeros(numel(s.inside),numel(cfg2.trials));
+    tmpcfg              = [];
+    tmpcfg.trials       = find(ismember(freq.trialinfo(:,end),[contrast whichflip]));
+    tmpfreq           = ft_selectdata(tmpcfg, freq);
+    s.pow = zeros(numel(s.inside),numel(tmpcfg.trials));
     s.pow(s.inside,:) = fourier2pow(cat(3, filter{:}), tmpfreq.fourierspctrm, tmpfreq.cumtapcnt);
     s.trialinfo       = tmpfreq.trialinfo;
     
-    cfgs.design                 = s.trialinfo(:,4)';
-    cfgs.design(cfgs.design==5) = 2;
-    stat15    = ft_sourcestatistics(cfgs, s);
-    stat15 = rmfield(stat15, {'prob', 'cirange', 'mask'});
-    try, stat15.tri = int16(stat15.tri); end
-    stat15.pos = single(stat15.pos);
+    if ~isempty(whichflip)
+      s = fliphemitrials(s, 'pow', 1, whichflip, contrast);
+    end
+    if poolhemi
+      load standard_sourcemodel3d4mm; %FIXME this hardcoded assumes a 4mm sourcemodel!
+      s = poolhemispheres(s, 'pow', 'left', [1 -1], sourcemodel);
+    end
     
-    % left hand response, IC vs neutral
-    cfg2              = [];
-    cfg2.trials       = find(ismember(freq.trialinfo(:,end),[3 5]));
-    tmpfreq           = ft_selectdata(cfg2, freq);
-    s.pow = zeros(numel(s.inside),numel(cfg2.trials));
-    s.pow(s.inside,:) = fourier2pow(cat(3, filter{:}), tmpfreq.fourierspctrm, tmpfreq.cumtapcnt);
-    s.trialinfo       = tmpfreq.trialinfo;
+    if stratifyflag
+      % stratify the trials based on the RTs
+      RT = s.trialinfo(:,3);
+      c  = s.trialinfo(:,1);
+      
+      tmpcfg        = [];
+      tmpcfg.numbin = 5;
+      out = ft_stratify(tmpcfg, RT(c==contrast(1))', RT(c==contrast(2))');
+      s.trialinfo(c==contrast(1),3) = out{1}';
+      s.trialinfo(c==contrast(2),3) = out{2}';
+    end
     
-    cfgs.design                 = s.trialinfo(:,4)';
-    cfgs.design(cfgs.design==3) = 1;
-    cfgs.design(cfgs.design==5) = 2;
-    stat35    = ft_sourcestatistics(cfgs, s);
-    stat35 = rmfield(stat35, {'prob', 'cirange', 'mask'});
-    try, stat35.tri = int16(stat35.tri); end
-    stat35.pos = single(stat35.pos);
+    tmpcfg        = [];
+    tmpcfg.trials = find(isfinite(s.trialinfo(:,3)));
+    s             = ft_selectdata(tmpcfg, s);
     
-    % right hand response, C vs neutral
-    cfg2              = [];
-    cfg2.trials       = find(ismember(freq.trialinfo(:,end),[4 5]));
-    tmpfreq           = ft_selectdata(cfg2, freq);
-    s.pow = zeros(numel(s.inside),numel(cfg2.trials));
-    s.pow(s.inside,:) = fourier2pow(cat(3, filter{:}), tmpfreq.fourierspctrm, tmpfreq.cumtapcnt);
-    s.trialinfo       = tmpfreq.trialinfo;
-    
-    cfgs.design                 = s.trialinfo(:,4)';
-    cfgs.design(cfgs.design==4) = 1;
-    cfgs.design(cfgs.design==5) = 2;
-    stat45    = ft_sourcestatistics(cfgs, s);
-    stat45 = rmfield(stat45, {'prob', 'cirange', 'mask'});
-    try, stat45.tri = int16(stat45.tri); end
-    stat45.pos = single(stat45.pos);
-    
-    % right hand response, IC vs neutral
-    cfg2              = [];
-    cfg2.trials       = find(ismember(freq.trialinfo(:,end),[2 5]));
-    tmpfreq           = ft_selectdata(cfg2, freq);
-    s.pow = zeros(numel(s.inside),numel(cfg2.trials));
-    s.pow(s.inside,:) = fourier2pow(cat(3, filter{:}), tmpfreq.fourierspctrm, tmpfreq.cumtapcnt);
-    s.trialinfo       = tmpfreq.trialinfo;
-    
-    cfgs.design                 = s.trialinfo(:,4)';
-    cfgs.design(cfgs.design==2) = 1;
-    cfgs.design(cfgs.design==5) = 2;
-    stat25    = ft_sourcestatistics(cfgs, s);
-    stat25 = rmfield(stat25, {'prob', 'cirange', 'mask'});
-    try, stat25.tri = int16(stat25.tri); end
-    stat25.pos = single(stat25.pos);
-    
-    % left hand response, C-IC
-    cfg2              = [];
-    cfg2.trials       = find(ismember(freq.trialinfo(:,end),[1 3]));
-    tmpfreq           = ft_selectdata(cfg2, freq);
-    s.pow = zeros(numel(s.inside),numel(cfg2.trials));
-    s.pow(s.inside,:) = fourier2pow(cat(3, filter{:}), tmpfreq.fourierspctrm, tmpfreq.cumtapcnt);
-    s.trialinfo       = tmpfreq.trialinfo;
-    
-    cfgs.design                 = s.trialinfo(:,4)';
-    cfgs.design(cfgs.design==3) = 2;
-    stat13                      = ft_sourcestatistics(cfgs, s);
-    stat13 = rmfield(stat13, {'prob', 'cirange', 'mask'});
-    try, stat13.tri = int16(stat13.tri); end
-    stat13.pos = single(stat13.pos); % what is this step for?
-    
-    % right hand response, C-IC
-    cfg2              = [];
-    cfg2.trials       = find(ismember(freq.trialinfo(:,end),[2 4]));
-    tmpfreq           = ft_selectdata(cfg2, freq);
-    s.pow = zeros(numel(s.inside),numel(cfg2.trials));
-    s.pow(s.inside,:) = fourier2pow(cat(3, filter{:}), tmpfreq.fourierspctrm, tmpfreq.cumtapcnt);
-    s.trialinfo       = tmpfreq.trialinfo;
-    
-    cfgs.design                 = s.trialinfo(:,4)';
-    cfgs.design(cfgs.design==4) = 1;
-    stat42                      = ft_sourcestatistics(cfgs, s);
-    stat42 = rmfield(stat42, {'prob', 'cirange', 'mask'});
-    try, stat42.tri = int16(stat42.tri); end
-    stat42.pos = single(stat42.pos);
-    
-    % same hemifield contrast
-    cfg2              = [];
-    cfg2.trials       = find(ismember(freq.trialinfo(:,end),[1 2]));
-    tmpfreq           = ft_selectdata(cfg2, freq);
-    s.pow = zeros(numel(s.inside),numel(cfg2.trials));
-    s.pow(s.inside,:) = fourier2pow(cat(3, filter{:}), tmpfreq.fourierspctrm, tmpfreq.cumtapcnt);
-    s.trialinfo       = tmpfreq.trialinfo;
-    
-    cfgs.design                 = s.trialinfo(:,4)';
-    stat12                      = ft_sourcestatistics(cfgs, s);
-    stat12 = rmfield(stat12, {'prob', 'cirange', 'mask'});
-    try, stat12.tri = int16(stat12.tri); end
-    stat12.pos = single(stat12.pos);
-    
-    cfg2              = [];
-    cfg2.trials       = find(ismember(freq.trialinfo(:,end),[4 3]));
-    tmpfreq           = ft_selectdata(cfg2, freq);
-    s.pow = zeros(numel(s.inside),numel(cfg2.trials));
-    s.pow(s.inside,:) = fourier2pow(cat(3, filter{:}), tmpfreq.fourierspctrm, tmpfreq.cumtapcnt);
-    s.trialinfo       = tmpfreq.trialinfo;
-    
-    cfgs.design                 = s.trialinfo(:,4)';
-    cfgs.design(cfgs.design==4) = 1;
-    cfgs.design(cfgs.design==3) = 2;
-    stat43                      = ft_sourcestatistics(cfgs, s);
-    stat43 = rmfield(stat43, {'prob', 'cirange', 'mask'});
-    try, stat43.tri = int16(stat43.tri); end
-    stat43.pos = single(stat43.pos);
-    
-    % smooth contrasts
-    % same response hand:
-    tmp         = stat13;
-    tmp.fwhm    = fwhm;
-    tmp.inside  = tmp.inside&isfinite(fwhm);
-    %tmp         = smooth_source(tmp, 'parameter', 'stat', 'maxdist', 0.025);
-    stat13      = tmp;
-    
-    tmp         = stat42;
-    tmp.fwhm    = fwhm;
-    tmp.inside  = tmp.inside&isfinite(fwhm);
-    %tmp         = smooth_source(tmp, 'parameter', 'stat', 'maxdist', 0.025);
-    stat42         = tmp;
-    
-    % same hemifield
-    tmp         = stat12;
-    tmp.fwhm    = fwhm;
-    tmp.inside  = tmp.inside&isfinite(fwhm);
-    %tmp         = smooth_source(tmp, 'parameter', 'stat', 'maxdist', 0.025);
-    stat12      = tmp;
-    
-    tmp         = stat43;
-    tmp.fwhm    = fwhm;
-    tmp.inside  = tmp.inside&isfinite(fwhm);
-    %tmp         = smooth_source(tmp, 'parameter', 'stat', 'maxdist', 0.025);
-    stat43      = tmp;
-    
-    % very ugly. FIXME
-    stat.stat13 = stat13;
-    stat.stat42 = stat42;
-    stat.stat12 = stat12;
-    stat.stat43 = stat43;
-    stat.stat15 = stat15;
-    stat.stat25 = stat25;
-    stat.stat35 = stat35;
-    stat.stat45 = stat45;
+    cfgs.design(s.trialinfo(:,4)==contrast(1)) = 1;
+    cfgs.design(s.trialinfo(:,4)==contrast(2)) = 2;
+    stat    = ft_sourcestatistics(cfgs, s);
+    stat = rmfield(stat, {'prob', 'cirange', 'mask'});
+    try, stat.tri = int16(stat.tri); end
+    stat.pos = single(stat.pos);
     
   case 'current_previous'
     % left response
     % current C, previous C vs IC
     cfg2              = [];
-    cfg2.trials       = find(ismember(freq.trialinfo(:,5),[1 2]) & freq.trialinfo(:,1)==1);
+    cfg2.trials       = find(ismember(freq.trialinfo(:,1)==contrast(1) & freq.trialinfo(:,5),[contrast(2:3)]));
     tmpfreq           = ft_selectdata(cfg2, freq);
     s.pow = zeros(numel(s.inside),numel(cfg2.trials));
     s.pow(s.inside,:) = fourier2pow(cat(3, filter{:}), tmpfreq.fourierspctrm, tmpfreq.cumtapcnt);
     s.trialinfo       = tmpfreq.trialinfo;
     
     cfgs.design                 = s.trialinfo(:,end)';
-    stat1    = ft_sourcestatistics(cfgs, s);
-    stat1 = rmfield(stat1, {'prob', 'cirange', 'mask'});
-    try, stat1.tri = int16(stat1.tri); end
-    stat1.pos = single(stat1.pos);
-    
-    % current C, previous C vs N
-    cfg2              = [];
-    cfg2.trials       = find(ismember(freq.trialinfo(:,5),[1 3]) & freq.trialinfo(:,1)==1);
-    tmpfreq           = ft_selectdata(cfg2, freq);
-    s.pow = zeros(numel(s.inside),numel(cfg2.trials));
-    s.pow(s.inside,:) = fourier2pow(cat(3, filter{:}), tmpfreq.fourierspctrm, tmpfreq.cumtapcnt);
-    s.trialinfo       = tmpfreq.trialinfo;
-    
-    cfgs.design                 = s.trialinfo(:,end)';
-    cfgs.design(cfgs.design==3) = 2;
-    stat2    = ft_sourcestatistics(cfgs, s);
-    stat2 = rmfield(stat2, {'prob', 'cirange', 'mask'});
-    try, stat2.tri = int16(stat2.tri); end
-    stat2.pos = single(stat2.pos);
-    
-    % current IC, previous IC vs C
-    cfg2              = [];
-    cfg2.trials       = find(ismember(freq.trialinfo(:,5),[4 5]) & freq.trialinfo(:,1)==3);
-    tmpfreq           = ft_selectdata(cfg2, freq);
-    s.pow = zeros(numel(s.inside),numel(cfg2.trials));
-    s.pow(s.inside,:) = fourier2pow(cat(3, filter{:}), tmpfreq.fourierspctrm, tmpfreq.cumtapcnt);
-    s.trialinfo       = tmpfreq.trialinfo;
-    
-    cfgs.design                 = s.trialinfo(:,end)';
-    cfgs.design(cfgs.design==5) = 1;
-    cfgs.design(cfgs.design==4) = 2;
-    stat3    = ft_sourcestatistics(cfgs, s);
-    stat3 = rmfield(stat3, {'prob', 'cirange', 'mask'});
-    try, stat3.tri = int16(stat3.tri); end
-    stat3.pos = single(stat3.pos);
-    
-    % current IC, previous IC vs N
-    cfg2              = [];
-    cfg2.trials       = find(ismember(freq.trialinfo(:,5),[5 6]) & freq.trialinfo(:,1)==3);
-    tmpfreq           = ft_selectdata(cfg2, freq);
-    s.pow = zeros(numel(s.inside),numel(cfg2.trials));
-    s.pow(s.inside,:) = fourier2pow(cat(3, filter{:}), tmpfreq.fourierspctrm, tmpfreq.cumtapcnt);
-    s.trialinfo       = tmpfreq.trialinfo;
-    
-    cfgs.design                 = s.trialinfo(:,end)';
-    cfgs.design(cfgs.design==5) = 1;
-    cfgs.design(cfgs.design==6) = 2;
-    stat4    = ft_sourcestatistics(cfgs, s);
-    stat4 = rmfield(stat4, {'prob', 'cirange', 'mask'});
-    try, stat4.tri = int16(stat4.tri); end
-    stat4.pos = single(stat4.pos);
-    
-    
-    % right response
-    % current C, previous C vs IC
-    cfg2              = [];
-    cfg2.trials       = find(ismember(freq.trialinfo(:,5),[1 2]) & freq.trialinfo(:,1)==4);
-    tmpfreq           = ft_selectdata(cfg2, freq);
-    s.pow = zeros(numel(s.inside),numel(cfg2.trials));
-    s.pow(s.inside,:) = fourier2pow(cat(3, filter{:}), tmpfreq.fourierspctrm, tmpfreq.cumtapcnt);
-    s.trialinfo       = tmpfreq.trialinfo;
-    
-    cfgs.design                 = s.trialinfo(:,end)';
-    stat5    = ft_sourcestatistics(cfgs, s);
-    stat5 = rmfield(stat5, {'prob', 'cirange', 'mask'});
-    try, stat5.tri = int16(stat5.tri); end
-    stat5.pos = single(stat5.pos);
-    
-    % current C, previous C vs N
-    cfg2              = [];
-    cfg2.trials       = find(ismember(freq.trialinfo(:,5),[1 3]) & freq.trialinfo(:,1)==4);
-    tmpfreq           = ft_selectdata(cfg2, freq);
-    s.pow = zeros(numel(s.inside),numel(cfg2.trials));
-    s.pow(s.inside,:) = fourier2pow(cat(3, filter{:}), tmpfreq.fourierspctrm, tmpfreq.cumtapcnt);
-    s.trialinfo       = tmpfreq.trialinfo;
-    
-    cfgs.design                 = s.trialinfo(:,end)';
-    cfgs.design(cfgs.design==3) = 2;
-    stat6    = ft_sourcestatistics(cfgs, s);
-    stat6 = rmfield(stat6, {'prob', 'cirange', 'mask'});
-    try, stat6.tri = int16(stat6.tri); end
-    stat6.pos = single(stat6.pos);
-    
-    % current IC, previous IC vs C
-    cfg2              = [];
-    cfg2.trials       = find(ismember(freq.trialinfo(:,5),[4 5]) & freq.trialinfo(:,1)==2);
-    tmpfreq           = ft_selectdata(cfg2, freq);
-    s.pow = zeros(numel(s.inside),numel(cfg2.trials));
-    s.pow(s.inside,:) = fourier2pow(cat(3, filter{:}), tmpfreq.fourierspctrm, tmpfreq.cumtapcnt);
-    s.trialinfo       = tmpfreq.trialinfo;
-    
-    cfgs.design                 = s.trialinfo(:,end)';
-    cfgs.design(cfgs.design==5) = 1;
-    cfgs.design(cfgs.design==4) = 2;
-    stat7    = ft_sourcestatistics(cfgs, s);
-    stat7 = rmfield(stat7, {'prob', 'cirange', 'mask'});
-    try, stat7.tri = int16(stat7.tri); end
-    stat7.pos = single(stat7.pos);
-    
-    % current IC, previous IC vs N
-    cfg2              = [];
-    cfg2.trials       = find(ismember(freq.trialinfo(:,5),[5 6]) & freq.trialinfo(:,1)==2);
-    tmpfreq           = ft_selectdata(cfg2, freq);
-    s.pow = zeros(numel(s.inside),numel(cfg2.trials));
-    s.pow(s.inside,:) = fourier2pow(cat(3, filter{:}), tmpfreq.fourierspctrm, tmpfreq.cumtapcnt);
-    s.trialinfo       = tmpfreq.trialinfo;
-    
-    cfgs.design                 = s.trialinfo(:,end)';
-    cfgs.design(cfgs.design==5) = 1;
-    cfgs.design(cfgs.design==6) = 2;
-    stat8    = ft_sourcestatistics(cfgs, s);
-    stat8 = rmfield(stat8, {'prob', 'cirange', 'mask'});
-    try, stat8.tri = int16(stat8.tri); end
-    stat8.pos = single(stat8.pos);
-    
-    stat.stat1=stat1;
-    stat.stat2=stat2;
-    stat.stat3=stat3;
-    stat.stat4=stat4;
-    stat.stat5=stat5;
-    stat.stat6=stat6;
-    stat.stat7=stat7;
-    stat.stat8=stat8;
+    stat    = ft_sourcestatistics(cfgs, s);
+    stat = rmfield(stat, {'prob', 'cirange', 'mask'});
+    try, stat.tri = int16(stat.tri); end
+    stat.pos = single(stat.pos);
 end
-
-
-
-
-%%condition 1: cue left, response left
-%%condition 2: cue left, response right
-%%condition 3: cue right, response left
-%%condition 4: cue right, response right
-%%condition 5: catch trial
