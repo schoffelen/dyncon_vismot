@@ -66,8 +66,6 @@ end
 coh13 = estimate_coh2x2_2dip_stratify(leadfield,{freq(1) freq(3)},'memory',memreq,'lambda',lambda, 'outputflags', [1 0 0 0], 'refindx', refindx, 'stratflag', stratflag);
 coh42 = estimate_coh2x2_2dip_stratify(leadfield,{freq(4) freq(2)},'memory',memreq,'lambda',lambda, 'outputflags', [1 0 0 0], 'refindx', refindx, 'stratflag', stratflag);
 
-
-
 dcoh13 = single(zeros(size(coh13.coh)));
 dcoh42 = dcoh13;
 dcoh13sq = dcoh13;
