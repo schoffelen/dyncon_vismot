@@ -31,7 +31,7 @@ end
 subject = vismot_subjinfo(subjectname);
 
 load(fullfile(subject.pathname,'grid',sprintf('%s_sourcemodel3d4mm',subject.name)),'sourcemodel');
-[source, stat] = vismot_bf_post(subject,'frequency',frequency,'sourcemodel',sourcemodel,'prewhiten',prewhiten, 'lambda', lambda, 'nrand', nrand, 'latoi', latoi);
+[source, stat] = vismot_bf(subject,'frequency',frequency,'sourcemodel',sourcemodel,'prewhiten',prewhiten, 'lambda', lambda, 'nrand', nrand, 'latoi', latoi);
 filename = fullfile(subject.pathname,'_source',[subject.name,sprintf('source3d4mm_%s_', latoi), num2str(frequency,'%03d')]);
 if istrue(prewhiten)
   filename = [filename '_prewhitened'];
@@ -77,6 +77,8 @@ if nrand>0
   stat_resamp = hemiflip(stat_resamp, 'zx42');
   stat_resamp.statResp = rmfield(stat13, 'stat');
   stat_resamp.statResp.stat = (stat_resamp.zx13 + stat_resamp.zx42)./2;
+else
+  stat_resamp=[];
 end
 
 % treat as if everything is left handed response
