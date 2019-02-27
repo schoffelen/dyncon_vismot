@@ -30,7 +30,7 @@ end
 
 subject = vismot_subjinfo(subjectname);
 load(fullfile(subject.pathname,'grid',sprintf('%s_sourcemodel3d4mm',subject.name)),'sourcemodel');
-[source, stat] = vismot_bf_pre(subject,'sourcemodel',sourcemodel,'frequency',frequency,'smoothing',smoothing, 'conditions', conditions, 'prewhiten', prewhiten, 'lambda', lambda);
+[source, stat13, stat42, stat12, stat43, stat15, stat25, stat35, stat45, statCvsIC] = vismot_bf_pre(subject,'sourcemodel',sourcemodel,'frequency',frequency,'smoothing',smoothing, 'conditions', conditions, 'prewhiten', prewhiten, 'lambda', lambda);
 filename = fullfile(subject.pathname,'source',sprintf('%s_source3d4mm_pre_%03d',subject.name,frequency));
 if istrue(prewhiten)
   filename = [filename '_prewhitened'];
@@ -41,14 +41,6 @@ for k = 1:numel(source)
   source(k).cfg = removefields(source(k).cfg, {'grid' 'headmodel'});
   source(k).cfg.callinfo.usercfg = removefields(source(k).cfg.callinfo.usercfg, {'grid' 'headmodel'});
 end
-stat13 = stat.stat13;
-stat42 = stat.stat42;
-stat12 = stat.stat12;
-stat43 = stat.stat43;
-stat15 = stat.stat15;
-stat25 = stat.stat25;
-stat35 = stat.stat35;
-stat45 = stat.stat45;
 
 % hemiflip right handed response/ right hemifield
 parameter = 'stat';
