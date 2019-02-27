@@ -1,13 +1,15 @@
-function [source, stat] = vismot_bf_pre(subject,varargin)
+function [source, stat13, stat42, stat12, stat43, stat15, stat25, stat35, stat45, statCvsIC] = vismot_bf_pre(subject,varargin)
 
 %function [source, filter, freq] = vismot_bf_post(subject,varargin)
 
-frequency   = ft_getopt(varargin, 'frequency', 10);
-smoothing   = ft_getopt(varargin, 'smoothing', []);
+frequency = ft_getopt(varargin, 'frequency', 10);
+smoothing = ft_getopt(varargin, 'smoothing', []);
 sourcemodel = ft_getopt(varargin, 'sourcemodel');
-conditions  = ft_getopt(varargin, 'conditions', 'previous');
-prewhiten   = ft_getopt(varargin, 'prewhiten', false);
-lambda      = ft_getopt(varargin, 'lambda', '100%');
+prewhiten = istrue(ft_getopt(varargin, 'prewhiten', false));
+lambda = ft_getopt(varargin, 'lambda', ' 100%');
+nrand          = ft_getopt(varargin, 'nrand', 0); % number of randomization for sensor subsampling
+N              = ft_getopt(varargin, 'N', 90);
+conditions = ft_getopt(varargin, 'conditions', 'previous');
 
 if isempty(smoothing)
   if frequency < 30
@@ -17,7 +19,7 @@ if isempty(smoothing)
   end
 end
 
-freq =  vismot_spectral(subject,'output','fourier','toi', 'pre', 'conditions',conditions, 'foilim', [frequency frequency], 'smoothing', smoothing, 'prewhiten', prewhiten);
+freq =  vismot_spectral(subject,'foilim', [frequency frequency], 'toi', 'pre', 'balance', false, 'smoothing', smoothing, 'output','fourier','prewhiten', prewhiten);
 for k = 1:numel(freq)
   if ~isfield(freq(k),'trialinfo')
     freq(k).trialinfo = ones(numel(freq(k).cumtapcnt),1).*k;
@@ -37,9 +39,6 @@ cfg.appenddim = 'rpt';
 cfg.parameter = 'fourierspctrm';
 freq = ft_appendfreq(cfg, tmpfreq{:});
 clear tmpfreq
-% freq = ft_appendfreq(cfg, freqpst(1), freqpst(2), freqpst(3), freqpst(4), freqpst(5));
-
-% clear freqpst;
 
 % load in the head model and the source model.
 if isempty(sourcemodel)
@@ -78,12 +77,12 @@ cfg.channel   = freq.label;
 cfg.singleshell.batchsize = 2000;
 leadfield     = ft_prepare_leadfield(cfg);
 
-[source, stat13, stat42, stat12, stat43, stat15, stat25, stat35, stat45, statCvsIC] = sourcepow_pre(freq, headmodel, leadfield, lambda);
+[source, stat13, stat42, stat12, stat43, stat15, stat25, stat35, stat45, statCvsIC] = sourcepow_pre(freq, headmodel, sourcemodel, leadfield, lambda, conditions);
 
 %%%%%% FIXME %%%%%%
 %%%%%% then implement resampling %%%%%
 
-function [source, stat13, stat42, stat12, stat43, stat15, stat25, stat35, stat45, statCvsIC] = sourcepow_pre(freq, headmodel, leadfield, lambda)
+function [source, stat13, stat42, stat12, stat43, stat15, stat25, stat35, stat45, statCvsIC] = sourcepow_pre(freq, headmodel, sourcemodel, leadfield, lambda, conditions)
 if ~exist('onlycompute_stat13_42', 'var'); onlycompute_stat13_42=false; end
 
 cfg                 = [];
@@ -108,14 +107,26 @@ fwhm             = ft_sourcedescriptives(cfg2, tmpsource);
 fwhm             = fwhm.fwhm;
 
 s     = keepfields(tmpsource,{'freq' 'tri' 'inside' 'pos' 'dim'});
+
+
+% compute condition specific power
+cfg.grid.filter     = filter;
+cfg.dics.keepfilter = 'no';
+for k = 1:numel(unique(freq.trialinfo(:, end)))
+  cfg2.trials = find(freq.trialinfo(:,end)==k);
+  tmp         = ft_sourceanalysis(cfg, ft_selectdata(cfg2, freq));
+  source(k)   = tmp;
+end
+
 if ~strcmp(conditions, 'current_previous')
   % same response hand contrast congruent minus incongruent
-  stat13 = makesourcecontrast(freq, filter, s, [1 3], [], false, false, conditions);
-  stat42 = makesourcecontrast(freq, filter, s, [4 2], [], false, false, conditions);
   
   if ~onlycompute_stat13_42
     statCvsIC  = makesourcecontrast(freq, filter, s, [1 3], [4 2], false, true, conditions);
     statCvsIC2 = makesourcecontrast(freq, filter, s, [1 3], [4 2], false, false, conditions);
+    
+    stat13 = makesourcecontrast(freq, filter, s, [1 3], [], false, false, conditions);
+    stat42 = makesourcecontrast(freq, filter, s, [4 2], [], false, false, conditions);
     
     % same hemifield contrast congruent minus incongruent
     stat12 = makesourcecontrast(freq, filter, s, [1 2], [], false, false, conditions);
@@ -127,14 +138,6 @@ if ~strcmp(conditions, 'current_previous')
     stat35 = makesourcecontrast(freq, filter, s, [3 5], [], false, false, conditions);
     stat45 = makesourcecontrast(freq, filter, s, [4 5], [], false, false, conditions);
     
-    % compute condition specific power
-    cfg.grid.filter     = filter;
-    cfg.dics.keepfilter = 'no';
-    for k = 1:nconditions
-      cfg2.trials = find(freq.trialinfo(:,end)==k);
-      tmp         = ft_sourceanalysis(cfg, ft_selectdata(cfg2, freq));
-      source(k)   = tmp;
-    end
   end
 else % not yet working FIXME
   % left response
@@ -170,7 +173,7 @@ switch conditions
     s.trialinfo       = tmpfreq.trialinfo;
     
     if ~isempty(whichflip)
-      s = fliphemitrials(s, 'pow', 1, whichflip, contrast);
+      s = fliphemitrials(s, 'pow', 4, whichflip, contrast);
     end
     if poolhemi
       load standard_sourcemodel3d4mm; %FIXME this hardcoded assumes a 4mm sourcemodel!
