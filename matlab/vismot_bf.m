@@ -1,4 +1,4 @@
-function [source, stat] = vismot_bf_post(subject,varargin)
+function [source, stat] = vismot_bf(subject,varargin)
 
 %function [source, filter, freq] = vismot_bf_post(subject,varargin)
 
@@ -242,7 +242,7 @@ cfgs.method = 'montecarlo';
 cfgs.numrandomization = 0;
 cfgs.statistic        = 'statfun_yuenTtest';
 
-if strcmp(latoi, 'post') || (strcmp(latoi, 'pre') && strcmp('conditions', 'previous')
+if strcmp(latoi, 'post') || (strcmp(latoi, 'pre') && strcmp(conditions, 'previous'))
   tmpcfg            = [];
   if strcmp(latoi, 'post')
     tmpcfg.trials   = find(ismember(freq.trialinfo(:,1),[contrast whichflip]) & freq.trialinfo(:,end)==2); % for the pst trials only
