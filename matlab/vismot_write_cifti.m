@@ -4,7 +4,8 @@ parameter    = ft_getopt(varargin, 'parameter',    'avg');
 parcellation = ft_getopt(varargin, 'parcellation');
 parcelparam  = ft_getopt(varargin, 'parcelparam', 'parcellation');
 
-tmp = load('atlas_subparc_8k');
+tmp = load(fullfile('/project/3011085.03/analysis/mri/Conte69_32k/atlas_subparc374_8k'));
+
 sourcemodel = tmp.atlas;
 n = size(sourcemodel.pos,1);
 
