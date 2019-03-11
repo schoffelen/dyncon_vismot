@@ -127,12 +127,14 @@ while ishandle(h)
   case 'left'
     % update the indices for the volume to be displayed on the right
     [x1i,y1i,z1i] = two2three(d1,d2,size(map1),siz1);
-    val1 = vol1(x1i,y1i,z1i);
+    val = vol1(x1i,y1i,z1i);
   case 'right'
     % update the indices for the volume to be displayed on the right
     [x2i,y2i,z2i] = two2three(d1,d2,size(map2),siz2);
-    val2 = vol2(x2i,y2i,z2i);
+    val = vol2(x2i,y2i,z2i);
   end
+  val2=val;
+  val1=val;
   x1i = round(x1i);
   y1i = round(y1i);
   z1i = round(z1i);

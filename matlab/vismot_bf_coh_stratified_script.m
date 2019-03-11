@@ -32,13 +32,15 @@ end
 subject = vismot_subjinfo(subjectname);
 load(fullfile(subject.pathname,'grid',sprintf('%s_sourcemodel3d10mm',subject.name)),'sourcemodel');
 
-% prune the inside, so that only the superficial dipoles are used
-dum = zeros(sourcemodel.dim);
-dum(sourcemodel.inside) = 1;
-dum = dum>0;
-se  = cat(3,[0 0 0;0 1 0;0 0 0],[0 1 0;1 1 1;0 1 0],[0 0 0;0 1 0;0 0 0])>0;
-dum2 = imerode(imerode(imerode(dum,se),se),se);
-sourcemodel.inside = (double(dum(:))-double(dum2(:)))>0;
+if nrand>0
+  % prune the inside, so that only the superficial dipoles are used
+  dum = zeros(sourcemodel.dim);
+  dum(sourcemodel.inside) = 1;
+  dum = dum>0;
+  se  = cat(3,[0 0 0;0 1 0;0 0 0],[0 1 0;1 1 1;0 1 0],[0 0 0;0 1 0;0 0 0])>0;
+  dum2 = imerode(imerode(imerode(dum,se),se),se);
+  sourcemodel.inside = (double(dum(:))-double(dum2(:)))>0;
+end
 
 % and then left/right symmetrize in anticipation of collapsing across
 % left/right responses
@@ -61,7 +63,7 @@ coh42.dcoh = abs(coh42.coh_1)-abs(coh42.coh_2);
 coh13 = rmfield(coh13, {'coh_1', 'coh_2'});
 coh42 = rmfield(coh42, {'coh_1', 'coh_2'});
 
-filename = fullfile(subject.pathname,'source', [subject.name, '_coh6d10mm_',sprintf('%03d', frequency)] );
+filename = fullfile(subject.pathname,'source', sprintf('%d/', N), [subject.name, '_coh6d10mm_',sprintf('%03d', frequency)] );
 if istrue(prewhiten)
   filename = [filename '_prewhitened'];
 end
