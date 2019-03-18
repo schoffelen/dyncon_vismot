@@ -70,13 +70,14 @@ stat25 = hemiflip(stat25, parameter);
 stat45 = hemiflip(stat45, parameter);
 
 if nrand>0
-  zx13 = stat.zx13;
-  zx42 = stat.zx42;
+  zx13 = rmfield(stat13, 'stat');
+  zx13.stat = stat.zx13;
+  zx42 = rmfield(stat42, 'stat');
+  zx42.stat = stat.zx42;
   stat_resamp.zx13 = zx13;
   stat_resamp.zx42 = zx42;
-  stat_resamp = hemiflip(stat_resamp, 'zx42');
   stat_resamp.statResp = rmfield(stat13, 'stat');
-  stat_resamp.statResp.stat = (stat_resamp.zx13 + stat_resamp.zx42)./2;
+  stat_resamp.statResp.stat = (stat_resamp.zx13.stat + hemiflip(stat_resamp.zx42, 'stat'))./2;
 else
   stat_resamp=[];
 end
