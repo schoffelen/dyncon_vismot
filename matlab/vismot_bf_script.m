@@ -58,16 +58,7 @@ for k = 1:numel(source)
   source(k).cfg.callinfo.usercfg = removefields(source(k).cfg.callinfo.usercfg, {'grid' 'headmodel'});
 end
 
-% hemiflip right handed response/ right hemifield
-if isfield(stat42, 'statsmooth')
-  parameter = {'stat', 'statsmooth'};
-else
-  parameter = 'stat';
-end
-stat42 = hemiflip(stat42, parameter);
-stat43 = hemiflip(stat43, parameter);
-stat25 = hemiflip(stat25, parameter);
-stat45 = hemiflip(stat45, parameter);
+
 
 if nrand>0
   zx13 = rmfield(stat13, 'stat');
@@ -77,23 +68,35 @@ if nrand>0
   stat_resamp.zx13 = zx13;
   stat_resamp.zx42 = zx42;
   stat_resamp.statResp = rmfield(stat13, 'stat');
-  stat_resamp.statResp.stat = (stat_resamp.zx13.stat + hemiflip(stat_resamp.zx42, 'stat'))./2;
+  tmpzx42 = hemiflip(stat_resamp.zx42, 'stat');
+  stat_resamp.statResp.stat = (stat_resamp.zx13.stat + tmpzx42.stat)./2;
 else
   stat_resamp=[];
 end
 
+% hemiflip right handed response/ right hemifield
+if isfield(stat42, 'statsmooth')
+  parameter = {'stat', 'statsmooth'};
+else
+  parameter = 'stat';
+end
+tmp42 = hemiflip(stat42, parameter);
+tmp43 = hemiflip(stat43, parameter);
+tmp25 = hemiflip(stat25, parameter);
+tmp45 = hemiflip(stat45, parameter);
+
 % treat as if everything is left handed response
 statResp = stat13;
-statResp.stat = (statResp.stat + stat42.stat)/2;
+statResp.stat = (statResp.stat + tmp42.stat)/2;
 
 % treat as if cue presented in left hemifield
 statHemi = stat12;
-statHemi.stat = (statHemi.stat + stat43.stat)/2;
+statHemi.stat = (statHemi.stat + tmp43.stat)/2;
 
 statCvsN       = stat15;
-statCvsN.stat  = (statCvsN.stat + stat45.stat)/2;
+statCvsN.stat  = (statCvsN.stat + tmp45.stat)/2;
 statICvsN      = stat35;
-statICvsN.stat = (statICvsN.stat + stat25.stat)/2;
+statICvsN.stat = (statICvsN.stat + tmp25.stat)/2;
 
 %save(filename, 'source', 'stat13', 'stat42','stat12', 'stat43','stat15','stat25','stat35','stat45', 'statResp', 'statHemi', 'statCvsN', 'statICvsN', 'statCvsIC', 'smoothing');
 
