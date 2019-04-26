@@ -1,21 +1,44 @@
 clear all;
 
-cd /project/3011085.03/analysis/mim
 load vismot_parcels
+cd /project/3011085.03/analysis/mim
+
+
+% if further dimension reduction to 6x6 (instead of (16x16)
+if ~exist('dim','var'), dim=16; end % or 6
+if dim==6
+  load sixteen2six
+  P3 = sixteen2six;
+else
+  P3=1;
+end
+freqs = 0.5:0.5:120;
+nfreq = numel(freqs);
+ncond=5;
+n=19;
 
 d = dir('*mim_pre.mat');
-Mtmp2 = zeros(16,16,240,5);
+Mtmp2 = zeros(dim,dim,nfreq,ncond);
+M_alltmp2 = zeros(dim,dim,nfreq);
 for k = 1:numel(d)
   k
   load(d(k).name);
   Mtmp = cat(4,mim.mimspctrm);
-  for m = 1:(240*5)
+  for m = 1:(nfreq*ncond)
     tmp = Mtmp(:,:,m);
-    Mtmp2(:,:,m) = P2*P*tmp*P'*P2';
+    Mtmp2(:,:,m) = P3*P2*P*tmp*P'*P2'*P3';
   end
   M(:,:,:,:,k) = Mtmp2;
+  
+  M_alltmp = mim_all.mimspctrm;
+  for m=1:nfreq
+    tmp_all = M_alltmp(:,:,m);
+    M_alltmp2(:,:,m) = P3*P2*P*tmp_all*P'*P2'*P3';
+  end
+  M_all(:,:,:,k) = M_alltmp2;
+  
 end
-M = reshape(M,[16 16 240 5 19]);
+M = reshape(M,[dim dim nfreq ncond n]);
 
 
 n = 19;

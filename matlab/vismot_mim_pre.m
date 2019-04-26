@@ -5,18 +5,19 @@ conditions  = ft_getopt(varargin, 'conditions', 1:5);
 reverseflag = ft_getopt(varargin, 'reverseflag', 0);
 split       = istrue(ft_getopt(varargin, 'split', false)); % compute individual conditions if true
 label       = ft_getopt(varargin, 'label', 'all');
+dobaseline  = istrue(ft_getopt(varargin, 'dobaseline', false)); % only analyze trials that were not preceded by a previous trial, but by a baseline (only works in conditons previous)
 
 if ischar(subject)
 	subject = vismot_subjinfo(subject);
 end
 
-[freqpre,tlckpre]      = vismot_spectral(subject,'output','fourier','conditions','previous','toi','pre');
+[freqpre,tlckpre]      = vismot_spectral(subject,'output','fourier','conditions','previous','toi','pre', 'dobaseline', dobaseline);
 if doprewhiten
-  load(fullfile(subject.pathname,'data',[subject.name,'emptyroom']));
+  emptyroom = load(fullfile(subject.pathname,'data',[subject.name,'emptyroom']));
   
   cfgr        = [];
   cfgr.length = 0.5;
-  noise       = ft_redefinetrial(cfgr, data);
+  noise       = ft_redefinetrial(cfgr, emptyroom.data);
   clear data;
   
   cfgd         = [];
@@ -107,14 +108,17 @@ for p = 1:240
   tmp_it(1,2,:) =dum;
  
   tmp_r = tmp_r(:,:,1:(n+1):end);
-  tmp_rinv = inv2x2(tmp_r);
+  tmp_rinv = inv2x2(tmp_r); % MvE: I have to cd to private in order for this to work.
   
   tmp_r1 = reshape(repmat(tmp_rinv,[1 1 1 n]),[2 2 n^2]);
   tmp_r2 = reshape(permute(repmat(tmp_rinv,[1 1 1 n]),[1 2 4 3]),[2 2 n^2]);
   
+  cpath = pwd;
+  cd('/project/3011085.03/scripts/fieldtrip/connectivity/private/')
   m = mtimes2x2(mtimes2x2(mtimes2x2(tmp_r1,tmp_i),tmp_r2),tmp_it);
   M(:,:,p) = reshape(m(1,1,:)+m(2,2,:),[n n]);
 end
+cd(cpath)
 
 mim.mimspctrm     = M;
 mim.freq          = freq.freq(1:240);
