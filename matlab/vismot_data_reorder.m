@@ -39,7 +39,7 @@ switch conditions
     
     % remove trials that were not preceded by a different trial, but
     % instead were preceded by the baseline (trials were presented in
-    % blocks of 5).
+    % blocks of 4).
     cfg=[];
     trialnumber = data.trialinfo(:,2);
     not_first_trial_of_block = find(mod(trialnumber, 4)~=1);
