@@ -96,3 +96,27 @@ end
 C_avg = [C_avg_left, C_avg_right];
 IC_avg = [IC_avg_left, IC_avg_right];
 [H,P,CI,STATS] = ttest(C_avg, IC_avg)
+
+
+%% Are Incongruent trials faster when visual information has to cross from left to right, vs right to left hemispheres?
+% (right hemisphere to left hemisphere (condition 2) faster then the other
+% way around (condition 3)
+
+load list
+for k=1:19
+subjectname = list(k);
+subject = vismot_subjinfo(subjectname);
+alldata = load(fullfile(subject.pathname,'data',[subject.name,'data']));
+alldata = rmfield(alldata, 'data5');
+C{k} = cat(1,alldata.data1.trialinfo,alldata.data4.trialinfo);
+IC{k} = cat(1,alldata.data2.trialinfo,alldata.data3.trialinfo);
+%IC{k} = [alldata.data2.trialinfo(:,3);alldata.data3.trialinfo(:,3)];
+end
+for k=1:19
+con2(k) = mean(IC{k}(IC{k}(:,1)==2,3));
+con3(k) = mean(IC{k}(IC{k}(:,1)==3,3));
+end
+[H,P,CI,STATS] = ttest(con2,con3, 'tail', 'left');
+
+
+
