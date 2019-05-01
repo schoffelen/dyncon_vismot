@@ -37,15 +37,16 @@ cfg.backproject = 'no';
 cfg.singleshell.batchsize = 2000;
 leadfieldorig = ft_prepare_leadfield(cfg);
 
-load(fullfile('/project/3011085.03/analysis/mri/Conte69_32k/atlas_subparc374_8k'));
+% load the atlas
+a = load(fullfile('/project/3011085.03/analysis/mri/Conte69_32k/atlas_subparc374_8k')); % load into structure, otherwise might be mistaken by function 'atlas'.
 
 leadfield = rmfield(leadfieldorig, {'pos' ,'tri', 'inside', 'unit', 'leadfield'});
-leadfield.brainordinate = atlas;
+leadfield.brainordinate = a.atlas;
 leadfield.brainordinate.pos = leadfieldorig.pos;
 leadfield.brainordinate.tri = leadfieldorig.tri;
 
-for k = 1:max(atlas.parcellation)
-	sel = atlas.parcellation==k;
+for k = 1:max(a.atlas.parcellation)
+	sel = a.atlas.parcellation==k;
   lf  = cat(2,leadfieldorig.leadfield{sel});
 	[u,s,v] = svd(lf,'econ');
 	pos = mean(leadfield.brainordinate.pos(sel,:));
