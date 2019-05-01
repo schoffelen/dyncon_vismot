@@ -1,5 +1,5 @@
 if ~exist('toi', 'var'); toi='pre'; end
-if ~exist('include_neighb', 'var'); include_neighb=true; end
+if ~exist('include_neighb', 'var'); include_neighb=false; end
 if ~exist('roi', 'var') && ~exist('refindx', 'var')
   % as Nx3 matrix, in the same units as the sourcemodel
   %error('roi or refindx should be defined')
