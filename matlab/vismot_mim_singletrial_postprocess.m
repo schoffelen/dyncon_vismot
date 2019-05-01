@@ -13,7 +13,7 @@ c = mim_all.mim.mimspctrm;
 
 filename = ['singletrial/', subjectname, '/', filename, '*'];
 d = dir(filename);
-dim = 6;
+dim = 16;
 
 if dim~=6
   P3=1;
@@ -23,7 +23,7 @@ if dim~=16 && dim~=6
 end
 
 freqs = 0.5:0.5:120;
-nfreq = 4%160;%4;
+nfreq = 159;%4;
 
 % Compute pseudo values and average within regions/frequencies of interest.
 Ci = zeros(numel(d), dim, dim, nfreq);
@@ -41,8 +41,10 @@ for k = 1:numel(d)
     Ci(k,:,:,2)  = mean(Citmp2(:,:,nearest(freqs,12):nearest(freqs,30)),3);
     Ci(k,:,:,3)  = mean(Citmp2(:,:,nearest(freqs,30):nearest(freqs,50)),3);
     Ci(k,:,:,4)  = mean(Citmp2(:,:,nearest(freqs,50):nearest(freqs,70)),3);
+  elseif nfreq==80
+    Ci(k,:,:,:) = Citmp2(:,:,3:2:2*(nfreq+1));
   else
-    Ci(k,:,:,:) = Citmp2(:,:,1:nfreq);
+    Ci(k,:,:,:) = Citmp2(:,:,2:nfreq+1);
   end
     clear Citmp Citmp2 ci m
 end
@@ -60,7 +62,6 @@ end
 % filename = sprintf('/project/3011085.03/analysis/mim/singletrial/%s/%s_pseudomim', subjectname, subjectname);
 % save(filename, 'Ci', 'conditions', 'trialnumber', 'trialinfo');
 
-
 % equalize conditions
 ntrials = min([sum(conditions==1), sum(conditions==2), sum(conditions==3), sum(conditions==4), sum(conditions==5)]);
 tmpidx = [];
@@ -73,15 +74,29 @@ Ci = Ci(tmpidx,:,:,:);
 conditions = conditions(tmpidx);
 
 % Only take lower triangle of dim dimensions
-sel = tril(ones(dim))~=0;
-Citmp = reshape(Ci, [size(Ci,1), dim*dim, size(Ci,4)]);
-Citmp = Citmp(:,sel,:);
-Citmp = reshape(Citmp, [size(Citmp,1), size(Citmp,2)*size(Citmp,3)]);
-
-% create timelock structure
-data=[];
-data.trial = reshape(Citmp, [size(Citmp,1), 1, size(Citmp,2)]);
-data.time = 1:size(Citmp,2);
+if 0 % both if and else should lead to the same result. But not when reshape dimensions are wrong.
+  Citmp = reshape(permute(Ci,[2,3,1,4]), [dim, dim, size(Ci,1)*nfreq]);
+  Citmp2=zeros(size(Citmp));
+  for k=1:size(Citmp,3)
+    Citmp2(:,:,k) = tril(Citmp(:,:,k));
+  end
+  
+  % MAKE SURE DIMENSIONS ARE CORRECT. permute(reshape(Citmp2, [dim, dim,
+  % nfreq, size(Ci,1)]), [4,1,2,3]); leads to accuracies of 50%!!
+  Citmp = permute(reshape(Citmp2, [dim, dim, size(Ci,1), nfreq]), [3,1,2,4]); 
+  Ci_small = single(Citmp);
+  
+  data.trial = reshape(Ci_small, [size(Ci,1), 1, dim*dim*nfreq]);
+  
+else
+  sel = tril(ones(dim))==1;
+  Citmp = reshape(Ci, [size(Ci,1), dim*dim, size(Ci,4)]);
+  Citmp = Citmp(:,sel,:);
+  Citmp = reshape(Citmp, [size(Citmp,1), 1, size(Citmp,2)*size(Citmp,3)]);
+  
+  data.trial = Citmp;
+end
+data.time = 1:size(data.trial,3);
 data.label = {'chan01'};
 data.dimord = 'rpt_chan_time';
 
@@ -91,7 +106,6 @@ x = find(conditions==5);
 data.trial(x,:,:)=[];
 conditions(x)=[];
 %}
-clear mim_all C Ci c Citmp d
 
 addpath('/project/3011085.03/scripts/fieldtrip/external/dmlt/')
 cfg=[];
@@ -103,7 +117,17 @@ cfg.type = 'nfold';
 cfg.nfolds = 5;
 cfg.resample = 0; % resamples conditions with fewer trials, and throws away oversampled conditions
 stat = ft_timelockstatistics(cfg, data);
+stat.statistic
 
+
+numrandomization = 100;
+r=zeros(numrandomization,1);
+for k=1:numrandomization
+  k
+  cfg.design = conditions(randperm(numel(conditions)));
+  randstat{k} = ft_timelockstatistics(cfg, data);
+  r(k) = randstat{k}.statistic.accuracy;
+end
 
 %{
 data13 = data;
