@@ -2,16 +2,22 @@
 % data, and divides pre and post cue onset intervals per condition
 
 if ~exist('subjectname', 'var')
-	error('subjectname should be defined');
+  error('subjectname should be defined');
 end
 if ~exist('condition', 'var')
-  condition = 1;
+  conditions = 1:5;
 end
-if numel(condition)==1
-  split = true;
+if ~exist('split', 'var')
+  split = false;
 end
 if ~exist('dobaseline', 'var')
   dobaseline = 0;
+end
+if ~exist('doL1out', 'var')
+  doL1out = false;
+end
+if ~exist('leaveouttrial', 'var')
+  leaveouttrial = false;
 end
 subject = vismot_subjinfo(subjectname);
 
@@ -28,19 +34,26 @@ sel   = sel|contains(label, '_17_');
 sel   = sel|contains(label, '_18_');
 sel   = sel|contains(label, '_19_');
 label = label(sel);
-
 if 1
-	[mim, parcellation] = vismot_mim_pre(subject,'prewhiten',true,'label',label,'split',split, 'dobaseline', dobaseline);
-  [mim_all] = vismot_mim_pre(subject,'prewhiten',true,'label',label,'split',false, 'conditions', [1:4], 'dobaseline', dobaseline);
-	filename = fullfile(subject.pathname,'mim',[subject.name,'_mim_pre']);
+  [mim, parcellation] = vismot_mim_pre(subject,'prewhiten',true,'label',label,'split',split, 'conditions', conditions, 'dobaseline', dobaseline, 'doL1out', doL1out, 'leaveouttrial', leaveouttrial);
+  mim = ft_struct2single(mim);
+  
+  if doL1out
+    filename = fullfile(subject.pathname,'mim','singletrial', subject.name, [subject.name,'_mim_pre']);
+  else
+    filename = fullfile(subject.pathname,'mim',[subject.name,'_mim_pre']);
+  end
+  if ~split
+    filename = [filename, '_all'];
+  end
   if dobaseline
     filename = [filename, '_baseline'];
   end
-	
-	mim = ft_struct2single(mim);
-  
-  
-	save(filename, 'mim','mim_all', 'parcellation');
-	clear mim parcellation
+  if doL1out
+    filename = [filename, sprintf('_%d', leaveouttrial)];
+    parcellation = [];
+  end
+  save(filename, 'mim', 'parcellation');
+  clear mim parcellation
 end
 

@@ -1,17 +1,23 @@
 function [mim, parcellation] = vismot_mim_pre(subject, varargin)
 
-doprewhiten = istrue(ft_getopt(varargin, 'prewhiten',  false));
-conditions  = ft_getopt(varargin, 'conditions', 1:5);
-reverseflag = ft_getopt(varargin, 'reverseflag', 0);
-split       = istrue(ft_getopt(varargin, 'split', false)); % compute individual conditions if true
-label       = ft_getopt(varargin, 'label', 'all');
-dobaseline  = istrue(ft_getopt(varargin, 'dobaseline', false)); % only analyze trials that were not preceded by a previous trial, but by a baseline (only works in conditons previous)
+doprewhiten   = istrue(ft_getopt(varargin, 'prewhiten',  false));
+conditions    = ft_getopt(varargin, 'conditions', 1:5);
+reverseflag   = ft_getopt(varargin, 'reverseflag', 0);
+split         = istrue(ft_getopt(varargin, 'split', false)); % compute individual conditions if true
+label         = ft_getopt(varargin, 'label', 'all');
+dobaseline    = istrue(ft_getopt(varargin, 'dobaseline', false)); % only analyze trials that were not preceded by a previous trial, but by a baseline (only works in conditons previous)
+doL1out       = istrue(ft_getopt(varargin, 'doL1out', false));
+leaveouttrial = ft_getopt(varargin, 'leaveouttrial', false);
+
+if doL1out && ~leaveouttrial
+  error('please specify the trial number that should be left out.')
+end
 
 if ischar(subject)
 	subject = vismot_subjinfo(subject);
 end
 
-[freqpre,tlckpre]      = vismot_spectral(subject,'output','fourier','conditions','previous','toi','pre', 'dobaseline', dobaseline);
+[freqpre,tlckpre]      = vismot_spectral(subject,'output','fourier','conditions','previous','toi','pre', 'dobaseline', dobaseline, 'doL1out', doL1out, 'leaveouttrial', leaveouttrial);
 if doprewhiten
   emptyroom = load(fullfile(subject.pathname,'data',[subject.name,'emptyroom']));
   

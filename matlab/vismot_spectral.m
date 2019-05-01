@@ -16,6 +16,8 @@ doplanar    = istrue(ft_getopt(varargin, 'doplanar',   false));
 doprewhiten = istrue(ft_getopt(varargin, 'prewhiten',  false));
 dobalance   = istrue(ft_getopt(varargin, 'balance',    false)); %balance the number of trials + number of samples
 dobaseline  = istrue(ft_getopt(varargin, 'dobaseline', false)); % only analyze trials that were not preceded by a previous trial, but by a baseline (only works in conditons previous)
+doL1out       = istrue(ft_getopt(varargin, 'doL1out', false));
+leaveouttrial = ft_getopt(varargin, 'leaveouttrial', false);
 
 dospectral = true;
 docsd      = false;
@@ -53,6 +55,17 @@ if dobaseline
   alldata = vismot_data_reorder_baseline(alldata, conditions);
 else
   alldata = vismot_data_reorder(alldata, conditions);
+end
+if doL1out
+  fd = fieldnames(alldata);
+  for k = 1:numel(fd)
+    data = alldata.(fd{k});
+    cfg=[];
+    cfg.trials = find(data.trialinfo(:,2) ~= leaveouttrial);
+    data = ft_selectdata(cfg, data);
+    
+    alldata.(fd{k}) = data;
+  end
 end
 
 if ischar(foilim) && strcmp(foilim, 'all')

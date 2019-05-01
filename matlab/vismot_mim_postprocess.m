@@ -4,7 +4,7 @@ load vismot_parcels
 cd /project/3011085.03/analysis/mim
 
 
-% if further dimension reduction to 6x6 (instead of (16x16)
+% if further dimension reduction to 6x6 (instead of (dimxdim)
 if ~exist('dim','var'), dim=16; end % or 6
 if dim==6
   load sixteen2six
@@ -47,34 +47,34 @@ cfgx.ivar=1;
 cfgx.uvar=2;
 stat13=ft_statfun_wilcoxon(cfgx,[reshape(M(:,:,:,1,:),[],19) reshape(M(:,:,:,3,:),[],19)],design);
 stat42=ft_statfun_wilcoxon(cfgx,[reshape(M(:,:,:,4,:),[],19) reshape(M(:,:,:,2,:),[],19)],design);
-T13 = reshape(stat13.stat,[16 16 240]);
-T42 = reshape(stat42.stat,[16 16 240]);
+T13 = reshape(stat13.stat,[dim dim nfreq]);
+T42 = reshape(stat42.stat,[dim dim nfreq]);
 
-re_indx = 16:-1:1;
+re_indx = dim:-1:1;
 dat     = [reshape(M(:,:,:,1,:)+M(re_indx,re_indx,:,4,:),[],19) reshape(M(:,:,:,3,:)+M(re_indx,re_indx,:,2,:),[],19)];
 stat    = ft_statfun_wilcoxon(cfgx, dat, design);
-T       = reshape(stat.stat,[16 16 240]);
+T       = reshape(stat.stat,[dim dim nfreq]);
 
 
-T13 = reshape(stat13.stat,[16 16 240]);
-T42 = reshape(stat42.stat,[16 16 240]);
-T   = reshape(stat.stat,  [16 16 240]);
+T13 = reshape(stat13.stat,[dim dim nfreq]);
+T42 = reshape(stat42.stat,[dim dim nfreq]);
+T   = reshape(stat.stat,  [dim dim nfreq]);
 
 stat15=ft_statfun_wilcoxon(cfgx,[reshape(M(:,:,:,1,:),[],19) reshape(M(:,:,:,5,:),[],19)],design);
 stat25=ft_statfun_wilcoxon(cfgx,[reshape(M(:,:,:,2,:),[],19) reshape(M(:,:,:,5,:),[],19)],design);
 stat35=ft_statfun_wilcoxon(cfgx,[reshape(M(:,:,:,3,:),[],19) reshape(M(:,:,:,5,:),[],19)],design);
 stat45=ft_statfun_wilcoxon(cfgx,[reshape(M(:,:,:,4,:),[],19) reshape(M(:,:,:,5,:),[],19)],design);
-T15   = reshape(stat15.stat,  [16 16 240]);
-T25   = reshape(stat25.stat,  [16 16 240]);
-T35   = reshape(stat35.stat,  [16 16 240]);
-T45   = reshape(stat45.stat,  [16 16 240]);
+T15   = reshape(stat15.stat,  [dim dim nfreq]);
+T25   = reshape(stat25.stat,  [dim dim nfreq]);
+T35   = reshape(stat35.stat,  [dim dim nfreq]);
+T45   = reshape(stat45.stat,  [dim dim nfreq]);
 
 cfgx.numrandomization = 1000;
 cfgx.statistic = 'ft_statfun_wilcoxon';
 
 foi   = 0:0.5:119.5;
 stat  = ft_statistics_montecarlo(cfgx, dat, design);
-T     = reshape(stat.stat,  [16 16 240]);
+T     = reshape(stat.stat,  [dim dim nfreq]);
 
 findx   = nearest(foi,8):nearest(foi,14);
 alpha   = [reshape(mean(M(:,:,findx,1,:)+M(re_indx,re_indx,findx,4,:),3),[],19) reshape(mean(M(:,:,findx,3,:)+M(re_indx,re_indx,findx,2,:),3),[],19)];
