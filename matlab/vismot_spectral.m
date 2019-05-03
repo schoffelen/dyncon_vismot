@@ -18,6 +18,7 @@ dobalance   = istrue(ft_getopt(varargin, 'balance',    false)); %balance the num
 dobaseline  = istrue(ft_getopt(varargin, 'dobaseline', false)); % only analyze trials that were not preceded by a previous trial, but by a baseline (only works in conditons previous)
 doL1out       = istrue(ft_getopt(varargin, 'doL1out', false));
 leaveouttrial = ft_getopt(varargin, 'leaveouttrial', false);
+keeptrials = ft_getopt(varargin, 'keeptrials', 'yes');
 
 dospectral = true;
 docsd      = false;
@@ -115,6 +116,7 @@ if dospectral
   cfg.foilim  = foilim;
   cfg.taper   = taper;
   cfg.tapsmofrq = smoothing;
+  cfg.keeptrials = keeptrials;
   
   if doprewhiten
     load(fullfile(subject.pathname,'data',[subject.name,'emptyroom']));
