@@ -23,7 +23,7 @@ if dim~=16 && dim~=6
 end
 
 freqs = 0.5:0.5:120;
-nfreq = 159;%4;
+nfreq = 239;
 
 % Compute pseudo values and average within regions/frequencies of interest.
 Ci = zeros(numel(d), dim, dim, nfreq);
@@ -62,64 +62,66 @@ end
 % filename = sprintf('/project/3011085.03/analysis/mim/singletrial/%s/%s_pseudomim', subjectname, subjectname);
 % save(filename, 'Ci', 'conditions', 'trialnumber', 'trialinfo');
 
+
+% remove outliers
+[a1,a2,a3,a4] = size(Ci);
+tmp = reshape(Ci, [a1, a2*a3*a4]);
+tmpdata.trial = reshape(tmp, [size(tmp,1), 1, size(tmp,2)]);
+tmpdata.dimord = 'rpt_chan_time';
+tmpdata.label = {'chan01'};
+tmpdata.time = 1:size(tmpdata.trial,3);
+tmpdata.trialinfo = conditions;
+cfg=[];
+cfg.method = 'summary';
+rej = ft_rejectvisual(cfg, tmpdata);
+
+Ci = reshape(rej.trial, [size(rej.trial,1), a2, a3, a4]); 
+conditions = rej.trialinfo;
+
+% remove neutral condition
+x = find(conditions==5);
+Ci(x,:,:,:)=[];
+conditions(x)=[];
+
 % equalize conditions
-ntrials = min([sum(conditions==1), sum(conditions==2), sum(conditions==3), sum(conditions==4), sum(conditions==5)]);
+ntrials = min([sum(conditions==1), sum(conditions==2), sum(conditions==3), sum(conditions==4)]);
 tmpidx = [];
-for k=1:5
+for k=1:4
   tmp = find(conditions==k);
-  P = randperm(ntrials);
+  P = randperm(sum(conditions==k));
   tmpidx = [tmpidx; tmp(P(1:ntrials))];
 end
 Ci = Ci(tmpidx,:,:,:);
 conditions = conditions(tmpidx);
 
 % Only take lower triangle of dim dimensions
-if 0 % both if and else should lead to the same result. But not when reshape dimensions are wrong.
-  Citmp = reshape(permute(Ci,[2,3,1,4]), [dim, dim, size(Ci,1)*nfreq]);
-  Citmp2=zeros(size(Citmp));
-  for k=1:size(Citmp,3)
-    Citmp2(:,:,k) = tril(Citmp(:,:,k));
-  end
-  
-  % MAKE SURE DIMENSIONS ARE CORRECT. permute(reshape(Citmp2, [dim, dim,
-  % nfreq, size(Ci,1)]), [4,1,2,3]); leads to accuracies of 50%!!
-  Citmp = permute(reshape(Citmp2, [dim, dim, size(Ci,1), nfreq]), [3,1,2,4]); 
-  Ci_small = single(Citmp);
-  
-  data.trial = reshape(Ci_small, [size(Ci,1), 1, dim*dim*nfreq]);
-  
-else
-  sel = tril(ones(dim))==1;
-  Citmp = reshape(Ci, [size(Ci,1), dim*dim, size(Ci,4)]);
-  Citmp = Citmp(:,sel,:);
-  Citmp = reshape(Citmp, [size(Citmp,1), 1, size(Citmp,2)*size(Citmp,3)]);
-  
-  data.trial = Citmp;
-end
+sel = tril(ones(dim),-1)==1;
+Citmp = reshape(Ci, [size(Ci,1), dim*dim, size(Ci,4)]);
+Citmp = Citmp(:,sel,:);
+Citmp = reshape(Citmp, [size(Citmp,1), 1, size(Citmp,2)*size(Citmp,3)]);
+
+data=[];
+data.trial = Citmp;
 data.time = 1:size(data.trial,3);
 data.label = {'chan01'};
 data.dimord = 'rpt_chan_time';
 
-% remove conditions 5
-%{
-x = find(conditions==5);
-data.trial(x,:,:)=[];
-conditions(x)=[];
-%}
-
 addpath('/project/3011085.03/scripts/fieldtrip/external/dmlt/')
+addpath('/project/3011085.03/scripts/fieldtrip/external/dmlt/external/')
+addpath('/project/3011085.03/scripts/fieldtrip/external/dmlt/external/svm/')
+
 cfg=[];
 cfg.method = 'crossvalidate';
-cfg.mva = {'dml.naive'};
+cfg.mva = {dml.standardizer dml.naive};%dml.svm};
 cfg.statistic = {'confusion', 'accuracy'};
 cfg.design = conditions;
 cfg.type = 'nfold';
-cfg.nfolds = 5;
+cfg.nfolds = 5;%numel(conditions);
 cfg.resample = 0; % resamples conditions with fewer trials, and throws away oversampled conditions
 stat = ft_timelockstatistics(cfg, data);
 stat.statistic
 
-
+%
 numrandomization = 100;
 r=zeros(numrandomization,1);
 for k=1:numrandomization
@@ -128,7 +130,7 @@ for k=1:numrandomization
   randstat{k} = ft_timelockstatistics(cfg, data);
   r(k) = randstat{k}.statistic.accuracy;
 end
-
+%}
 %{
 data13 = data;
 x=find(conditions==1 | conditions==3);
@@ -152,12 +154,13 @@ x=find(conditions==4 | conditions==2);
 tmp42 = Ci(x,:,:,:);
 rev = [dim/2+1:dim 1:dim/2];
 tmp42 = tmp42(:, rev, rev,:);
-tmp = reshape(permute(tmp42,[2,3,1,4]), [dim, dim, nfreq*size(tmp42,1)]);
-for k=1:size(tmp,3)
-  tmp(:,:,k) = tril(tmp(:,:,k));
-end
-tmp42 = permute(reshape(tmp, [dim, dim, nfreq, size(tmp42,1)]), [4,1,2,3]);
-dataX.trial(x,1,:) = reshape(tmp42, [size(tmp42,1), 1, dim*dim*nfreq]);
+
+% Only take lower triangle of dim dimensions
+tmp42 = reshape(tmp42, [size(tmp42,1), dim*dim, size(tmp42,4)]);
+tmp42 = tmp42(:,sel,:);
+tmp42 = reshape(tmp42, [size(tmp42,1), 1, size(tmp42,2)*size(tmp42,3)]);
+
+dataX.trial(x,1,:) = tmp42;
 cfg.design = conditions;
 cfg.design(cfg.design==4)=1;
 cfg.design(cfg.design==3)=2;
