@@ -2,10 +2,10 @@ load vismot_parcels
 cd /project/3011085.03/analysis/mim
 load list
 
-subjectname = list{1};
+subjectname = list{2};
 
 x = load(sprintf('/project/3011085.03/analysis/trl/%s_trialnumber_%s', subjectname, 'previous'));
-T = numel(unique(x.trialnumber));
+T = numel(x.trialnumber);
 
 filename = sprintf('%s_mim_pre_all', subjectname);
 mim_all = load(filename);
@@ -13,7 +13,7 @@ c = mim_all.mim.mimspctrm;
 
 filename = ['singletrial/', subjectname, '/', filename, '*'];
 d = dir(filename);
-dim = 16;
+dim = 6;
 
 if dim~=6
   P3=1;
@@ -23,7 +23,7 @@ if dim~=16 && dim~=6
 end
 
 freqs = 0.5:0.5:120;
-nfreq = 239;
+nfreq = 80;
 
 % Compute pseudo values and average within regions/frequencies of interest.
 Ci = zeros(numel(d), dim, dim, nfreq);
@@ -41,8 +41,10 @@ for k = 1:numel(d)
     Ci(k,:,:,2)  = mean(Citmp2(:,:,nearest(freqs,12):nearest(freqs,30)),3);
     Ci(k,:,:,3)  = mean(Citmp2(:,:,nearest(freqs,30):nearest(freqs,50)),3);
     Ci(k,:,:,4)  = mean(Citmp2(:,:,nearest(freqs,50):nearest(freqs,70)),3);
+    freqs = [10 21 40 60];
   elseif nfreq==80
     Ci(k,:,:,:) = Citmp2(:,:,3:2:2*(nfreq+1));
+    freqs = 1:1:80;
   else
     Ci(k,:,:,:) = Citmp2(:,:,2:nfreq+1);
   end
@@ -60,8 +62,7 @@ for k=1:numel(idx)
 end
 
 % filename = sprintf('/project/3011085.03/analysis/mim/singletrial/%s/%s_pseudomim', subjectname, subjectname);
-% save(filename, 'Ci', 'conditions', 'trialnumber', 'trialinfo');
-
+% save(filename, 'Ci', 'conditions', 'trialnumber', 'trialinfo', 'nfreq', 'dim', 'freqs');
 
 % remove outliers
 [a1,a2,a3,a4] = size(Ci);
@@ -112,7 +113,7 @@ addpath('/project/3011085.03/scripts/fieldtrip/external/dmlt/external/svm/')
 
 cfg=[];
 cfg.method = 'crossvalidate';
-cfg.mva = {dml.standardizer dml.naive};%dml.svm};
+cfg.mva = {dml.standardizer dml.naive};
 cfg.statistic = {'confusion', 'accuracy'};
 cfg.design = conditions;
 cfg.type = 'nfold';
@@ -121,7 +122,11 @@ cfg.resample = 0; % resamples conditions with fewer trials, and throws away over
 stat = ft_timelockstatistics(cfg, data);
 stat.statistic
 
-%
+
+% filename = sprintf('/project/3011085.03/analysis/mim/singletrial/%s/%s_mimdecoding', subjectname, subjectname);
+% save(filename, 'data', 'conditions', 'cfg', 'stat', 'dim', 'nfreq');
+
+%%
 numrandomization = 100;
 r=zeros(numrandomization,1);
 for k=1:numrandomization
