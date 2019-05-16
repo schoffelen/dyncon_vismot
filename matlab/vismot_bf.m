@@ -1,4 +1,4 @@
-function [source, stat] = vismot_bf(subject,varargin)
+function [source, stat, filter] = vismot_bf(subject,varargin)
 
 %function [source, filter, freq] = vismot_bf_post(subject,varargin)
 
@@ -98,7 +98,7 @@ cfg.channel   = freq.label;
 cfg.singleshell.batchsize = 2000;
 leadfield     = ft_prepare_leadfield(cfg);
 
-[source, stat] = sourcepow(freq, headmodel, sourcemodel, leadfield, lambda, latoi, conditions);
+[source, stat, filter] = sourcepow(freq, headmodel, sourcemodel, leadfield, lambda, latoi, conditions);
 
 if nrand>0
   
@@ -143,7 +143,7 @@ if nrand>0
 end
 
 
-function [source, stat] = sourcepow(freq, headmodel, sourcemodel, leadfield, lambda, latoi, conditions, onlycompute_stat13_42)
+function [source, stat, filter] = sourcepow(freq, headmodel, sourcemodel, leadfield, lambda, latoi, conditions, onlycompute_stat13_42)
 if ~exist('onlycompute_stat13_42', 'var'); onlycompute_stat13_42=false; end
 
 cfg                 = [];
