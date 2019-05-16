@@ -58,6 +58,7 @@ else
   alldata = vismot_data_reorder(alldata, conditions);
 end
 if doL1out
+%   alldata=removefields(alldata,'data5');
   fd = fieldnames(alldata);
   for k = 1:numel(fd)
     data = alldata.(fd{k});
