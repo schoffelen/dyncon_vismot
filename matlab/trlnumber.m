@@ -8,7 +8,7 @@ alldata = load(fullfile(subject.pathname,'data',[subject.name,'data']));
 alldata = vismot_data_reorder(alldata, conditions);
 if strcmp(conditions, 'previous')
   freqpre      = vismot_spectral(subject,'output','pow','keeptrials','yes', 'conditions','previous','toi','pre', 'dobaseline', 0, 'doL1out', 0);
-  alldata = ft_appendfreq([], freqpre(1), freqpre(2), freqpre(3), freqpre(4), freqpre(5));
+  alldata = ft_appendfreq([], freqpre(1), freqpre(2), freqpre(3), freqpre(4));
 else
   alldata = ft_appenddata([], alldata.data1, alldata.data2, alldata.data3, alldata.data4, alldata.data5);
 end
