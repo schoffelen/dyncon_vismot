@@ -29,6 +29,10 @@ data.trial(idx,:,:)=[];
 data.trialinfo(idx,:)=[];
 insidepow(idx,:,:) = [];
 
+cfg=[];
+cfg.method = 'summary';
+data = ft_rejectvisual(cfg, data);
+
 % equalize conditions
 ntrials = min([sum(data.trialinfo(:,end)==1), sum(data.trialinfo(:,end)==2), sum(data.trialinfo(:,end)==3), sum(data.trialinfo(:,end)==4)]);
 tmpidx = [];
@@ -39,6 +43,7 @@ for k=1:numel(unique(data.trialinfo(:,end)))
 end
 data.trial = data.trial(tmpidx, :, :);
 data.trialinfo = data.trialinfo(tmpidx,:);
+
 conditions = data.trialinfo(:, end);
 insidepow = insidepow(tmpidx, :,:);
 
@@ -60,14 +65,7 @@ model.freq = freqs;
 model.divergence = zeros(numel(model.inside),nfreq);
 model.divergence(model.inside,:) = squeeze(nanmean(divergence,1));
 
-numrandomization = 100;
-randacc = zeros(numrandomization,1);
-for k=1:numrandomization
-  k
-  cfg.design = cfg.design(randperm(numel(cfg.design)));
-  tmpstat{k} = ft_timelockstatistics(cfg, data);
-  randacc(k,1) = tmpstat{k}.statistic.accuracy;
-end
+
 
 %% seperately for each frequency
 for k=1:nfreq
@@ -79,7 +77,21 @@ for k=1:nfreq
 end
 
 filename = fullfile(subject.pathname,'pow', [subject.name, '_source3d4mm_pre_enet.mat']);
-save(filename, 'stat','model','data', 'tmpstat', 'randacc', 'data_perfreq', 'stat_perfreq')
+save(filename, 'stat','model','data', 'data_perfreq', 'stat_perfreq', 'cfg')
 
+% randomize
+numrandomization = 100;
+for k=1:numrandomization
+  randseq = randperm(numel(cfg.design));
+  qsubfeval(@vismot_execute_pipeline, 'vismot_bf_enet_rand', subject.name, {'randnr', k}, {'randseq', randseq}, 'memreq', 10*1024^3, 'timreq', 1800, 'batchid', sprintf('pow_enet_%s_rand%d', subjectname, k));
+end
+%{
 
-
+randacc = zeros(numrandomization,1);
+for k=1:numrandomization
+  k
+  cfg.design = cfg.design(randperm(numel(cfg.design)));
+  tmpstat{k} = ft_timelockstatistics(cfg, data);
+  randacc(k,1) = tmpstat{k}.statistic.accuracy;
+end
+%}
