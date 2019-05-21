@@ -77,7 +77,7 @@ for k=1:nfreq
 end
 
 filename = fullfile(subject.pathname,'pow', [subject.name, '_source3d4mm_pre_enet.mat']);
-save(filename, 'stat','model','data', 'data_perfreq', 'stat_perfreq', 'cfg')
+save(filename, 'stat','model', 'stat_perfreq', 'cfg')
 
 % randomize
 numrandomization = 100;
