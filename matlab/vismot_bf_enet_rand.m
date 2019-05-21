@@ -12,5 +12,5 @@ cfg.design = cfg.design(randseq);
 
 stat = ft_timelockstatistics(cfg, data);
 
-filename = fullfile(subject.pathname,'pow', [subject.name, sprintf('_source3d4mm_pre_enet_rand%d.mat', randnr)]);
+filename = fullfile(subject.pathname,'pow', 'rand', [subject.name, sprintf('_source3d4mm_pre_enet_rand%d.mat', randnr)]);
 save(filename, 'stat')
