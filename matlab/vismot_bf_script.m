@@ -60,6 +60,7 @@ sourcepow.dim = tmpsource{1}.dim;
 sourcepow.inside = tmpsource{1}.inside;
 
 filename = fullfile(subject.pathname,'pow', [subject.name,sprintf('_source3d4mm_%s_', latoi), num2str(frequency,'%03d')]);
+sourcepow = removefields(sourcepow, 'cfg');
 save(filename, 'sourcepow', 'filter');
 %{
 %% post process stats
