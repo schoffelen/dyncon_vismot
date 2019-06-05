@@ -28,41 +28,13 @@ if isempty(smoothing)
     smoothing = 8;
   end
 end
+if ~exist('singletrialpow'); singletrialpow = false; end
+
 subject = vismot_subjinfo(subjectname);
 
 load(fullfile(subject.pathname,'grid',sprintf('%s_sourcemodel3d4mm',subject.name)),'sourcemodel');
 [source, stat, filter] = vismot_bf(subject,'frequency',frequency,'sourcemodel',sourcemodel,'prewhiten',prewhiten, 'lambda', lambda, 'nrand', nrand, 'latoi', latoi);
 
-
-% compute single trial source power
-freq    = vismot_spectral(subject, 'foilim', [frequency frequency], 'toi', latoi, 'balance', true, 'smoothing', smoothing, 'output', 'fourier', 'prewhiten', prewhiten);
-F = zeros(numel(source(1).inside), numel(freq(1).label));
-F(source(1).inside,:) = cat(1, filter{:});
-
-for k=1:numel(freq)
-tmpfreq = freq(k);
-nrpt = numel(tmpfreq.cumtapcnt);
-ntap = tmpfreq.cumtapcnt(1);
-
-ix = reshape(repmat(1:nrpt,[ntap 1]),[],1);
-iy = 1:(nrpt*ntap);
-iz = ones(nrpt*ntap,1)./ntap;
-P  = sparse(iy,ix,iz,nrpt*ntap,nrpt);
-
-tmpsource{k} = removefields(source(k), {'avg', 'cumtapcnt'});
-
-tmpsource{k}.pow = transpose((abs(F*transpose(tmpfreq.fourierspctrm)).^2)*P);
-end
-cfg=[];
-cfg.parameter = 'pow';
-sourcepow = ft_appendsource(cfg, tmpsource{:});
-sourcepow.dim = tmpsource{1}.dim;
-sourcepow.inside = tmpsource{1}.inside;
-
-filename = fullfile(subject.pathname,'pow', [subject.name,sprintf('_source3d4mm_%s_', latoi), num2str(frequency,'%03d')]);
-sourcepow = removefields(sourcepow, 'cfg');
-save(filename, 'sourcepow', 'filter');
-%{
 %% post process stats
 filename = fullfile(subject.pathname,'source', [subject.name,sprintf('_source3d4mm_%s_', latoi), num2str(frequency,'%03d')]);
 if istrue(prewhiten)
@@ -89,8 +61,6 @@ for k = 1:numel(source)
   source(k).cfg = removefields(source(k).cfg, {'grid' 'headmodel'});
   source(k).cfg.callinfo.usercfg = removefields(source(k).cfg.callinfo.usercfg, {'grid' 'headmodel'});
 end
-
-
 
 if nrand>0
   zx13 = rmfield(stat13, 'stat');
@@ -151,4 +121,34 @@ stat.statCvsIC2 = statCvsIC2.stat;
 
 save(filename, 'stat', 'smoothing', 'lambda', 'stat_resamp', 'nrand');
 
-%}
+% compute single trial source power
+if singletrialpow
+  freq    = vismot_spectral(subject, 'foilim', [frequency frequency], 'toi', latoi, 'balance', true, 'smoothing', smoothing, 'output', 'fourier', 'prewhiten', prewhiten);
+  F = zeros(numel(source(1).inside), numel(freq(1).label));
+  F(source(1).inside,:) = cat(1, filter{:});
+  
+  for k=1:numel(freq)
+    tmpfreq = freq(k);
+    nrpt = numel(tmpfreq.cumtapcnt);
+    ntap = tmpfreq.cumtapcnt(1);
+    
+    ix = reshape(repmat(1:nrpt,[ntap 1]),[],1);
+    iy = 1:(nrpt*ntap);
+    iz = ones(nrpt*ntap,1)./ntap;
+    P  = sparse(iy,ix,iz,nrpt*ntap,nrpt);
+    
+    tmpsource{k} = removefields(source(k), {'avg', 'cumtapcnt'});
+    
+    tmpsource{k}.pow = transpose((abs(F*transpose(tmpfreq.fourierspctrm)).^2)*P);
+  end
+  cfg=[];
+  cfg.parameter = 'pow';
+  sourcepow = ft_appendsource(cfg, tmpsource{:});
+  sourcepow.dim = tmpsource{1}.dim;
+  sourcepow.inside = tmpsource{1}.inside;
+  
+  filename = fullfile(subject.pathname,'pow', [subject.name,sprintf('_source3d4mm_%s_', latoi), num2str(frequency,'%03d')]);
+  sourcepow = removefields(sourcepow, 'cfg');
+  save(filename, 'sourcepow', 'filter');
+end
+
