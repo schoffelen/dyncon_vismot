@@ -49,8 +49,8 @@ insidepow = insidepow(tmpidx, :,:);
 
 cfg=[];
 cfg.method= 'crossvalidate';
-cfg.mva=  {dml.standardizer dml.naive};
-cfg.statistic= {'confusion'  'accuracy'};
+cfg.mva=  {dml.standardizer dml.naive};%dml.one_against_one('mva', dml.svm)}
+cfg.statistic = {'confusion'  'accuracy'};
 cfg.type= 'nfold';
 cfg.nfolds = 5;
 cfg.design = conditions;
@@ -76,15 +76,25 @@ for k=1:nfreq
   stat_perfreq{k} = ft_timelockstatistics(cfg, data_perfreq{k});
 end
 
-filename = fullfile(subject.pathname,'pow', [subject.name, '_source3d4mm_pre_enet.mat']);
-save(filename, 'stat','model', 'stat_perfreq', 'cfg')
+filename = fullfile(subject.pathname,'pow', [subject.name, '_source3d4mm_pre_naive.mat']);
+% filename = fullfile(subject.pathname,'pow', [subject.name, '_source3d4mm_pre_svm.mat']);
+
+save(filename, 'stat','model', 'stat_perfreq', 'cfg', 'data')
+
+
+
+
 
 % randomize
-numrandomization = 100;
+numrandomization = 500;
 for k=1:numrandomization
   randseq = randperm(numel(cfg.design));
-  qsubfeval(@vismot_execute_pipeline, 'vismot_bf_enet_rand', subject.name, {'randnr', k}, {'randseq', randseq}, 'memreq', 10*1024^3, 'timreq', 1800, 'batchid', sprintf('pow_enet_%s_rand%d', subjectname, k));
+%   vismot_execute_pipeline('vismot_bf_naive_rand', subject.name, {'randnr', k}, {'randseq', randseq},{'data', data}, {'cfg',cfg});
+
+  qsubfeval(@vismot_execute_pipeline, 'vismot_bf_naive_rand', subject.name, {'randnr', k}, {'randseq', randseq}, 'memreq', 10*1024^3, 'timreq', 1800, 'batchid', sprintf('pow_naive_%s_rand%d', subjectname, k));
 end
+
+
 %{
 
 randacc = zeros(numrandomization,1);
