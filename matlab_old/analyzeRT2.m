@@ -71,7 +71,7 @@ for k = 1:4
   sel        = intersect(find(trl==k),find(correct==1));
   rs.n(k)    = mean(rt(sel));
   rs.ntrim(k) = trimmean(rt(sel), 0.20);
-  rs.ntrimsem(k)  = trimsem(rt(sel),  0.20);
+%   rs.ntrimsem(k)  = trimsem(rt(sel),  0.20);
 end
 
 %rt in trial N as a function of condition N-1
@@ -81,7 +81,7 @@ for k = 1:4
     tmprt         = rt(:,2:end);
     rs.nmin1(k,m) = mean(tmprt(sel));
     rs.nmin1trim(k,m) = trimmean(tmprt(sel),0.20);
-    rs.nmin1trimsem(k,m)  = trimsem(tmprt(sel), 0.20);
+%     rs.nmin1trimsem(k,m)  = trimsem(tmprt(sel), 0.20);
     rs.sel{k,m}   = sel;
   end
 end
@@ -91,7 +91,7 @@ sel   = find(correct(:,1)==1 & trl(:,1)~=5);
 tmprt = rt(sel, 1);
 rs.nfirst        = mean(tmprt);
 rs.nfirsttrim    = trimmean(tmprt, 0.2);
-rs.nfirsttrimsem = trimsem(tmprt,  0.2); 
+% rs.nfirsttrimsem = trimsem(tmprt,  0.2); 
 
 
 
