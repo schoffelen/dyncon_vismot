@@ -1,6 +1,6 @@
 function [trl,event] = trialfun_longtrials(cfg)
 
-event = read_event(cfg.datafile);
+event = ft_read_event(cfg.datafile);
 value = [event.value]; %this can be shorter than event (because type occasionally is []
 for k = 1:length(event)
   ok(k) = ~isempty(event(k).value);
