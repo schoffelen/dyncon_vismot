@@ -6,20 +6,27 @@ subjectname = list{subj};
 %% MRI preprocessing
 
 vismot_anatomy_dicom2mgz(subjectname)
-vismot_anatomy_mgz2bti(subjectname)
+vismot_anatomy_mgz2bti(subjectname) % this step is interactive. will not be reproduced, but is reproducible (tested)
 
 vismot_anatomy_headmodel(subjectname)
 vismot_anatomy_sourcemodel3d(subjectname, 4)
 
 %% MEG preprocessing
 
-% setting up subject info and behavioral results.
-vismot_subjinfo(list{subj});
+% setting up subject info.
+vismot_subjinfo(subjectname);
 
-% artifact selection?
+% artifact selection? 
+% work in progress: vismot_preproc_artifact
+
+% preprocess emptyroom data
+vismot_execute_pipeline('vismot_emptyroom_script', subjectname);
 
 % defining trials and rejecting artifacts
 vismot_execute_pipeline('vismot_preproc_script', subjectname)
+
+%% behavioral effects
+
 
 %% post cue power
 frequencies = [10 22 38 42 58 62];
@@ -34,9 +41,10 @@ vismot_execute_function('vismot_script_Tstat_post', [])
 
 
 
+%% pre cue power
 
 
 
 
-%% post cue power
 
+%% pre cue coherence
