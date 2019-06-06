@@ -4,6 +4,11 @@ function [sourcemodel] = vismot_anatomy_sourcemodel3d(subject, resolution)
 % specified resolution based on an inverse warp of a template
 % grid in MNI space.
 
+if ischar(subject)
+  subject = vismot_subjinfo(subject);
+end
+
+
 % load the mri + coreg
 mri = ft_read_mri(fullfile(subject.pathname,'mri',subject.name,'mri',sprintf('%s.mgz',subject.name)));
 tmp = load(fullfile(subject.pathname,'mri',sprintf('%s_transform_vox2bti.mat',subject.name)));

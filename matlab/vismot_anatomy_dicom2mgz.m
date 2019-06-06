@@ -12,7 +12,7 @@ for k = 1:numel(subject)
     continue;
   end
   
-  if ~isempty(subject(k).mriname)
+  if isfield(subject(k), 'mriname') && ~isempty(subject(k).mriname)
     name = subject(k).mriname;
   else
     name = subject(k).name;
