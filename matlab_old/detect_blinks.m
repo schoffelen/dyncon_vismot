@@ -7,7 +7,7 @@ elseif nargin<4,
   ecg         = [];
 end
 
-hdr   = read_header(fname);
+hdr   = ft_read_header(fname);
   
 trllong      = trl;
 trllong(:,1) = trllong(:,1)-round(0.5*hdr.Fs);
@@ -42,7 +42,7 @@ elseif ~isempty(ecg),
 else
   %no changes to cfg
 end
-data                   = preprocessing(cfg);
+data                   = ft_preprocessing(cfg);
 
 cfg                          = [];
 cfg.trl                      = trllong;
@@ -60,4 +60,4 @@ cfg.artfctdef.eog.artpadding = 0.1;
 cfg.artfctdef.eog.feedback   = 'yes';
 cfg.artfctdef.type           = 'eog';
 cfg.artfctdef.reject         = 'partial';
-cfg                          = artifact_eog(cfg, data);
+cfg                          = ft_artifact_eog(cfg, data);

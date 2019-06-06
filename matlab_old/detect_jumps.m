@@ -7,7 +7,7 @@ elseif nargin<3,
   padding     = 5;
 end
 
-hdr   = read_header(fname);
+hdr   = ft_read_header(fname);
   
 trllong      = trl;
 trllong(:,1) = trllong(:,1)-round(0.5*padding*hdr.Fs);
@@ -22,7 +22,7 @@ cfg.trl      = trllong;
 cfg.blc      = 'yes';
 if denoiseflag,
   cfg.channel            = {'MEG' 'MEGREF' 'UACurrent'};
-  cfg.denoise.channel    = channelselection({'MEG' 'MEGREF'},hdr.label);
+  cfg.denoise.channel    = ft_channelselection({'MEG' 'MEGREF'},hdr.label);
   cfg.denoise.refchannel = {'UACurrent'};
   cfg.denoise.hilbert    = 'yes';
 else
@@ -49,7 +49,7 @@ end
 cfg.trl               = trl;
 cfg.continuous        = 'yes';
 %cfg                   = artifact_jump(cfg, data);
-cfg                   = artifact_jump(cfg);
+cfg                   = ft_artifact_jump(cfg);
 
 %keyboard
 %cfg          = [];

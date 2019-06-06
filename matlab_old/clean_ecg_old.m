@@ -4,7 +4,7 @@ if nargin<3,
   denoiseflag = 0;
 end
 
-hdr   = read_header(fname);
+hdr   = ft_read_header(fname);
 
 %read in all data and do some filtering
 cfg          = [];
