@@ -18,7 +18,7 @@ trllong(:,3) = trl(:,3)-round(0.5*hdr.Fs);
 cfg          = [];
 cfg.trl      = trllong;
 cfg.datafile = fname;
-cfg          = dataset2files(cfg);
+cfg          = ft_checkconfig(cfg, 'dataset2files', 'yes');
 
 if denoiseflag && isempty(ecg),
   fprintf('denoising the data\n');

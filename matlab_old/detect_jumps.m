@@ -16,7 +16,7 @@ trllong(:,3) = trl(:,3)-round(0.5*padding*hdr.Fs);
 
 cfg          = [];
 cfg.datafile = fname;
-cfg          = dataset2files(cfg);
+cfg          = ft_checkconfig(cfg, 'dataset2files', 'yes');
 cfg.trl      = trllong;
 %cfg.trl      = trl;
 cfg.blc      = 'yes';
