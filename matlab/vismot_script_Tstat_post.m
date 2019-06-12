@@ -5,6 +5,7 @@ alldir = '/project/3011085.03/';
 datadir = fullfile([alldir, 'analysis/source/']);
 load list;
 
+% Pooled statistic: (left response C-IC minus right response C-IC)
 whichstat = 'statResp';
 frequency = [10 22 38 42 58 62 78 82];%[10 16 24 26 48:4:92];%[4:2:30 40:4:100];
 n=19;
@@ -12,13 +13,15 @@ dat = zeros(numel(sourcemodel.inside), numel(frequency), n);
 cnt = 0;
 for k = frequency
   for m = 1:n
-    d = fullfile([datadir, sprintf('%s_source3d4mm_post_%03d_prewhitened.mat', list{m}, k)]);
+    d = fullfile([datadir, sprintf('orig/%s_source3d4mm_post_%03d_prewhitened.mat', list{m}, k)]);
     dum = load(d, 'stat');
     dat(:,cnt+1, m) = dum.stat.(whichstat);
   end
   clear dum
   cnt=cnt+1;
 end
+
+% make data structure
 foi = { 'alpha', 10, 10
         'beta', 22, 22
         'gamma1', [38 42], 40
@@ -29,6 +32,8 @@ dat = permute(dat, [3,1,2]);
 source = sourcemodel;
 source.dimord = 'rpt_pos_freq';
 source.freq = cat(2,foi{:,end});
+
+% fill data structure. Average within bands.
 l=0;
 for k=1:size(foi,1)
   freqidx = find(ismember(foi{k,2}, frequency));
@@ -38,6 +43,7 @@ for k=1:size(foi,1)
   source.stat(:,:,k) = nanmean(dat(:,:,freqidx),3);
 end
 
+% compare with zero
 nul = source;
 nul.stat(:)=0;
 source.avg = squeeze(nanmean(source.stat,1));
