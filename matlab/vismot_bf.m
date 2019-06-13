@@ -52,8 +52,12 @@ elseif strcmp(latoi, 'pre')
   end
 end
 
-for k=1:numel(freq)
-  tmpfreq{k} = freq(k);
+for k=1:size(freq,2)
+  tmpfreq{k} = freq(1,k);
+  try
+    tmpfreq{k+size(freq,2)} = freq(2,k);
+  catch
+  end
 end
 cfg = [];
 cfg.appenddim = 'rpt';
