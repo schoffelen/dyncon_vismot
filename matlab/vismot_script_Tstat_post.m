@@ -111,6 +111,7 @@ foi = [
   {'gamma2'}          {[50 70]}           {60}                 {[58 62]}                      {8}
   {'gamma3'}          {[70 90]}           {80}                 {[78 82]}                      {8}];
 
-save('/project/3011085.03/analysis/source/roi.mat', 'roi', 'foi');
+unit = 'cm';
+save('/project/3011085.03/analysis/source/roi.mat', 'roi', 'foi', 'unit');
 
 
