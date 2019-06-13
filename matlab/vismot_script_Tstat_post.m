@@ -13,7 +13,7 @@ dat = zeros(numel(sourcemodel.inside), numel(frequency), n);
 cnt = 0;
 for k = frequency
   for m = 1:n
-    d = fullfile([datadir, sprintf('orig/%s_source3d4mm_post_%03d_prewhitened.mat', list{m}, k)]);
+    d = fullfile([datadir, sprintf('%s_source3d4mm_post_%03d_prewhitened.mat', list{m}, k)]);
     dum = load(d, 'stat');
     dat(:,cnt+1, m) = dum.stat.(whichstat);
   end
@@ -62,8 +62,7 @@ cfgs.clusteralpha = 0.025;
 cfgs.correcttail = 'prob';
 stat = ft_sourcestatistics(cfgs, source, nul);
 
-save(fullfile([alldir, 'analysis/stat_bf_post.mat']), 'stat', 'source', 'sourcemodel', 'foi')
-
+% pool across hemispheres by subtracting the other hemisphere
 stat_semhemi = stat;
 for k=1:numel(stat.freq)
   tmpx=stat.stat(:,k);
@@ -74,7 +73,10 @@ for k=1:numel(stat.freq)
   stat_semhemi.stat(:,k) = dum(:)/2;
   clear dum tmpx
 end
+save(fullfile([alldir, 'analysis/stat_bf_post.mat']), 'stat', 'source', 'sourcemodel', 'foi', 'stat_semhemi')
 
+
+%% Define ROI's by browsing through Ortho Maps
 cmap = flipud(brewermap(64,'RdBu'));
 cfgp=[];
 cfgp.funcolormap = cmap;
@@ -86,54 +88,29 @@ for k=1:numel(stat_semhemi.freq)
     ft_sourceplot(cfgp, stat_semhemi)
 end
 
+% Note the FOIs and ROIs here:
+roi = [
+  {'REGION'}    {'FREQUENCY BAND'}  {'LOCATION LEFT'}   {'LOCATION RIGHT'}
+  {'occipital'} {'alpha'}           {[-2.6 -9.6 3.2]}   {[2.6 -9.6 3.2]}
+  {'occipital'} {'gamma1'}          {[-3.0 -10.4 0.8]}  {[3.0 -10.4 0.8]}
+  {'occipital'} {'gamma2'}          {[-2.6 -9.2 0.8]}   {[2.6 -9.2 0.8]}
+  {'occipital'} {'gamma3'}          {[-3.4 -9.2 1.6]}   {[3.4 -9.2 1.6]}
+  {'parietal'}  {'alpha'}           {[-3.4 -7.6 5.6]}   {[3.4 -7.6 5.6]}
+  {'parietal'}  {'gamma1'}          {[-3.4 -8.8 4.4]}   {[3.4 -8.8 4.4]}
+  {'parietal'}  {'gamma2'}          {[-3.4 -7.6 5.6]}   {[3.4 -7.6 5.6]}
+  {'parietal'}  {'gamma3'}          {[-2.6 -8.4 4.8]}   {[2.6 -8.4 4.8]}
+  {'motor'}     {'alpha'}           {[-4.6 -0.4 6.4]}   {[4.6 -0.4 6.4]}
+  {'motor'}     {'beta'}            {[-3.8 -4.0 5.6]}   {[3.8 -4.0 5.6]}
+  {'motor'}     {'gamma1'}          {[-4.6 -3.6 5.6]}   {[4.6 -3.6 5.6]}
+  {'motor'}     {'gamma3'}          {[-4.2 -3.6 7.2]}   {[4.2 -3.6 7.2]}];
+foi = [
+  {'FREQUENCY BAND'}  {'FREQUENCY RANGE'} {'CENTER FREQUENCY'} {'REPRESENTATIVE FREQUENCIES'} {'SMOOTHING'}
+  {'alpha' }          {[8 12]}            {10}                 {10}                           {2}
+  {'beta'  }          {[14 30]}           {22}                 {22}                           {8}
+  {'gamma1'}          {[30 50]}           {40}                 {[38 42]}                      {8}
+  {'gamma2'}          {[50 70]}           {60}                 {[58 62]}                      {8}
+  {'gamma3'}          {[70 90]}           {80}                 {[78 82]}                      {8}];
 
-%% Define ROI's by browsing through Ortho Maps
-source = ft_convert_units(source, 'mm');
-
-cfgp=[];
-cfgp.funcolormap = cmap;
-cfgp.maskstyle = 'colormix';
-cfgp.method     = 'ortho';
-cfgp.funparameter = 'stat';
-cfgp.maskparameter = 'stat';
-
-cfgp.frequency = frequency(1);
-cfgp.location='max';
-ft_sourceplot(cfgp, source);
+save('/project/3011085.03/analysis/source/roi.mat', 'roi', 'foi');
 
 
-%% Make tval bar graph of defined ROIs and FOIs
-load('/project/3011085.03/analysis/source/roi.mat', 'ROI');
-filename = fullfile(['/project/3011085.03/', 'analysis/', 'freq/', 'post_cue_pow_stat.mat']);
-load(filename, 'source_int', 'source', 'stat', 'frequency','foi');
-
-for k=1:3
-    idx_left(k) = find_dipoleindex(source, ROI{k,2});
-    idx_right(k) = find_dipoleindex(source, ROI{k,3});
-end
-
-
-figure;
-% occipital
-subplot(1,2,1);
-y = [source.stat(idx_left(1),2), source.stat(idx_left(1),5); source.stat(idx_right(1),2), source.stat(idx_right(1),5)]; 
-bar(y);
-set(gca,'xticklabel',{'left', 'right'});
-legend({'alpha', 'gamma1'}, 'location', 'northwest')
-title('40-60 Hz')
-
-% parietal
-subplot(1,3,2);
-y = [source.stat(idx_left(2),2), source.stat(idx_left(2),5) source.stat(idx_left(2),6); source.stat(idx_right(2),2), source.stat(idx_right(2),5) source.stat(idx_right(2),6)]; 
-bar(y);
-set(gca,'xticklabel',{'left', 'right'});
-legend({'alpha', 'gamma1', 'gamma2'}, 'location', 'northwest')
-title('parietal')
-
-% motor
-subplot(1,3,3);
-y = [source.stat(idx_left(3),4), source.stat(idx_left(3),6); source.stat(idx_right(3),4), source.stat(idx_right(3),6)]; 
-bar(y);
-set(gca,'xticklabel',{'left', 'right'});
-legend({'beta2', 'gamma2'}, 'location', 'northwest')
-title('motor')

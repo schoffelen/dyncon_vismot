@@ -38,30 +38,21 @@ for k=1:size(foi,1)
   source.stat(:,:,k) = nanmean(dat(:,:,freqidx),3);
 end
 
-l = [
--2.6 -9.6 3.2	% occ alpha
--3.0 -10.4 0.8 % occ gam1
--2.6 -9.2 0.8 % occ gam2
--3.4 -9.2 1.6 % occ gam3
--3.4 -7.6 5.6 % par alpha
--3.4 -8.8 4.4 % par gam1
--3.4 -7.6 5.6 % par gam2
--2.6 -8.4 4.8 % par gam3
--4.6 -0.4 6.4 % mot alpha
--3.8 -4.0 5.6 % mot beta 
--4.6 -3.6 5.6 % mot gam1
--4.2 -3.6 7.2]; % mot gam3
 
-freq_idx = [1 3 4 5 1 3 4 5 1 2 3 5]';
+load(fullfile([alldir, 'analysis/source/roi.mat']));
 
-r=l; 
-r(:,1) = -r(:,1);
+% find ROI indices
+for k=1:size(roi,1)-1
+  l(k,:) = roi{k+1,3};
+  r(k,:) = roi{k+1,4};
+  freq_idx(k) = find(strcmp(roi{k+1,2}, foi([2:end],1)));
+end
 l = find_dipoleindex(sourcemodel, l);
 r = find_dipoleindex(sourcemodel, r);
 
 stat_roi = nan(n,numel(l), 1);
 for k=1:numel(l)
-  stat_roi(:,k) = (source.stat(:,l(k),freq_idx(k))-source.stat(:,r(k),freq_idx(k)))./2;
+  stat_roi(:,k) = (source.stat(:,l(k),freq_idx(k))-source.stat(:,r(k),freq_idx(k)));
 end
 
 source.freq=0;
@@ -71,6 +62,12 @@ source.stat(:)=nan;
 source.stat(:,1:numel(l),:) = stat_roi;
 source.inside(:) = 0;
 source.inside(1:numel(l))=1;
+
+d =[];
+d.stat = reshape(stat_roi, 19, 1, 12);
+d.time = 1:size(stat_roi,2);
+d.dimord = 'rpt_chan_time';
+d.label{1} = 'pre_pow';
 
 nul = source;
 nul.stat=0*nul.stat;
@@ -83,7 +80,7 @@ cfgs.alpha = 0.05;
 cfgs.ivar = 1;
 cfgs.uvar = 2;
 cfgs.design = [ones(1,n) ones(1,n)*2;1:n 1:n];
-cfgs.correctm = 'bonferoni';
+cfgs.correctm = 'bonferroni';
 cfgs.numrandomization = 10000;
 cfgs.correcttail = 'prob';
 stat = ft_sourcestatistics(cfgs, source, nul);
