@@ -13,13 +13,12 @@ insidepos = sourcemodel.pos(sourcemodel.inside==1,:);
 s=sourcemodel;
 
 mri = ft_read_mri('single_subj_T1_1mm.nii');
-vismot_subjinfo;
 alldir = '/project/3011085.03/';
 datadir = fullfile([alldir, 'analysis/source/']);
 load list;
 
-frequency = [10 24 26 42 58 62 78 82];
-foi = [10 25 42 60 80];
+frequency = [10 22 38 42 58 62 78 82];
+foi = [10 22 40 60 80];
 n=19;
 dat = zeros(74784, numel(frequency), n);
 cnt = 1;
