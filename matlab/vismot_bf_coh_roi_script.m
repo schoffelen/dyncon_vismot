@@ -6,15 +6,16 @@ if ~exist('roi', 'var') && ~exist('refindx', 'var')
   
   % use the rois defined in the file, at present with hard coded path
   % (suboptimal)
-  load('/project/3011085.03/analysis/source/roi.mat');
-  if iscell(ROI)
-    roi = zeros(size(ROI,1)*2,3);
-    for m = 1:size(ROI,1)
-      roi((m-1)*2+1,:) = ROI{m,2};
-      roi((m-1)*2+2,:) = ROI{m,3};
+  d = load('/project/3011085.03/analysis/source/roi.mat');
+  if iscell(d.roi)
+    for m = 1:size(d.roi,1)-1
+      roi((m-1)*2+1,:) = d.roi{m+1,3};
+      roi((m-1)*2+2,:) = d.roi{m+1,4};
     end
   end
-  roi = roi./10; % assume that the values were in mm, convert to cm
+  if strcmp(d.unit, 'mm')
+    roi = roi./10; % assume that the values were in mm, convert to cm
+  end
 end
 if ~exist('refindx', 'var')
   
