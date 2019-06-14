@@ -1,16 +1,35 @@
 if ~exist('toi', 'var'); toi='pre'; end
 if ~exist('include_neighb', 'var'); include_neighb=false; end
 if ~exist('roi', 'var') && ~exist('refindx', 'var')
-  % as Nx3 matrix, in the same units as the sourcemodel
-  %error('roi or refindx should be defined')
+  if ~exist('frequency', 'var')
+    error('frequency should be defined');
+  end
+if ~exist('nrand', 'var')
+  nrand = 0;
+end
+if ~exist('subjectname', 'var')
+    error('subjectname needs to be defined');
+end
+if ~exist('conditions', 'var')
+    error('conditions need to be specified (current, previous, or current_previous')
+end
+if ~exist('smoothing', 'var')
+    smoothing = 4;
+end
+if ~exist('lambda', 'var')
+    lambda = [];
+end
+if ~isempty('lambda') && lambda(end)~='%'
+    error('lambda should be specified in percentages')
+end
   
   % use the rois defined in the file, at present with hard coded path
   % (suboptimal)
   d = load('/project/3011085.03/analysis/source/roi.mat');
   if iscell(d.roi)
     for m = 1:size(d.roi,1)-1
-      roi((m-1)*2+1,:) = d.roi{m+1,3};
-      roi((m-1)*2+2,:) = d.roi{m+1,4};
+      roi(m,:) = d.roi{m+1,3};
+      roi(m+size(d.roi,1)-1,:) = d.roi{m+1,4};
     end
   end
   if strcmp(d.unit, 'mm')
@@ -51,34 +70,12 @@ if ~exist('refindx', 'var')
   % refindx = find_dipoleindex(sourcemodel, roi); % Does not work yet.
 end
 
-if ~exist('frequency', 'var')
-    error('frequency should be defined');
-end
 
-if ~exist('nrand', 'var')
-  nrand = 100;
-end
-
-if ~exist('subjectname', 'var')
-    error('subjectname needs to be defined');
-end
-if ~exist('conditions', 'var')
-    error('conditions need to be specified (current, previous, or current_previous')
-end
-if ~exist('smoothing', 'var')
-    smoothing = 4;
-end
-if ~exist('lambda', 'var')
-    lambda = [];
-end
-if ~isempty('lambda') && lambda(end)~='%'
-    error('lambda should be specified in percentages')
-end
 subject = vismot_subjinfo(subjectname);
 load(fullfile(subject.pathname,'grid',sprintf('%s_sourcemodel3d4mm',subject.name)),'sourcemodel');
 [coh,zx13,zx42,looptime] = vismot_bf_coh_roi(subject,'toi', toi,'conditions', conditions, 'sourcemodel',sourcemodel,'lambda', lambda, 'frequency',frequency,'smoothing',smoothing,'nrand',nrand, 'ref', ref, 'include_neighb', include_neighb);
 
-filename = fullfile(subject.pathname,'source', [subject.name, '_coh6d4mm_', sprintf('%s_', toi), 'roi_',sprintf('%03d', frequency)] );
+filename = fullfile(subject.pathname,'source', [subject.name, '_coh6d4mm_', sprintf('%s_', toi), sprintf('roi2%s_', roi_to),sprintf('%03d', frequency)] );
 if include_neighb
     filename = fullfile([filename, '_neighb']); 
 end

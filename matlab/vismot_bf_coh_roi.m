@@ -11,6 +11,7 @@ roi            = ft_getopt(varargin, 'roi', []);
 ref            = ft_getopt(varargin, 'ref', []);
 include_neighb = ft_getopt(varargin, 'include_neighb', false);
 lambda         = ft_getopt(varargin, 'lambda', '10%');
+roi_to         = ft_getopt(varargin, 'roi_to', 'all');
 
 if isempty(roi) && isempty(ref)
     error('roi or refindx required');
@@ -172,6 +173,18 @@ else
     zx13 = abs(coh(1).coh)-abs(coh(3).coh);
     zx42 = abs(coh(4).coh)-abs(coh(2).coh);
 end
+
+if strcmp(roi_to, 'roi')
+  zx13 = zx13(refindx,:);
+  zx42 = zx42(refindx,:);
+for k=1:numel(coh)
+  coh(k).coh = allcoh.coh(refindx,:);
+  coh(k).ori = allcoh.ori(refindx,:);
+  coh(k).a   = allcoh.a(refindx,:);
+  coh(k).r   = allcoh.r(refindx,:);
+end
+end
+
 
 if ~exist('looptime', 'var'), looptime = nan; end
 
