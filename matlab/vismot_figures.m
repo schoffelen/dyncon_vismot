@@ -17,7 +17,7 @@ title(['Figure 7' newline 'A) Dodge Options Example 1']);
 set(gca,'XLim', [0 40], 'YLim', [-.075 .15]);
 box off
 
-
+cmap = brewermap(2, 'RdBu');
 filename = [subjects(1).pathname, '/rt/', 'stat_gratton.mat'];
 d2 = load(filename);
 figure;
@@ -88,3 +88,73 @@ end
 set(gca,'xticklabel',{'left', 'right'});
 legend({'alpha', 'beta', 'gamma1', 'gamma3'}, 'location', 'northeast')
 title('motor')
+
+%% ROI plot
+
+
+%% pre cue power
+
+s = load(fullfile([alldir, 'analysis/stat_bf_pre.mat']))
+% OPTION 1
+cmap = brewermap(12, 'Set1');
+figure;
+for k=1:12
+d{k,1} = s.lpow(:,k);
+d{k,2} = s.rpow(:,k);
+end
+h = rm_raincloud(d, cmap);
+for k=1:numel(h.l)
+  h.l(k).Color = 'none';
+end
+for k=1:numel(h.m)
+    h.m(k).MarkerFaceColor = 'none';
+  h.m(k).MarkerEdgeColor = 'none';
+end
+
+% OPTION 2
+figure;
+cmap2 = brewermap(2, 'RdBu');
+for k=1:size(s.lpow,2)
+  subplot(3,4,k)
+  h1{k} = raincloud_plot(s.lpow(:,k), 'box_on', 1, 'color', cmap(1,:), 'alpha', 0.5,...
+     'box_dodge', 1, 'box_dodge_amount', .15, 'dot_dodge_amount', .15,...
+     'box_col_match', 0);
+  h2{k} = raincloud_plot(s.rpow(:,k), 'box_on', 1, 'color', cmap(2,:), 'alpha', 0.5,...
+     'box_dodge', 1, 'box_dodge_amount', .35, 'dot_dodge_amount', .35, 'box_col_match', 0);
+end
+
+% OPTION 3
+  diff = s.lpow-s.rpow;
+  addpath /project/3011085.03/scripts/IoSR-Surrey-MatlabToolbox-4bff1bb/
+figure; iosr.statistics.boxPlot(diff', 'showScatter', true, 'scatterMarker', '.', 'boxColor'); 
+load(fullfile([alldir, 'analysis/source/roi.mat']));
+cmap = brewermap(5, 'Set3');
+for k=1:12
+%   c{k} = cmap(s.freq_idx(k),:);
+x{1}(k,:) = [cmap(s.freq_idx(k),:)];
+end
+
+% OPTION 4
+meanl = mean(s.lpow,1);
+meanr = mean(s.rpow,1);
+figure;
+tmpcmap = cmap([1 3:5],:);
+subplot(1,3,1)
+b = bar([lpow(1:4); rpow(1:4)]);
+for k=1:4
+  set(b(k),'FaceColor', tmpcmap(k,:));
+end
+set(gca,'xticklabel',{'left', 'right'});
+subplot(1,3,2)
+b = bar([lpow(5:8); rpow(5:8)]);
+for k=1:4
+  set(b(k),'FaceColor', tmpcmap(k,:));
+end
+set(gca,'xticklabel',{'left', 'right'});
+subplot(1,3,3)
+tmpcmap = cmap([1:3 5],:);
+b = bar([lpow(9:12); rpow(9:12)]);
+for k=1:4
+  set(b(k),'FaceColor', tmpcmap(k,:));
+end
+set(gca,'xticklabel',{'left', 'right'});
