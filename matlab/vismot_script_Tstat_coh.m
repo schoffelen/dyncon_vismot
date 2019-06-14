@@ -1,3 +1,53 @@
+
+load standard_sourcemodel3d4mm;
+mri = ft_read_mri('single_subj_T1_1mm.nii');
+vismot_subjinfo;
+alldir = '/project/3011085.03/';
+datadir = fullfile([alldir, 'analysis/source/']);
+load list;
+frequency = [10 22 38 42 58 62 78 82];
+n=numel(list);
+
+toi = 'pre';
+roi_to = 'roi';
+load(fullfile([alldir, 'analysis/source/roi.mat']));
+nregions = 2*(size(roi,1)-1);
+
+cnt = 1;
+zx13 = zeros(n, numel(frequency), nregions, nregions);
+zx42 = zeros(n, numel(frequency), nregions, nregions);
+for k = frequency
+    for m = 1:n
+        filename = fullfile([datadir, sprintf('%s_coh6d4mm_%s_roi2%s_%03d', list{m},toi,roi_to, k)]);
+        dum = load(filename);
+        zx13(m,cnt,:,:) = dum.zx13;
+        zx42(m,cnt,:,:) = dum.zx42;
+    end
+    cnt=cnt+1;
+end
+
+
+foi = [10 22 40 60 80];
+% average within frequency bands
+[a1,a2,a3,a4] = size(zx42);
+zx42tmp = zeros(a1,numel(foi), a3, a4);
+zx42tmp(:,[1 2],:,:) = zx42(:,[1 2], :,:);
+zx42tmp(:,3,:,:) = nanmean(zx42(:,[3 4],:,:),2);
+zx42tmp(:,4,:,:) = nanmean(zx42(:,[5 6],:,:),2);
+zx42tmp(:,5,:,:) = nanmean(zx42(:,[7 8],:,:),2);
+
+zx13tmp = zeros(a1,numel(foi), a3, a4);
+zx13tmp(:,[1 2],:,:) = zx13(:,[1 2], :,:);
+zx13tmp(:,3,:,:) = nanmean(zx13(:,[3 4],:,:),2);
+zx13tmp(:,4,:,:) = nanmean(zx13(:,[5 6],:,:),2);
+zx13tmp(:,5,:,:) = nanmean(zx13(:,[7 8],:,:),2);
+
+% combine select FOI belonging to ROI
+load('/project/3011085.03/analysis/stat_bf_pre.mat', 'freq_idx')
+
+
+
+%{
 if ~exist('fliphemi', 'var'); fliphemi = false; end % not yet implemented. look at left and right hand resp trials seperately.
 if ~exist('toi', 'var'); toi = 'pre'; end
 if ~exist('include_neighb', 'var'); include_neighb = false; end
@@ -49,6 +99,33 @@ for k = frequency
 end
 
 % average within frequency bands
+[a1,a2,a3,a4] = size(zx42);
+zx42tmp = zeros(a1,numel(foi), a3, a4);
+zx42tmp(:,[1 2],:,:) = zx42(:,[1 2], :,:);
+zx42tmp(:,3,:,:) = nanmean(zx42(:,[3 4],:,:),2);
+zx42tmp(:,4,:,:) = nanmean(zx42(:,[5 6],:,:),2);
+zx42tmp(:,5,:,:) = nanmean(zx42(:,[7 8],:,:),2);
+
+zx13tmp = zeros(a1,numel(foi), a3, a4);
+zx13tmp(:,[1 2],:,:) = zx13(:,[1 2], :,:);
+zx13tmp(:,3,:,:) = nanmean(zx13(:,[3 4],:,:),2);
+zx13tmp(:,4,:,:) = nanmean(zx13(:,[5 6],:,:),2);
+zx13tmp(:,5,:,:) = nanmean(zx13(:,[7 8],:,:),2);
+
+% only consider roi interactions
+tmp = 1:numel(sourcemodel.inside);
+tmp(sourcemodel.inside~=1)=[];
+load('/project/3011085.03/analysis/stat_bf_pre.mat', 'l', 'r', 'freq_idx')
+[~, inside_idx_l] = ismember(l,tmp);
+[~, inside_idx_r] = ismember(r,tmp);
+zx42tmp = zx42tmp(:, :, [inside_idx_l; inside_idx_r],:);
+zx13tmp = zx13tmp(:, :, [inside_idx_l; inside_idx_r],:);
+
+% only roi interactions in specific fois
+
+%
+
+% average within frequency bands
 zx13(:,2,:,:) = nanmean(zx13(:,2:3,:,:),2);
 zx13(:,3,:,:) = zx13(:,4,:,:);
 zx13(:,4,:,:) = nanmean(zx13(:,5:6,:,:),2);
@@ -62,28 +139,8 @@ zx42(:,5,:,:) = nanmean(zx42(:,7:8,:,:),2);
 zx42(:,6:end,:,:)=[];
 
 %% get ROI indices
-load('/project/3011085.03/analysis/source/roi.mat');
-if iscell(ROI)
-    % explicitly remove the last ROI, frontal region.
-    roi = zeros(size(ROI,1)*2,3);
-    for m = 1:size(ROI,1)
-        roi((m-1)*2+1,:) = ROI{m,2};
-        roi((m-1)*2+2,:) = ROI{m,3};
-    end
-end
-roi = roi./10; % assume that the values were in mm, convert to cm
+load('/project/3011085.03/analysis/stat_bf_pre.mat', 'l', 'r')
 
-load standard_sourcemodel3d4mm;
-insidepos = sourcemodel.pos(sourcemodel.inside,:);
-if islogical(sourcemodel.inside)
-    insidevec = find(sourcemodel.inside);
-else
-    insidevec = sourcemodel.inside;
-end
-refindx = nan(size(roi,1),1);
-for m = 1:size(roi,1)
-    [~,refindx(m)] = min( sum((insidepos-roi(m,:)).^2,2) ); % find the index of each ROI in insidepos.
-end
 
 %% spatial smoothing: average over neighbours (before tstat)
 if spatsmooth
@@ -311,3 +368,4 @@ if doplot
         end
     end
 end
+%}
