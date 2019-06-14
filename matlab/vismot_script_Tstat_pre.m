@@ -40,7 +40,8 @@ end
 
 
 load(fullfile([alldir, 'analysis/source/roi.mat']));
-
+l = zeros(size(roi,1)-1,3);
+r = zeros(size(roi,1)-1,3);
 % find ROI indices
 for k=1:size(roi,1)-1
   l(k,:) = roi{k+1,3};
@@ -52,24 +53,18 @@ r = find_dipoleindex(sourcemodel, r);
 
 stat_roi = nan(n,numel(l), 1);
 for k=1:numel(l)
-  stat_roi(:,k) = (source.stat(:,l(k),freq_idx(k))-source.stat(:,r(k),freq_idx(k)));
+  lpow(:,k) = source.stat(:,l(k),freq_idx(k));
+  rpow(:,k) = source.stat(:,r(k),freq_idx(k));
 end
-
-source.freq=0;
-source.stat(:,:,2:end)=[];
-
-source.stat(:)=nan;
-source.stat(:,1:numel(l),:) = stat_roi;
-source.inside(:) = 0;
-source.inside(1:numel(l))=1;
+stat_roi = lpow-rpow;
 
 d =[];
 d.stat = reshape(stat_roi, 19, 1, 12);
 d.time = 1:size(stat_roi,2);
 d.dimord = 'rpt_chan_time';
-d.label{1} = 'pre_pow';
+d.label{1} = 'pre_roi_pow';
 
-nul = source;
+nul = d;
 nul.stat=0*nul.stat;
 
 cfgs=[];
@@ -83,8 +78,8 @@ cfgs.design = [ones(1,n) ones(1,n)*2;1:n 1:n];
 cfgs.correctm = 'bonferroni';
 cfgs.numrandomization = 10000;
 cfgs.correcttail = 'prob';
-stat = ft_sourcestatistics(cfgs, source, nul);
+stat = ft_timelockstatistics(cfgs, d, nul);
 
-save('/project/3011085.03/analysis/stat_bf_pre.mat', 'l','r','freq_idx', 'sourcemodel', 'source','stat');
+save('/project/3011085.03/analysis/stat_bf_pre.mat', 'l','r','freq_idx', 'sourcemodel', 'source','stat', 'stat_roi', 'd', 'rpow', 'lpow');
 
 
