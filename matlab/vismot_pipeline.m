@@ -29,21 +29,30 @@ vismot_execute_pipeline('vismot_preproc_script', subjectname)
 vismot_rt
 
 %% post cue power
-frequencies = [10 22 38 42 58 62];
-smoothing  = [2, 8, 8, 8, 8, 8];
+frequencies = [10 22 38 42 58 62, 78, 82];
+smoothing  = [2, 8, 8, 8, 8, 8, 8, 8];
 for f=1:numel(frequencies)
   vismot_execute_pipeline('vismot_bf_script', subjectname, {'latoi', 'post'}, ...
     {'frequency', frequencies(f)}, {'subjectname', subjectname}, {'smoothing', smoothing(f)},...
     {'lambda', []}, {'prewhiten', true})
 end
 
-vismot_execute_function('vismot_script_Tstat_post', [])
+vismot_execute_function('vismot_script_Tstat_post', [], {'stratifyflag', false})
 
+
+% stratified for RT
+for f=1:numel(frequencies)
+  vismot_execute_pipeline('vismot_bf_script', subjectname, {'latoi', 'post'}, ...
+    {'frequency', frequencies(f)}, {'subjectname', subjectname}, {'smoothing', smoothing(f)},...
+    {'lambda', []}, {'prewhiten', true}, {'stratifyflag', true})
+end
+
+vismot_execute_function('vismot_script_Tstat_post', [], {'stratifyflag', true})
 
 
 %% pre cue power
 frequencies = [10 22 38 42 58 62, 78, 82];
-smoothing  = [2, 8, 8, 8, 8, 8];
+smoothing  = [2, 8, 8, 8, 8, 8, 8, 8];
 for f=1:numel(frequencies)
   vismot_execute_pipeline('vismot_bf_script', subjectname, {'latoi', 'pre'}, ...
     {'frequency', frequencies(f)}, {'subjectname', subjectname}, {'smoothing', smoothing(f)},...
@@ -59,9 +68,10 @@ smoothing  = [2, 8, 8, 8, 8, 8, 8, 8];
 for f = 1:numel(frequencies)
   vismot_execute_pipeline('vismot_bf_coh_roi_script', subjectname, {'toi', 'pre'},...
     {'conditions', 'previous'}, {'frequency', frequencies(f), {'smoothing', smoothing(f)}}, ...
-    {'lambda', '100%'}, {'nrand', 0}, {'roi_to', 'roi'}) % check this
+    {'lambda', '100%'}, {'nrand', 0}, {'roi_to', 'roi'}) 
 end
 
+vismot_execute_function('vismot_script_Tstat_coh', [])
 
 
 
