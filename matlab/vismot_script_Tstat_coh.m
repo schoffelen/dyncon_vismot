@@ -13,38 +13,118 @@ roi_to = 'roi';
 load(fullfile([alldir, 'analysis/source/roi.mat']));
 nregions = 2*(size(roi,1)-1);
 
-cnt = 1;
-zx13 = zeros(n, numel(frequency), nregions, nregions);
-zx42 = zeros(n, numel(frequency), nregions, nregions);
-for k = frequency
-    for m = 1:n
-        filename = fullfile([datadir, sprintf('%s_coh6d4mm_%s_roi2%s_%03d', list{m},toi,roi_to, k)]);
-        dum = load(filename);
-        zx13(m,cnt,:,:) = dum.zx13;
-        zx42(m,cnt,:,:) = dum.zx42;
+cnt=1;
+for k=2:size(foi,1)
+  tmpfreqs = foi{k,4};
+  for subj=1:n
+    sz = numel(tmpfreqs);
+    tmpzx13 = [];
+    tmpzx42 = [];
+    for f = 1:sz
+      
+      filename = fullfile([datadir, sprintf('%s_coh6d4mm_%s_roi2%s_%03d', list{subj},toi,roi_to, tmpfreqs(f))]);
+      dum = load(filename);
+      
+      tmpzx13(:,:,f) = dum.zx13;
+      tmpzx42(:,:,f) = dum.zx42;
     end
-    cnt=cnt+1;
+    zx13{cnt}(subj,:,:) = nanmean(tmpzx13,3);
+    zx42{cnt}(subj,:,:) = nanmean(tmpzx42,3);
+  end
+  cnt=cnt+1;
 end
 
+% % pool zx13 and zx42: flip zx42 and average
+% for k=1:numel(zx42)
+%   nloc = size(zx42{k},3)/2;
+%   zx42
 
-foi = [10 22 40 60 80];
-% average within frequency bands
-[a1,a2,a3,a4] = size(zx42);
-zx42tmp = zeros(a1,numel(foi), a3, a4);
-zx42tmp(:,[1 2],:,:) = zx42(:,[1 2], :,:);
-zx42tmp(:,3,:,:) = nanmean(zx42(:,[3 4],:,:),2);
-zx42tmp(:,4,:,:) = nanmean(zx42(:,[5 6],:,:),2);
-zx42tmp(:,5,:,:) = nanmean(zx42(:,[7 8],:,:),2);
+% calculate average within/between hemisphere coherence
+% seperately for conditions 1-3 and 4-2
+for k=1:numel(zx13)
+  nloc = size(zx13{k},3)/2;
+  x = ones(2*nloc);
+  for subj=1:n
+    x13tmp = squeeze(zx13{k}(subj,:,:));
+    x13tmp(find(triu(x))) = nan;
+    
+    zx13_between(subj,k) = nanmean(nanmean(x13tmp(nloc+1:2*nloc, 1:nloc)));
+    zx13_within(subj,k) = nanmean([nanmean(nanmean(x13tmp(1:nloc, 1:nloc))),...
+      nanmean(nanmean(x13tmp(nloc+1:2*nloc,nloc+1:2*nloc)))]);
+    
+    
+    x42tmp = squeeze(zx42{k}(subj,:,:));
+    x42tmp(find(triu(x))) = nan;
+    zx42_between(subj,k) = nanmean(nanmean(x42tmp(nloc+1:2*nloc, 1:nloc)));
+    zx42_within(subj,k) = nanmean([nanmean(nanmean(x42tmp(1:nloc, 1:nloc))),...
+      nanmean(nanmean(x42tmp(nloc+1:2*nloc,nloc+1:2*nloc)))]);
+  end
+end
 
-zx13tmp = zeros(a1,numel(foi), a3, a4);
-zx13tmp(:,[1 2],:,:) = zx13(:,[1 2], :,:);
-zx13tmp(:,3,:,:) = nanmean(zx13(:,[3 4],:,:),2);
-zx13tmp(:,4,:,:) = nanmean(zx13(:,[5 6],:,:),2);
-zx13tmp(:,5,:,:) = nanmean(zx13(:,[7 8],:,:),2);
+% pool conditions 13 and 42
+zx_between = (zx13_between + zx42_between)./2;
+zx_within = (zx13_within + zx42_within)./2;
 
-% combine select FOI belonging to ROI
-load('/project/3011085.03/analysis/stat_bf_pre.mat', 'freq_idx')
+% average over frequencies
+zx_between = nanmean(zx_between,2);
+zx_within = nanmean(zx_within,2);
 
+% we expect within hemisphere connectivity to be higher for conditions 1-3
+% and 4-2, w.r.t. between hemispheres connectivity: i.e.
+% zx_within>zxbetween
+[w.H,w.P,w.CI,w.STATS] = ttest(zx_within, zx_between, 'tail', 'right');
+within_vs_between_hemiC = w;
+
+%% Is there any connectivity pattern significant individually (i.e. larger/smaller for C than IC)?
+% combine 1-3 and 4-2
+zx42_flipped = zx42;
+for k=1:numel(zx42)
+  nloc = size(zx13{k},3)/2;
+  zx42_flipped{k}(:,1:nloc,1:nloc) = zx42{k}(:,nloc+1:2*nloc, nloc+1:2*nloc);
+  zx42_flipped{k}(:,nloc+1:2*nloc, nloc+1:2*nloc) = zx42{k}(:,1:nloc,1:nloc);
+  zx42_flipped{k}(:,nloc+1:2*nloc,1:nloc) = permute(zx42{k}(:,nloc+1:2*nloc,1:nloc), [1 3 2]);
+  
+  zx{k} = (zx13{k} + zx42_flipped{k})./2;
+end
+  
+allconnectivity = cell(n,1);
+for k=1:numel(zx)
+  nloc = size(zx13{k},3)/2;
+  x = ones(2*nloc);
+  for subj=1:n
+  tmpc = squeeze(zx{k}(subj,:,:));
+  tmpc(find(triu(x))) = nan;
+  tmpc = tmpc(:);
+  tmpc = tmpc(~isnan(tmpc));
+  allconnectivity{subj} = [allconnectivity{subj}, tmpc'];
+  ncomparisson(k) = numel(tmpc);
+  end
+end
+allconnectivity = cat(1, allconnectivity{:});
+
+data = [];
+data.label = {'coh'};
+data.time = 1:size(allconnectivity,2);
+data.trial = reshape(allconnectivity, [n 1 size(allconnectivity,2)]);
+data.dimord = 'rpt_chan_time';
+
+nul = data;
+nul.trial = nul.trial*0;
+
+cfgs=[];
+cfgs.method = 'montecarlo';
+cfgs.statistic = 'depsamplesT';
+cfgs.parameter = 'trial';
+cfgs.alpha = 0.05;
+cfgs.ivar = 1;
+cfgs.uvar = 2;
+cfgs.design = [ones(1,n) ones(1,n)*2;1:n 1:n];
+cfgs.correctm = 'bonferroni';
+cfgs.numrandomization = 10000;
+cfgs.correcttail = 'prob';
+stat = ft_timelockstatistics(cfgs, data, nul);
+
+save(fullfile([alldir, 'analysis/source/stat_coh_pre.mat']), 'stat', 'allconnectivity', 'data', 'ncomparisson', 'zx', 'within_vs_between_hemiC', 'zx_within', 'zx_between');
 
 
 %{
