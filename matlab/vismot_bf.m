@@ -2,15 +2,16 @@ function [source, stat, filter] = vismot_bf(subject,varargin)
 
 %function [source, filter, freq] = vismot_bf_post(subject,varargin)
 
-frequency   = ft_getopt(varargin, 'frequency', 10);
-smoothing   = ft_getopt(varargin, 'smoothing', []);
-sourcemodel = ft_getopt(varargin, 'sourcemodel');
-prewhiten   = istrue(ft_getopt(varargin, 'prewhiten', false));
-lambda      = ft_getopt(varargin, 'lambda', ' 100%');
-nrand       = ft_getopt(varargin, 'nrand', 0); % number of randomization for sensor subsampling
-N           = ft_getopt(varargin, 'N', 90);
-latoi       = ft_getopt(varargin, 'latoi', []);
-conditions  = ft_getopt(varargin, 'conditions', []);
+frequency    = ft_getopt(varargin, 'frequency', 10);
+smoothing    = ft_getopt(varargin, 'smoothing', []);
+sourcemodel  = ft_getopt(varargin, 'sourcemodel');
+prewhiten    = istrue(ft_getopt(varargin, 'prewhiten', false));
+lambda       = ft_getopt(varargin, 'lambda', ' 100%');
+nrand        = ft_getopt(varargin, 'nrand', 0); % number of randomization for sensor subsampling
+N            = ft_getopt(varargin, 'N', 90);
+latoi        = ft_getopt(varargin, 'latoi', []);
+conditions   = ft_getopt(varargin, 'conditions', []);
+stratifyflag = ft_getopt(varargin, 'stratifyflag', false);
 
 if isempty(smoothing)
   if frequency < 30
@@ -102,7 +103,7 @@ cfg.channel   = freq.label;
 cfg.singleshell.batchsize = 2000;
 leadfield     = ft_prepare_leadfield(cfg);
 
-[source, stat, filter] = sourcepow(freq, headmodel, sourcemodel, leadfield, lambda, latoi, conditions);
+[source, stat, filter] = sourcepow(freq, headmodel, sourcemodel, leadfield, lambda, latoi, conditions, stratifyflag);
 
 if nrand>0
   
@@ -124,7 +125,7 @@ if nrand>0
     end
     tmpleadfield.label = tmpfreq(1).label;
     
-    tmpsource = sourcepow(tmpfreq, headmodel, sourcemodel, tmpleadfield, lambda, latoi, conditions, true);
+    tmpsource = sourcepow(tmpfreq, headmodel, sourcemodel, tmpleadfield, lambda, latoi, conditions, stratifyflag, true);
     
     dpow13   = dpow13   + double(tmpsource(1).avg.pow - tmpsource(3).avg.pow);
     dpow13sq = dpow13sq + double(tmpsource(1).avg.pow - tmpsource(3).avg.pow).^2;
@@ -147,7 +148,7 @@ if nrand>0
 end
 
 
-function [source, stat, filter] = sourcepow(freq, headmodel, sourcemodel, leadfield, lambda, latoi, conditions, onlycompute_stat13_42)
+function [source, stat, filter] = sourcepow(freq, headmodel, sourcemodel, leadfield, lambda, latoi, conditions, stratifyflag,  onlycompute_stat13_42)
 if ~exist('onlycompute_stat13_42', 'var'); onlycompute_stat13_42=false; end
 
 cfg                 = [];
@@ -188,32 +189,32 @@ end
 if ~onlycompute_stat13_42
   if ~strcmp(conditions, 'current_previous')
     % same response hand contrast congruent minus incongruent
-    stat13 = makesourcecontrast(freq, filter, s, [1 3], [], false, false, latoi, conditions);
-    stat42 = makesourcecontrast(freq, filter, s, [4 2], [], false, false, latoi, conditions);
+    stat13 = makesourcecontrast(freq, filter, s, [1 3], [], stratifyflag, false, latoi, conditions);
+    stat42 = makesourcecontrast(freq, filter, s, [4 2], [], stratifyflag, false, latoi, conditions);
     
-    statCvsIC  = makesourcecontrast(freq, filter, s, [1 3], [4 2], false, true, latoi, conditions);
-    statCvsIC2 = makesourcecontrast(freq, filter, s, [1 3], [4 2], false, false, latoi, conditions);
+    statCvsIC  = makesourcecontrast(freq, filter, s, [1 3], [4 2], stratifyflag, true, latoi, conditions);
+    statCvsIC2 = makesourcecontrast(freq, filter, s, [1 3], [4 2], stratifyflag, false, latoi, conditions);
     
     % same hemifield contrast congruent minus incongruent
-    stat12 = makesourcecontrast(freq, filter, s, [1 2], [], false, false, latoi, conditions);
-    stat43 = makesourcecontrast(freq, filter, s, [4 3], [], false, false, latoi, conditions);
+    stat12 = makesourcecontrast(freq, filter, s, [1 2], [], stratifyflag, false, latoi, conditions);
+    stat43 = makesourcecontrast(freq, filter, s, [4 3], [], stratifyflag, false, latoi, conditions);
     
     % vs neutral condition (don't stratify RT)
-    stat15 = makesourcecontrast(freq, filter, s, [1 5], [], false, false, latoi, conditions);
-    stat25 = makesourcecontrast(freq, filter, s, [2 5], [], false, false, latoi, conditions);
-    stat35 = makesourcecontrast(freq, filter, s, [3 5], [], false, false, latoi, conditions);
-    stat45 = makesourcecontrast(freq, filter, s, [4 5], [], false, false, latoi, conditions);
+    stat15 = makesourcecontrast(freq, filter, s, [1 5], [], stratifyflag, false, latoi, conditions);
+    stat25 = makesourcecontrast(freq, filter, s, [2 5], [], stratifyflag, false, latoi, conditions);
+    stat35 = makesourcecontrast(freq, filter, s, [3 5], [], stratifyflag, false, latoi, conditions);
+    stat45 = makesourcecontrast(freq, filter, s, [4 5], [], stratifyflag, false, latoi, conditions);
   else % not yet working FIXME
     % left response
-    stat1_12 = makesourcecontrast(freq, filter, s, [1 1 2], [], false, false, conditions); % current C, previous C vs IC
-    stat1_13 = makesourcecontrast(freq, filter, s, [1 1 3], [], false, false, conditions); % current C, previous C vs N
-    stat3_45 = makesourcecontrast(freq, filter, s, [3 4 5], [], false, false, conditions); % current IC, previous IC vs C
-    stat3_56 = makesourcecontrast(freq, filter, s, [3 5 6], [], false, false, conditions); % current IC, previous IC vs N
+    stat1_12 = makesourcecontrast(freq, filter, s, [1 1 2], [], stratifyflag, false, conditions); % current C, previous C vs IC
+    stat1_13 = makesourcecontrast(freq, filter, s, [1 1 3], [], stratifyflag, false, conditions); % current C, previous C vs N
+    stat3_45 = makesourcecontrast(freq, filter, s, [3 4 5], [], stratifyflag, false, conditions); % current IC, previous IC vs C
+    stat3_56 = makesourcecontrast(freq, filter, s, [3 5 6], [], stratifyflag, false, conditions); % current IC, previous IC vs N
     % right response
-    stat4_12 = makesourcecontrast(freq, filter, s, [4 1 2], [], false, false, conditions); % current C, previous C vs IC
-    stat4_13 = makesourcecontrast(freq, filter, s, [4 1 3], [], false, false, conditions); % current C, previous C vs N
-    stat2_45 = makesourcecontrast(freq, filter, s, [2 4 5], [], false, false, conditions); % current IC, previous IC vs C
-    stat2_56 = makesourcecontrast(freq, filter, s, [2 5 6], [], false, false, conditions); % current IC, previous IC vs N
+    stat4_12 = makesourcecontrast(freq, filter, s, [4 1 2], [], stratifyflag, false, conditions); % current C, previous C vs IC
+    stat4_13 = makesourcecontrast(freq, filter, s, [4 1 3], [], stratifyflag, false, conditions); % current C, previous C vs N
+    stat2_45 = makesourcecontrast(freq, filter, s, [2 4 5], [], stratifyflag, false, conditions); % current IC, previous IC vs C
+    stat2_56 = makesourcecontrast(freq, filter, s, [2 5 6], [], stratifyflag, false, conditions); % current IC, previous IC vs N
   end
 end
 stat=[];

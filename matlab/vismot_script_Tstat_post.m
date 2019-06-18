@@ -4,16 +4,21 @@ vismot_subjinfo;
 alldir = '/project/3011085.03/';
 datadir = fullfile([alldir, 'analysis/source/']);
 load list;
+if ~exist('stratifyflag', 'var'), stratifyflag = false; end
 
 % Pooled statistic: (left response C-IC minus right response C-IC)
 whichstat = 'statResp';
-frequency = [10 22 38 42 58 62 78 82];%[10 16 24 26 48:4:92];%[4:2:30 40:4:100];
+frequency = [10 22 38 42 58 62 78 82];
 n=19;
 dat = zeros(numel(sourcemodel.inside), numel(frequency), n);
 cnt = 0;
 for k = frequency
   for m = 1:n
-    d = fullfile([datadir, sprintf('%s_source3d4mm_post_%03d_prewhitened.mat', list{m}, k)]);
+    if stratifyflag
+      d = fullfile([datadir, sprintf('%s_source3d4mm_post_%03d_prewhitened_stratified.mat', list{m}, k)]);
+    else
+      d = fullfile([datadir, sprintf('%s_source3d4mm_post_%03d_prewhitened.mat', list{m}, k)]);
+    end
     dum = load(d, 'stat');
     dat(:,cnt+1, m) = dum.stat.(whichstat);
   end
@@ -73,8 +78,11 @@ for k=1:numel(stat.freq)
   stat_semhemi.stat(:,k) = dum(:)/2;
   clear dum tmpx
 end
-save(fullfile([alldir, 'analysis/stat_bf_post.mat']), 'stat', 'source', 'sourcemodel', 'foi', 'stat_semhemi')
-
+if stratifyflag
+  save(fullfile([alldir, 'analysis/stat_bf_post_stratified.mat']), 'stat', 'source', 'sourcemodel', 'foi', 'stat_semhemi')
+else
+  save(fullfile([alldir, 'analysis/stat_bf_post.mat']), 'stat', 'source', 'sourcemodel', 'foi', 'stat_semhemi')
+end
 
 %% Define ROI's by browsing through Ortho Maps
 cmap = flipud(brewermap(64,'RdBu'));

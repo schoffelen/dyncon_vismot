@@ -1,48 +1,29 @@
 % this script performs spectral analysis of a given subject, using pre-computed
 % data, and divides pre and post cue onset intervals per condition
-if ~exist('latoi', 'var')
-  error('latency of interest (latoi) should be specified (pre/post)');
-end
-if ~exist('frequency', 'var')
-  error('frequency should be defined');
-end
-if ~exist('subjectname', 'var')
-  error('subjectname needs to be defined');
-end
-if ~exist('smoothing', 'var')
-  smoothing = [];
-end
-if ~exist('prewhiten', 'var')
-  prewhiten = false;
-end
-if ~exist('lambda', 'var')
-  lambda = [];
-end
-if ~exist('nrand', 'var')
-  nrand = 0;
-end
+if ~exist('latoi', 'var'), error('latency of interest (latoi) should be specified (pre/post)'); end
+if ~exist('frequency', 'var'), error('frequency should be defined'); end
+if ~exist('subjectname', 'var'), error('subjectname needs to be defined'); end
+if ~exist('smoothing', 'var'), smoothing = []; end
+if ~exist('prewhiten', 'var'), prewhiten = false; end
+if ~exist('lambda', 'var'), lambda = []; end
+if ~exist('nrand', 'var'), nrand = 0; end
+if ~exist('stratifyflag', 'var'), stratifyflag = false; end
 if isempty(smoothing)
-  if frequency < 30
-    smoothing = 4;
-  else
-    smoothing = 8;
-  end
+  if frequency < 30, smoothing = 4;
+  else, smoothing = 8; end
 end
 if ~exist('singletrialpow'); singletrialpow = false; end
 
 subject = vismot_subjinfo(subjectname);
 
 load(fullfile(subject.pathname,'grid',sprintf('%s_sourcemodel3d4mm',subject.name)),'sourcemodel');
-[source, stat, filter] = vismot_bf(subject,'frequency',frequency,'sourcemodel',sourcemodel,'prewhiten',prewhiten, 'lambda', lambda, 'nrand', nrand, 'latoi', latoi);
+[source, stat, filter] = vismot_bf(subject,'frequency',frequency,'sourcemodel',sourcemodel,'prewhiten',prewhiten, 'lambda', lambda, 'nrand', nrand, 'latoi', latoi, 'stratifyflag', stratifyflag);
 
 %% post process stats
 filename = fullfile(subject.pathname,'source', [subject.name,sprintf('_source3d4mm_%s_', latoi), num2str(frequency,'%03d')]);
-if istrue(prewhiten)
-  filename = [filename '_prewhitened'];
-end
-if nrand>0
-  filename = [filename, '_resamp'];
-end
+if istrue(prewhiten), filename = [filename '_prewhitened']; end
+if istrue(stratifyflag), filename = [filename, '_stratified']; end
+if nrand>0, filename = [filename, '_resamp']; end
 
 stat13 = stat.stat13;
 stat42 = stat.stat42;
