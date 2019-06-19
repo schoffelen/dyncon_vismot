@@ -200,10 +200,10 @@ if ~onlycompute_stat13_42
     stat43 = makesourcecontrast(freq, filter, s, [4 3], [], stratifyflag, false, latoi, conditions);
     
     % vs neutral condition (don't stratify RT)
-    stat15 = makesourcecontrast(freq, filter, s, [1 5], [], stratifyflag, false, latoi, conditions);
-    stat25 = makesourcecontrast(freq, filter, s, [2 5], [], stratifyflag, false, latoi, conditions);
-    stat35 = makesourcecontrast(freq, filter, s, [3 5], [], stratifyflag, false, latoi, conditions);
-    stat45 = makesourcecontrast(freq, filter, s, [4 5], [], stratifyflag, false, latoi, conditions);
+    stat15 = makesourcecontrast(freq, filter, s, [1 5], [], false, false, latoi, conditions);
+    stat25 = makesourcecontrast(freq, filter, s, [2 5], [], false, false, latoi, conditions);
+    stat35 = makesourcecontrast(freq, filter, s, [3 5], [], false, false, latoi, conditions);
+    stat45 = makesourcecontrast(freq, filter, s, [4 5], [], false, false, latoi, conditions);
   else % not yet working FIXME
     % left response
     stat1_12 = makesourcecontrast(freq, filter, s, [1 1 2], [], stratifyflag, false, conditions); % current C, previous C vs IC
