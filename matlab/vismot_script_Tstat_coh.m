@@ -124,7 +124,7 @@ cfgs.numrandomization = 10000;
 cfgs.correcttail = 'prob';
 stat = ft_timelockstatistics(cfgs, data, nul);
 
-save(fullfile([alldir, 'analysis/source/stat_coh_pre.mat']), 'stat', 'allconnectivity', 'data', 'ncomparisson', 'zx', 'within_vs_between_hemiC', 'zx_within', 'zx_between');
+save(fullfile([alldir, 'analysis/stat_coh_pre.mat']), 'stat', 'allconnectivity', 'data', 'ncomparisson', 'zx', 'within_vs_between_hemiC', 'zx_within', 'zx_between');
 
 
 %{
