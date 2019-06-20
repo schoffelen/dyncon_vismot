@@ -37,7 +37,7 @@ for f=1:numel(frequencies)
     {'lambda', []}, {'prewhiten', true})
 end
 
-vismot_execute_function('vismot_script_Tstat_post', [], {'stratifyflag', false})
+vismot_execute_pipeline('vismot_script_Tstat_post', [], {'stratifyflag', false})
 
 
 % stratified for RT
@@ -47,7 +47,7 @@ for f=1:numel(frequencies)
     {'lambda', []}, {'prewhiten', true}, {'stratifyflag', true})
 end
 
-vismot_execute_function('vismot_script_Tstat_post', [], {'stratifyflag', true})
+vismot_execute_pipeline('vismot_script_Tstat_post', [], {'stratifyflag', true})
 
 
 %% pre cue power
@@ -59,7 +59,7 @@ for f=1:numel(frequencies)
     {'lambda', []}, {'prewhiten', true})
 end
 
-vismot_execute_function('vismot_script_Tstat_pre', [])
+vismot_execute_pipeline('vismot_script_Tstat_pre', [])
 
 
 %% pre cue coherence
@@ -71,7 +71,7 @@ for f = 1:numel(frequencies)
     {'lambda', '100%'}, {'nrand', 0}, {'roi_to', 'roi'}) 
 end
 
-vismot_execute_function('vismot_script_Tstat_coh', [])
+vismot_execute_pipeline('vismot_script_Tstat_coh', [])
 
 
 
