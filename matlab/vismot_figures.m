@@ -1,40 +1,43 @@
 addpath('/project/3011085.03/scripts/RainCloudPlots/tutorial_matlab/')
 addpath('/project/3011085.03/scripts/Robust_Statistical_Toolbox/')
 subjects = vismot_subjinfo;
+alldir = '/project/3011085.03/';
 
 %% FIGURE 2 - behavior
 filename = [subjects(1).pathname, '/rt/', 'stat_simon.mat'];
 d = load(filename);
 
 % Figure 1a : Si
-cmap = flipud(brewermap(2,'RdBu'));
+figure;
+cmap = (brewermap(2,'RdBu'));
 f1 = figure;
-h1 = raincloud_plot(d.avgC, 'box_on', 1, 'color', cmap(1,:), 'alpha', 0.5,...
+h2 = raincloud_plot(d.avgIC/1000, 'box_on', 1, 'color', cmap(2,:), 'alpha', 0.5,...
+     'box_dodge', 1, 'box_dodge_amount', .35, 'dot_dodge_amount', .35, 'box_col_match', 0);
+h1 = raincloud_plot(d.avgC/1000, 'box_on', 1, 'color', cmap(1,:), 'alpha', 0.5,...
      'box_dodge', 1, 'box_dodge_amount', .15, 'dot_dodge_amount', .15,...
      'box_col_match', 0);
-h2 = raincloud_plot(d.avgIC, 'box_on', 1, 'color', cmap(2,:), 'alpha', 0.5,...
-     'box_dodge', 1, 'box_dodge_amount', .35, 'dot_dodge_amount', .35, 'box_col_match', 0);
+
 legend([h1{1} h2{1}], {'Congruent', 'Incongruent'});
 title('reacion times - Simon effect');
-set(gca,'Ylim', [-2.5e-3 5e-3], 'Xlim', [300 1100]);
-xlabel('Reaction time (ms)'); ylabel('Probability (a.u.)')
+set(gca,'Ylim', [-2 5], 'Xlim', [.300 1.100]);
+xlabel('Reaction time (s)'); ylabel('Probability density (1/s)')
 box off
 
 cmap = brewermap(2, 'RdBu');
 filename = [subjects(1).pathname, '/rt/', 'stat_gratton.mat'];
 d2 = load(filename);
 figure;
-data{1,1} = d2.avgC_C;
-data{2,1} = d2.avgN_C;
-data{3,1} = d2.avgIC_C;
-data{1,2} = d2.avgC_IC;
-data{2,2} = d2.avgN_IC;
-data{3,2} = d2.avgIC_IC;
+data{1,1} = d2.avgC_C/1000;
+data{2,1} = d2.avgN_C/1000;
+data{3,1} = d2.avgIC_C/1000;
+data{1,2} = d2.avgC_IC/1000;
+data{2,2} = d2.avgN_IC/1000;
+data{3,2} = d2.avgIC_IC/1000;
 h  = rm_raincloud(data, cmap);
 % note that the x and y axes are switched
 xlabel('Reaction time (s)')
 yticklabels({'previous IC', 'previous N', 'previous C'}) % in reverse order because of switched axes!
-xlim([400 1100])
+xlim([.400 1.100])
 legend({'current congruent', 'current incongruent'}, 'Location', 'NorthEast') % how to implement this?
 
 
@@ -58,10 +61,14 @@ cfgp.funcolormap = cmap;
 cfgp.maskparameter = cfgp.funparameter;
 cfgp.slicerange = [70 150];
 cfgp.nslices = 16;
+clim = [5 6 5 8 6];
+k=1;
 for f=stat_int.freq
   cfgp.frequency = f;
+  cfgp.funcolorlim = [-clim(k) clim(k)];
   ft_sourceplot(cfgp, stat_int);
   title(sprintf('post-cue power - %d Hz',f))
+  k=k+1;
 end
 
 
@@ -113,6 +120,14 @@ legend({'alpha', 'beta', 'gamma1', 'gamma3'}, 'location', 'northeast')
 title('motor')
 
 %% or per frequency
+% Make bar graph of defined of power in defined ROIs and FOIs
+% find indices of roi locations
+for k=1:size(roi,1)-1
+    idx_left(k) = find_dipoleindex(stat, roi{k+1,3});
+    idx_right(k) = find_dipoleindex(stat, roi{k+1,4});
+end
+
+
 cmap = brewermap(3, 'Accent');
 freqs = {'8-12', '14-30', '30-50', '50-70', '70-90'};
 
@@ -125,7 +140,7 @@ for k=1:3
   set(b(k),'FaceColor', cmap(k,:));
 end
 set(gca,'xticklabel',{'left', 'right'});
-legend({'occipital', 'parietal', 'motor'}, 'location', 'northwest')
+if f==1; legend({'occipital', 'parietal', 'motor'}), end
 title(sprintf('%s Hz', freqs{f}))
 end
 
@@ -155,11 +170,11 @@ grad.label = {'1'};
 for k=1:length(p)
   grad.chanpos=[s.pos(l(p(k)),:)];
   grad.elecpos=grad.chanpos;
-  ft_plot_sens(grad,'elecshape','point', 'elecsize', 40, 'facecolor', [cmap(k,:)])
+  ft_plot_sens(grad,'elecshape','point', 'elecsize', 50, 'facecolor', [cmap(k,:)])
   
   grad.chanpos=[s.pos(r(p(k)),:)];
   grad.elecpos=grad.chanpos;
-  ft_plot_sens(grad,'elecshape','point', 'elecsize', 40, 'facecolor', [cmap(k,:)])
+  ft_plot_sens(grad,'elecshape','point', 'elecsize', 50, 'facecolor', [cmap(k,:)])
 end
 view([0,69]);
 view([-90,0]);camlight
@@ -171,11 +186,11 @@ p = [10];
 grad=[];
 grad.label = {'1'};
 for k=1:length(p)
-  grad.chanpos=[s.pos(l(p(k)),:)];
+  grad.chanpos=[s.pos(l(p(k)),:)]+[0 0 2];
   grad.elecpos=grad.chanpos;
   ft_plot_sens(grad,'elecshape','point', 'elecsize', 40, 'facecolor', [cmap(3,:)])
   
-  grad.chanpos=[s.pos(r(p(k)),:)];
+  grad.chanpos=[s.pos(r(p(k)),:)]+[0 0 2];
   grad.elecpos=grad.chanpos;
   ft_plot_sens(grad,'elecshape','point', 'elecsize', 40, 'facecolor', [cmap(3,:)])
 end
@@ -238,9 +253,9 @@ view([-90,0]);camlight
 
 %% pre cue power
 alldir = '/project/3011085.03/';
-s = load(fullfile([alldir, 'analysis/stat_bf_pre.mat']))
+s = load(fullfile([alldir, 'analysis/stat_bf_pre.mat']));
 % OPTION 1
-cmap = brewermap(2, 'Set1');
+cmap = brewermap(2, 'RdBu');
 figure;
 for k=1:12
 d{k,1} = s.lpow(:,k);
