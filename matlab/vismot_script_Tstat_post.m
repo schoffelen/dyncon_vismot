@@ -20,6 +20,7 @@ for k = frequency
       d = fullfile([datadir, sprintf('%s_source3d4mm_post_%03d_prewhitened.mat', list{m}, k)]);
     end
     dum = load(d, 'stat');
+    raw{m, cnt+1} = load(d,'source');
     dat(:,cnt+1, m) = dum.stat.(whichstat);
   end
   clear dum
@@ -67,6 +68,44 @@ cfgs.clusteralpha = 0.025;
 cfgs.correcttail = 'prob';
 stat = ft_sourcestatistics(cfgs, source, nul);
 
+% hemiflip raw 4-2 conditions
+for k=1:n
+  for f=1:8
+    for c=[2 4]
+      raw{k,f}.source(c).avg.dim = raw{k,f}.source(c).dim;
+      raw{k,f}.source(c).avg = hemiflip(raw{k,f}.source(c).avg, 'pow');
+    end
+  end
+end
+
+% calculate raw effect size
+for k=1:n
+  for c=1:4
+    tmpraw{k,c}(:,1) = raw{k,1}.source(c).avg.pow; % alpha
+    tmpraw{k,c}(:,2) = raw{k,2}.source(c).avg.pow; % beta
+    tmpraw{k,c}(:,3) = nanmean([raw{k,3}.source(c).avg.pow, raw{k,4}.source(c).avg.pow],2); % gamma 1
+    tmpraw{k,c}(:,4) = nanmean([raw{k,5}.source(c).avg.pow, raw{k,6}.source(c).avg.pow],2); % gamma 2
+    tmpraw{k,c}(:,5) = nanmean([raw{k,7}.source(c).avg.pow, raw{k,8}.source(c).avg.pow],2); % gamma 3
+  end  
+end
+raw = tmpraw;
+
+mask = find(stat.mask==1);
+posidx = find(stat.stat>0);
+maskpos = mask(ismember(mask, posidx));
+negidx = find(stat.stat<0);
+maskneg = mask(ismember(mask, negidx));
+
+for k=1:n
+  c_ic(k,:,:) = (raw{k,1}./raw{k,3}-1 + raw{k,4}./raw{k,2}-1)./2;
+end
+c_ic2 = reshape(c_ic, n, []);
+
+poseffectsize = mean(c_ic2(:,maskpos),2);
+negeffectsize = mean(c_ic2(:,maskneg),2);
+
+effectsize_largest_cluster = mean(c_ic(:,find(stat.posclusterslabelmat==1)),2);
+
 % pool across hemispheres by subtracting the other hemisphere
 stat_semhemi = stat;
 for k=1:numel(stat.freq)
@@ -78,10 +117,11 @@ for k=1:numel(stat.freq)
   stat_semhemi.stat(:,k) = dum(:)/2;
   clear dum tmpx
 end
+
 if stratifyflag
-  save(fullfile([alldir, 'analysis/stat_bf_post_stratified.mat']), 'stat', 'source', 'sourcemodel', 'foi', 'stat_semhemi')
+  save(fullfile([alldir, 'analysis/stat_bf_post_stratified.mat']), 'stat', 'source', 'sourcemodel', 'foi', 'stat_semhemi', 'poseffectsize', 'negeffectsize', 'effectsize_largest_cluster')
 else
-  save(fullfile([alldir, 'analysis/stat_bf_post.mat']), 'stat', 'source', 'sourcemodel', 'foi', 'stat_semhemi')
+  save(fullfile([alldir, 'analysis/stat_bf_post.mat']), 'stat', 'source', 'sourcemodel', 'foi', 'stat_semhemi', 'poseffectsize', 'negeffectsize', 'effectsize_largest_cluster')
 end
 
 %% Define ROI's by browsing through Ortho Maps
@@ -122,4 +162,27 @@ foi = [
 unit = 'cm';
 save('/project/3011085.03/analysis/source/roi.mat', 'roi', 'foi', 'unit');
 
+% Find effect size in ROIs
+l = zeros(size(roi,1)-1,3);
+r = zeros(size(roi,1)-1,3);
+% find ROI indices
+for k=1:size(roi,1)-1
+  l(k,:) = roi{k+1,3};
+  r(k,:) = roi{k+1,4};
+  freq_idx(k) = find(strcmp(roi{k+1,2}, foi([2:end],1)));
+end
+l = find_dipoleindex(sourcemodel, l);
+r = find_dipoleindex(sourcemodel, r);
 
+
+for m=1:numel(freq_idx)
+  effectsize_roi_left(:,m) = c_ic(:,l(m), freq_idx(m));
+  effectsize_roi_right(:,m) =  c_ic(:,r(m), freq_idx(m));
+end
+
+
+if stratifyflag
+  save(fullfile([alldir, 'analysis/stat_bf_post_stratified.mat']), 'effectsize_roi_left','effectsize_roi_left','-append')
+else
+  save(fullfile([alldir, 'analysis/stat_bf_post.mat']), 'effectsize_roi_left','effectsize_roi_left','-append')
+end
