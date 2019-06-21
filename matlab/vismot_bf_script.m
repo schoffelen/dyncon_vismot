@@ -100,7 +100,7 @@ stat.statCvsIC = statCvsIC.stat;
 stat.statCvsIC2 = statCvsIC2.stat;
 
 
-save(filename, 'stat', 'smoothing', 'lambda', 'stat_resamp', 'nrand');
+save(filename, 'source','stat', 'smoothing', 'lambda', 'stat_resamp', 'nrand');
 
 % compute single trial source power
 if singletrialpow
