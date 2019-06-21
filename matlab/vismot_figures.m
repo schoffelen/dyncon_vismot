@@ -6,6 +6,10 @@ alldir = '/project/3011085.03/';
 %% FIGURE 2 - behavior
 filename = [subjects(1).pathname, '/rt/', 'stat_simon.mat'];
 d = load(filename);
+effectsize_ms = round(abs(mean(d.avgC-d.avgIC)));
+effectsize_perc = round(abs(mean(d.avgC./d.avgIC-1)*100),1);
+sprintf('behavioral advantage congruent trials: %d ms, %s percent', effectsize_ms, num2str(effectsize_perc))
+sprintf('SD = %d, t(%d) = %s, p = %s', round(d.STATS.sd), d.STATS.df, num2str(round(d.STATS.tstat,3, 'significant')), num2str(round(d.P, 3, 'significant')))
 
 % Figure 1a : Si
 figure;
@@ -26,6 +30,10 @@ box off
 cmap = brewermap(2, 'RdBu');
 filename = [subjects(1).pathname, '/rt/', 'stat_gratton.mat'];
 d2 = load(filename);
+eta2 = 0;% look at spss thingy
+sprintf('eta2 = %s, F(2,17) = %s, p = %s',num2str(round(eta2, 3, 'significant')), num2str(round(d2.stat{4,5},2)), num2str(round(d2.stat{4,6},3, 'significant')))
+
+
 figure;
 data{1,1} = d2.avgC_C/1000;
 data{2,1} = d2.avgN_C/1000;
@@ -45,8 +53,20 @@ legend({'current congruent', 'current incongruent'}, 'Location', 'NorthEast') % 
 %% FIGURE 3 - Post cue power slice plots
 alldir = '/project/3011085.03/';
 load(fullfile([alldir, 'analysis/source/roi.mat']));
-load(fullfile([alldir, 'analysis/stat_bf_post.mat']))
+load(fullfile([alldir, 'analysis/stat_bf_post.mat']));
 mri = ft_read_mri('single_subj_T1_1mm.nii');
+
+effect_size = 0; % get average from 'significant clusters' of raw effect (not 1st level T)
+sprintf('effect size M = %s, p = %d', effect_size, stat.posclusters(1).prob)
+
+d = load(fullfile([alldir, 'analysis/stat_bf_post_stratified.mat']));
+effect_size_stratified = 0; % get average from 'significant clusters' of raw effect (not 1st level T)
+sprintf('RT-stratified effect size M = %s, p = %d', effect_size, d.stat.posclusters(1).prob)
+
+% effect size
+effect_size_roi = zeros(12,2);
+% HOW TO COMPUTE EFFECT SIZE, WHEN COND1-3 AND 4-2 ARE POOLED IN TERMS OF
+% FIRST LEVEL T?
 
 % make slice plots of power
 cfg=[];
