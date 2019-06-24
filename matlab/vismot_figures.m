@@ -11,7 +11,7 @@ effectsize_perc = round(abs(mean(d.avgC./d.avgIC-1)*100),1);
 sprintf('behavioral advantage congruent trials: %d ms, %s percent', effectsize_ms, num2str(effectsize_perc))
 sprintf('SD = %d, t(%d) = %s, p = %s', round(d.STATS.sd), d.STATS.df, num2str(round(d.STATS.tstat,3, 'significant')), num2str(round(d.P, 3, 'significant')))
 
-% Figure 1a : Si
+% Figure 1a : SIMON EFFECT
 figure;
 cmap = (brewermap(2,'RdBu'));
 f1 = figure;
@@ -27,11 +27,13 @@ set(gca,'Ylim', [-2 5], 'Xlim', [.300 1.100]);
 xlabel('Reaction time (s)'); ylabel('Probability density (1/s)')
 box off
 
+
+% Figure 1b: GRATTON EFFECT
 cmap = brewermap(2, 'RdBu');
 filename = [subjects(1).pathname, '/rt/', 'stat_gratton.mat'];
 d2 = load(filename);
-eta2 = 0;% look at spss thingy
-sprintf('eta2 = %s, F(2,17) = %s, p = %s',num2str(round(eta2, 3, 'significant')), num2str(round(d2.stat{4,5},2)), num2str(round(d2.stat{4,6},3, 'significant')))
+partialeta2 = 0.827;% see /project/3011085.03/analysis/rt/Mats_output_gratton
+sprintf('partial eta2 = %s, F(2,17) = %s, p = %s',num2str(round(partialeta2, 3, 'significant')), num2str(round(d2.stat{4,5},2)), num2str(round(d2.stat{4,6},3, 'significant')))
 
 
 figure;
@@ -53,25 +55,22 @@ legend({'current congruent', 'current incongruent'}, 'Location', 'NorthEast') % 
 %% FIGURE 3 - Post cue power slice plots
 alldir = '/project/3011085.03/';
 load(fullfile([alldir, 'analysis/source/roi.mat']));
-load(fullfile([alldir, 'analysis/stat_bf_post.mat']));
+d = load(fullfile([alldir, 'analysis/stat_bf_post.mat']));
 mri = ft_read_mri('single_subj_T1_1mm.nii');
 
-effect_size = 0; % get average from 'significant clusters' of raw effect (not 1st level T)
-sprintf('effect size M = %s, p = %d', effect_size, stat.posclusters(1).prob)
+effect_size = mean(d.effectsize_largest_cluster); % get average from 'significant clusters' of raw effect (not 1st level T)
+effect_size_sd = std(d.effectsize_largest_cluster);
+sprintf('effect size M = %s percent (SD = %s percent), p = %d', num2str(round(100*effect_size,1)),num2str(round(100*effect_size_sd,1)), d.stat.posclusters(1).prob)
 
-d = load(fullfile([alldir, 'analysis/stat_bf_post_stratified.mat']));
-effect_size_stratified = 0; % get average from 'significant clusters' of raw effect (not 1st level T)
-sprintf('RT-stratified effect size M = %s, p = %d', effect_size, d.stat.posclusters(1).prob)
-
-% effect size
-effect_size_roi = zeros(12,2);
-% HOW TO COMPUTE EFFECT SIZE, WHEN COND1-3 AND 4-2 ARE POOLED IN TERMS OF
-% FIRST LEVEL T?
+d2 = load(fullfile([alldir, 'analysis/stat_bf_post_stratified.mat']));
+effect_size_stratified = mean(d2.effectsize_largest_cluster); % get average from 'significant clusters' of raw effect (not 1st level T)
+effect_size_stratified_sd = std(d2.effectsize_largest_cluster);
+sprintf('RT-stratified effect size M = %s percent (SD = %s percent), p = %s', num2str(round(100*effect_size_stratified,1)),num2str(round(100*effect_size_stratified_sd,1)), num2str(round(d2.stat.posclusters(1).prob, 3, 'significant')))
 
 % make slice plots of power
 cfg=[];
 cfg.parameter = 'stat';
-stat_int = ft_sourceinterpolate(cfg, stat, mri);
+stat_int = ft_sourceinterpolate(cfg, d2.stat, mri);
 
 cmap = flipud(brewermap(64, 'RdBu'));
 cfgp = [];
@@ -95,17 +94,17 @@ end
 %% FIGURE 4 - post cue power ROI + bar plot
 % Make bar graph of defined of power in defined ROIs and FOIs
 % find indices of roi locations
-for k=1:size(roi,1)-1
-    idx_left(k) = find_dipoleindex(stat, roi{k+1,3});
-    idx_right(k) = find_dipoleindex(stat, roi{k+1,4});
-end
+
+idx_left = d.l;
+idx_right = d.r;
 
 cmap = brewermap(5, 'Accent');
 
 figure;
 % occipital
 subplot(1,3,1);
-occ = [stat.stat(idx_left(1),1), stat.stat(idx_left(2),3) stat.stat(idx_left(3),4), stat.stat(idx_left(4),5); stat.stat(idx_right(1),1), stat.stat(idx_right(2),3) stat.stat(idx_right(3),4), stat.stat(idx_right(4),5)];
+occ = [mean(d.effectsize_roi_left(:,1),1), mean(d.effectsize_roi_left(:,2),1) mean(d.effectsize_roi_left(:,3),1), mean(d.effectsize_roi_left(:,4),1); mean(d.effectsize_roi_right(:,1),1), mean(d.effectsize_roi_right(:,2),1) mean(d.effectsize_roi_right(:,3),1), mean(d.effectsize_roi_right(:,4),1)];
+% occ = [d.stat.stat(idx_left(1),1), d.stat.stat(idx_left(2),3) d.stat.stat(idx_left(3),4), d.stat.stat(idx_left(4),5); d.stat.stat(idx_right(1),1), d.stat.stat(idx_right(2),3) d.stat.stat(idx_right(3),4), d.stat.stat(idx_right(4),5)];
 b = bar(occ);
 tmpcmap = cmap([1 3:5],:);
 for k=1:4
@@ -117,7 +116,8 @@ title('occipital')
 
 % parietal
 subplot(1,3,2);
-par = [stat.stat(idx_left(5),1), stat.stat(idx_left(6),3) stat.stat(idx_left(7),4), stat.stat(idx_left(8),5); stat.stat(idx_right(5),1), stat.stat(idx_right(6),3) stat.stat(idx_right(7),4), stat.stat(idx_right(8),5)];
+par = [mean(d.effectsize_roi_left(:,5),1), mean(d.effectsize_roi_left(:,6),1) mean(d.effectsize_roi_left(:,7),1), mean(d.effectsize_roi_left(:,8),1); mean(d.effectsize_roi_right(:,5),1), mean(d.effectsize_roi_right(:,6),1) mean(d.effectsize_roi_right(:,7),1), mean(d.effectsize_roi_right(:,8),1)];
+% par = [stat.stat(idx_left(5),1), stat.stat(idx_left(6),3) stat.stat(idx_left(7),4), stat.stat(idx_left(8),5); stat.stat(idx_right(5),1), stat.stat(idx_right(6),3) stat.stat(idx_right(7),4), stat.stat(idx_right(8),5)];
 b = bar(par);
 tmpcmap = cmap([1 3:5],:);
 for k=1:4
@@ -129,7 +129,9 @@ title('parietal')
 
 % motor
 subplot(1,3,3);
-mot = [stat.stat(idx_left(9),1), stat.stat(idx_left(10),2) stat.stat(idx_left(11),3), stat.stat(idx_left(12),5); stat.stat(idx_right(9),1), stat.stat(idx_right(10),2) stat.stat(idx_right(11),3), stat.stat(idx_right(12),5)];
+% mot = [stat.stat(idx_left(9),1), stat.stat(idx_left(10),2) stat.stat(idx_left(11),3), stat.stat(idx_left(12),5); stat.stat(idx_right(9),1), stat.stat(idx_right(10),2) stat.stat(idx_right(11),3), stat.stat(idx_right(12),5)];
+mot = [mean(d.effectsize_roi_left(:,9),1), mean(d.effectsize_roi_left(:,10),1) mean(d.effectsize_roi_left(:,11),1), mean(d.effectsize_roi_left(:,12),1); mean(d.effectsize_roi_right(:,9),1), mean(d.effectsize_roi_right(:,10),1) mean(d.effectsize_roi_right(:,11),1), mean(d.effectsize_roi_right(:,12),1)];
+
 b = bar(mot);
 tmpcmap = cmap([1:3 5],:);
 for k=1:4
@@ -143,8 +145,8 @@ title('motor')
 % Make bar graph of defined of power in defined ROIs and FOIs
 % find indices of roi locations
 for k=1:size(roi,1)-1
-    idx_left(k) = find_dipoleindex(stat, roi{k+1,3});
-    idx_right(k) = find_dipoleindex(stat, roi{k+1,4});
+    idx_left(k) = find_dipoleindex(d2.stat, roi{k+1,3});
+    idx_right(k) = find_dipoleindex(d2.stat, roi{k+1,4});
 end
 
 
