@@ -182,7 +182,7 @@ end
 
 
 if stratifyflag
-  save(fullfile([alldir, 'analysis/stat_bf_post_stratified.mat']), 'effectsize_roi_left','effectsize_roi_left','-append')
+  save(fullfile([alldir, 'analysis/stat_bf_post_stratified.mat']), 'effectsize_roi_right','effectsize_roi_left', 'l', 'r', 'freq_idx','-append')
 else
-  save(fullfile([alldir, 'analysis/stat_bf_post.mat']), 'effectsize_roi_left','effectsize_roi_left','-append')
+  save(fullfile([alldir, 'analysis/stat_bf_post.mat']), 'effectsize_roi_right','effectsize_roi_left', 'l', 'r', 'freq_idx','-append')
 end
