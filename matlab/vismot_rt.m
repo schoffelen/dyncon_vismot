@@ -59,7 +59,7 @@ for k=1:numel(list)
 end
 [H_r,P_r,CI_r,STATS_r] = ttest(avgC_r, avgIC_r)
 
-filename = [subjects(1).pathname, '/rt/', 'stat_simon.mat'];
+filename = [subjects(1).pathname, 'stat_behavior_simon.mat'];
 save(filename, 'data', 'avgC', 'avgIC', 'avgC_r', 'avgIC_r', 'avgC_l', 'avgIC_l','H', 'P', 'CI', 'STATS','perc', 'H_l', 'P_l', 'CI_l', 'STATS_l', 'H_r', 'P_r', 'CI_r', 'STATS_r')
 %% Are subjects faster when the current and previous trial are of the same condition?
 for k=1:numel(list)
@@ -100,128 +100,5 @@ p = stat{4,6};
 F = stat{4,5};
 df = stat{4,3};
   
-filename = [subjects(1).pathname, '/rt/', 'stat_gratton.mat'];
+filename = [subjects(1).pathname, 'stat_behavior_gratton.mat'];
 save(filename, 'dataprev', 'avgC_C', 'avgC_IC', 'avgIC_C', 'avgIC_IC', 'avgN_C', 'avgN_IC', 'stat', 'p','F','df')
-%{  
-  %% Are subjects faster when the previous trial was congruent?
-  load list
-  for k=1:19
-    subjectname = list(k);
-    subject = vismot_subjinfo(subjectname);
-    alldata = load(fullfile(subject.pathname,'data',[subject.name,'data']));
-    alldata = vismot_data_reorder(alldata, 'previous');
-    C{k} = cat(1,alldata.data1.trialinfo,alldata.data4.trialinfo);
-    IC{k} = cat(1,alldata.data2.trialinfo,alldata.data3.trialinfo);
-    N{k} = alldata.data5.trialinfo;
-    %C{k} = [alldata.data1.trialinfo(:,3);alldata.data4.trialinfo(:,3)];
-    %IC{k} = [alldata.data2.trialinfo(:,3);alldata.data3.trialinfo(:,3)];
-  end
-  
-  for k=1:19
-    IC_avg(k) = mean(IC{k}(:,3));
-    C_avg(k) = mean(C{k}(:,3));
-  end
-  
-  [H,P,CI,STATS] = ttest(C_avg, IC_avg)
-  
-  % I would say that the thing to test is whether there's an interaction for
-  % the RT contingent on the congruency of the current trial, conditioned on the previous
-  % trial:
-  for k = 1:19
-    rt(k,1) = mean(C{k}(ismember(C{k}(:,1),[1 4]),3)); %previous C, current C
-    rt(k,2) = mean(C{k}(ismember(C{k}(:,1),[2 3]),3)); %previous C, current IC
-    rt(k,3) = mean(IC{k}(ismember(IC{k}(:,1),[1 4]),3)); %previous IC, current C
-    rt(k,4) = mean(IC{k}(ismember(IC{k}(:,1),[2 3]),3)); %previous IC, current IC
-    %   rt(k,5) = mean(IC{k}
-  end
-  
-  % just judging the averages: theres a behavioral benefit for the current
-  % trial to be congruent (columns 1 and 3)
-  mean(rt)
-  
-  
-  
-  %% Are subjects faster when the previous trial was congruent vs incongruent, while both required same response?
-  
-  % previous and current response left
-  load list
-  for k=1:19
-    subjectname = list(k);
-    subject = vismot_subjinfo(subjectname);
-    alldata = load(fullfile(subject.pathname,'data',[subject.name,'data']));
-    alldata = rmfield(alldata, {'data2', 'data4', 'data5'});
-    alldata = vismot_data_reorder(alldata, 'previous');
-    C{k} = [alldata.data1.trialinfo(:,3)];
-    IC{k} = [alldata.data3.trialinfo(:,3)];
-  end
-  
-  for k=1:19
-    nc = numel(C{k});
-    nic = numel(IC{k});
-    n = min([nc nic]);
-    randc = randperm(nc);
-    randic = randperm(nic);
-    C{k} = C{k}(randc(1:n));
-    IC{k} = IC{k}(randic(1:n));
-  end
-  
-  for k=1:19
-    IC_avg_left(k) = mean(IC{k});
-    C_avg_left(k) = mean(C{k});
-  end
-  
-  % previous and current response right
-  for k=1:19
-    subjectname = list(k);
-    subject = vismot_subjinfo(subjectname);
-    alldata = load(fullfile(subject.pathname,'data',[subject.name,'data']));
-    alldata = rmfield(alldata, {'data1', 'data3', 'data5'});
-    alldata = vismot_data_reorder(alldata, 'previous');
-    C{k} = [alldata.data2.trialinfo(:,3)];
-    IC{k} = [alldata.data4.trialinfo(:,3)];
-  end
-  
-  for k=1:19
-    nc = numel(C{k});
-    nic = numel(IC{k});
-    n = min([nc nic]);
-    randc = randperm(nc);
-    randic = randperm(nic);
-    C{k} = C{k}(randc(1:n));
-    IC{k} = IC{k}(randic(1:n));
-  end
-  
-  for k=1:19
-    IC_avg_right(k) = mean(IC{k});
-    C_avg_right(k) = mean(C{k});
-  end
-  
-  
-  % combine
-  C_avg = [C_avg_left, C_avg_right];
-  IC_avg = [IC_avg_left, IC_avg_right];
-  [H,P,CI,STATS] = ttest(C_avg, IC_avg)
-  
-  
-  %% Are Incongruent trials faster when visual information has to cross from left to right, vs right to left hemispheres?
-  % (right hemisphere to left hemisphere (condition 2) faster then the other
-  % way around (condition 3)
-  
-  load list
-  for k=1:19
-    subjectname = list(k);
-    subject = vismot_subjinfo(subjectname);
-    alldata = load(fullfile(subject.pathname,'data',[subject.name,'data']));
-    alldata = rmfield(alldata, 'data5');
-    C{k} = cat(1,alldata.data1.trialinfo,alldata.data4.trialinfo);
-    IC{k} = cat(1,alldata.data2.trialinfo,alldata.data3.trialinfo);
-    %IC{k} = [alldata.data2.trialinfo(:,3);alldata.data3.trialinfo(:,3)];
-  end
-  for k=1:19
-    con2(k) = mean(IC{k}(IC{k}(:,1)==2,3));
-    con3(k) = mean(IC{k}(IC{k}(:,1)==3,3));
-  end
-  [H,P,CI,STATS] = ttest(con2,con3, 'tail', 'left');
-  %}
-  
-  
