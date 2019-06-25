@@ -10,10 +10,11 @@ frequency = [10 22 38 42 58 62 78 82];
 n=19;
 dat = zeros(74784, numel(frequency), n);
 cnt = 0;
-for k = frequency
+for k = fliplr(frequency)
   for m = 1:n
     d = fullfile([datadir, sprintf('%s_source3d4mm_pre_%03d_prewhitened.mat', list{m}, k)]);
     dum = load(d, 'stat');
+    raw{m, cnt+1} = load(d,'source');
     dat(:, cnt+1,m) = dum.stat.(whichstat);
   end
   clear dum
@@ -80,6 +81,34 @@ cfgs.numrandomization = 10000;
 cfgs.correcttail = 'prob';
 stat = ft_timelockstatistics(cfgs, d, nul);
 
-save('/project/3011085.03/analysis/stat_bf_pre.mat', 'l','r','freq_idx', 'sourcemodel', 'source','stat', 'stat_roi', 'd', 'rpow', 'lpow');
+% hemiflip raw 4-2 conditions
+for k=1:n
+  for f=1:8
+    for c=[2 4]
+      raw{k,f}.source(c).avg.dim = raw{k,f}.source(c).dim;
+      raw{k,f}.source(c).avg = hemiflip(raw{k,f}.source(c).avg, 'pow');
+    end
+  end
+end
+% average within frequency bands
+for k=1:n
+  for c=1:4
+    tmpraw{k,c}(:,1) = raw{k,1}.source(c).avg.pow; % alpha
+    tmpraw{k,c}(:,2) = raw{k,2}.source(c).avg.pow; % beta
+    tmpraw{k,c}(:,3) = nanmean([raw{k,3}.source(c).avg.pow, raw{k,4}.source(c).avg.pow],2); % gamma 1
+    tmpraw{k,c}(:,4) = nanmean([raw{k,5}.source(c).avg.pow, raw{k,6}.source(c).avg.pow],2); % gamma 2
+    tmpraw{k,c}(:,5) = nanmean([raw{k,7}.source(c).avg.pow, raw{k,8}.source(c).avg.pow],2); % gamma 3
+  end  
+end
+raw = tmpraw;
+for k=1:n
+  c_ic(k,:,:) = (raw{k,1}./raw{k,3}-1 + raw{k,4}./raw{k,2}-1)./2;
+end
+for m=1:numel(freq_idx)
+  effectsize_roi_left(:,m) = c_ic(:,l(m), freq_idx(m));
+  effectsize_roi_right(:,m) =  c_ic(:,r(m), freq_idx(m));
+end
+
+save('/project/3011085.03/analysis/stat_bf_pre.mat', 'l','r','freq_idx', 'sourcemodel', 'source','stat', 'stat_roi', 'd', 'rpow', 'lpow','effectsize_roi_left', 'effectsize_roi_right');
 
 
