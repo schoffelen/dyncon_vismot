@@ -11,7 +11,7 @@ end
 
 for k = [1:numel(subject)]
   if exist(fullfile(subject(k).pathname,'mri',[subject(k).name,'_transform_vox2bti.mat']),'file')
-    continue;
+%     continue;
   end
   
   fname = fullfile(subject(k).pathname,'mri',subject(k).name);
@@ -29,6 +29,7 @@ for k = [1:numel(subject)]
   cfg.headshape.headshape = ft_read_headshape(hsfile);
   cfg.headshape.icp       = 1;
   cfg.headshape.interactive = 0;
+  cfg.coordsys = 'bti';
   mri           = ft_volumerealign(cfg, mri);
   
   hs     = mri.cfg.headshape.headshape;
