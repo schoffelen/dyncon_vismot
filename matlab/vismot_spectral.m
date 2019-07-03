@@ -90,9 +90,8 @@ for k = 1:numel(fd)
     data = alldata.(fd{k});
     cfg           = [];
     cfg.toilim    = toilim(m,:);
-    cfg.minlength = 0.25;%0.49;
-    data          = ft_redefinetrial(cfg, data); % note: this should actually use ft_selectdata, but for some reason this does not work robustly, due to rounding issues of time axes or so
-    
+    if smoothing<=2,cfg.minlength = 0.5; else cfg.minlength = 0.25; end
+      data          = ft_redefinetrial(cfg, data); % note: this should actually use ft_selectdata, but for some reason this does not work robustly, due to rounding issues of time axes or so
     cfg           = [];
     cfg.detrend   = 'yes';
     data          = ft_preprocessing(cfg, data);

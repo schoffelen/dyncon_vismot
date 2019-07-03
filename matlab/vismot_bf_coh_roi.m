@@ -12,6 +12,7 @@ ref            = ft_getopt(varargin, 'ref', []);
 include_neighb = ft_getopt(varargin, 'include_neighb', false);
 lambda         = ft_getopt(varargin, 'lambda', '10%');
 roi_to         = ft_getopt(varargin, 'roi_to', 'all');
+dobalance      = ft_getopt(varargin, 'dobalance', false);
 
 if isempty(roi) && isempty(ref)
   error('roi or refindx required');
@@ -39,7 +40,7 @@ if isempty(smoothing)
   end
 end
 
-[freq, tlck] =  vismot_spectral(subject,'toi', toi, 'conditions', conditions, 'output','csd', 'foilim', [frequency frequency], 'smoothing', smoothing);
+[freq, tlck] =  vismot_spectral(subject,'toi', toi, 'conditions', conditions, 'output','csd', 'foilim', [frequency frequency], 'smoothing', smoothing, 'dobalance', dobalance);
 
 
 % load in the head model and the source model.
@@ -112,7 +113,7 @@ leadfield_scalar = rmfield(leadfield_scalar, 'v');
 
 % this line was to check equivalence of the results.
 %cohtmp = estimate_coh2x2_2dip_new(leadfield_scalar,allfreq,'memory','low','lambda',0.05);
-for k = 1:5
+for k = 1:numel(freq)
   coh(k) = estimate_coh2x2_2dip_new(leadfield_scalar,freq(k),'memory',memreq,'lambda',lambda, 'outputflags', [1 0 0 0], 'refindx', refindx);
   if include_neighb
     coh(k) = average_seed_over_neighbors(coh(k), refindx, n_neighbors, index_orig_seed);
