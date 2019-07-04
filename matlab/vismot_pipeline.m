@@ -16,8 +16,8 @@ vismot_anatomy_sourcemodel3d(subjectname, 4)
 % setting up subject info.
 vismot_subjinfo(subjectname);
 
-% artifact selection?
-% work in progress: vismot_preproc_artifact
+% artifact selection
+vismot_execute_pipeline('vismot_preproc_artifact', subjectname)
 
 % preprocess emptyroom data
 vismot_execute_pipeline('vismot_emptyroom_script', subjectname);
@@ -74,4 +74,5 @@ end
 vismot_execute_pipeline('vismot_script_Tstat_coh', [])
 
 
-
+%% plotting
+vismot_figures
