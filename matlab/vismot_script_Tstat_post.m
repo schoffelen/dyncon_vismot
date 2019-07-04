@@ -125,6 +125,7 @@ else
 end
 
 %% Define ROI's by browsing through Ortho Maps
+if stratifyflag
 cmap = flipud(brewermap(64,'RdBu'));
 cfgp=[];
 cfgp.funcolormap = cmap;
@@ -161,6 +162,7 @@ foi = [
 
 unit = 'cm';
 save('/project/3011085.03/analysis/source/roi.mat', 'roi', 'foi', 'unit');
+end
 
 % Find effect size in ROIs
 l = zeros(size(roi,1)-1,3);
