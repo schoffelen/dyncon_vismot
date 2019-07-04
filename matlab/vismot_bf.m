@@ -34,7 +34,7 @@ elseif strcmp(latoi, 'pre')
   if isempty(conditions); conditions = 'previous'; end
 end
 
-freq    = vismot_spectral(subject, 'foilim', [frequency frequency], 'toi', toi, 'smoothing', smoothing, 'output', 'fourier','dobalance', stratifyflag, 'prewhiten', prewhiten);
+freq    = vismot_spectral(subject, 'foilim', [frequency frequency], 'toi', toi, 'smoothing', smoothing, 'output', 'fourier','balance', stratifyflag, 'prewhiten', prewhiten);
 
 if strcmp(latoi, 'post')
   for k = 1:5
@@ -175,12 +175,39 @@ fwhm             = fwhm.fwhm;
 
 s     = keepfields(tmpsource, {'freq' 'tri' 'inside' 'pos' 'dim'});
 
-% compute condition specific power, this is without stratification for RT
+% compute condition specific power, potentially stratified for RT between
+% condition 1-3 and 4-2
+if stratifyflag
+  trialselection = cell(5,1);
+  trialselection{5} = find(freq.trialinfo(:,1)==5 & freq.trialinfo(:,end)==1);
+  
+  contrasts = [1 3; 4 2];
+  for k=1:size(contrasts,1)
+    % stratify the trials based on the RTs
+    idx1 = find(ismember(freq.trialinfo(:,1), contrasts(k,1)) & freq.trialinfo(:,end)==1);
+    idx2 = find(ismember(freq.trialinfo(:,1), contrasts(k,2)) & freq.trialinfo(:,end)==1);
+    RT = freq.trialinfo([idx1 idx2],3);
+    c  = freq.trialinfo([idx1 idx2],1);
+    
+    tmpcfg        = [];
+    tmpcfg.numbin = 5;
+    out = ft_stratify(tmpcfg, RT(c==contrasts(k,1))', RT(c==contrasts(k,2))');
+    
+    trialselection{contrasts(k,1)} = idx1(~isnan(out{1}));
+    trialselection{contrasts(k,2)} = idx2(~isnan(out{2}));
+  end
+end
+
 cfg.grid.filter     = filter;
 cfg.dics.keepfilter = 'no';
+tmpcfg=[];
 for k = 1:5
   if strcmp(latoi, 'post')
-    tmpcfg.trials = find(freq.trialinfo(:,1)==k & freq.trialinfo(:,end)==2); % for the pst trials only
+    if stratifyflag
+      tmpcfg.trials = trialselection{k};
+    else
+      tmpcfg.trials = find(freq.trialinfo(:,1)==k & freq.trialinfo(:,end)==2); % for the pst trials only
+    end
   elseif strcmp(latoi, 'pre')
     tmpcfg.trials = find(freq.trialinfo(:,end)==k);
   end
