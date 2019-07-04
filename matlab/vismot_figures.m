@@ -86,8 +86,8 @@ effect_size_sd = std(d.effectsize_largest_cluster);
 sprintf('effect size M = %s percent (SD = %s percent), p = %s', num2str(round(100*effect_size,1)),num2str(round(100*effect_size_sd,2)), num2str(round(d.stat.posclusters(1).prob, 3, 'significant')))
 
 d2 = load(fullfile([alldir, 'analysis/stat_bf_post_stratified.mat']));
-effect_size_stratified = mean(d2.negeffectsize); % get average from 'significant clusters' of raw effect (not 1st level T)
-effect_size_stratified_sd = std(d2.negeffectsize);
+effect_size_stratified = mean(d2.effectsize_largest_cluster); % get average from 'significant clusters' of raw effect (not 1st level T)
+effect_size_stratified_sd = std(d2.effectsize_largest_cluster);
 sprintf('RT-stratified effect size M = %s percent (SD = %s percent), p = %s', num2str(round(100*effect_size_stratified,1)),num2str(round(100*effect_size_stratified_sd,1)), num2str(round(d2.stat.posclusters(1).prob, 3, 'significant')))
 
 % make slice plots of power
