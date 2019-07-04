@@ -97,6 +97,9 @@ load(fullfile(subject.pathname,'grid',sprintf('%s_sourcemodel3d4mm',subject.name
 [coh,zx13,zx42,looptime] = vismot_bf_coh_roi(subject,'toi', toi,'conditions', conditions, 'sourcemodel',sourcemodel,'lambda', lambda, 'frequency',frequency,'smoothing',smoothing,'nrand',nrand, 'ref', ref, 'roi_to', roi_to,'include_neighb', include_neighb, 'dobalance', dobalance);
 
 filename = fullfile(subject.pathname,'source', [subject.name, '_coh6d4mm_', sprintf('%s_', toi), sprintf('roi2%s_', roi_to),sprintf('%03d', frequency)] );
+if strcmp(conditions, 'current_previous')
+  filename = fullfile([filename, '_curprev']);
+end
 if include_neighb
   filename = fullfile([filename, '_neighb']);
 end
