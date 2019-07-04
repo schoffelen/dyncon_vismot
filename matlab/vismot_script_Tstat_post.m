@@ -125,16 +125,17 @@ else
 end
 
 %% Define ROI's by browsing through Ortho Maps
-if stratifyflag
-cmap = flipud(brewermap(64,'RdBu'));
-cfgp=[];
-cfgp.funcolormap = cmap;
-cfgp.method     = 'ortho';
-cfgp.funparameter = 'stat';
-cfgp.location = 'max';
-for k=1:numel(stat_semhemi.freq)
+if ~stratifyflag
+  cmap = flipud(brewermap(64,'RdBu'));
+  cfgp=[];
+  cfgp.funcolormap = cmap;
+  cfgp.method     = 'ortho';
+  cfgp.funparameter = 'stat';
+  cfgp.location = 'max';
+  for k=1:numel(stat_semhemi.freq)
     cfgp.frequency = stat.freq(k);
     ft_sourceplot(cfgp, stat_semhemi)
+  end
 end
 
 % Note the FOIs and ROIs here:
@@ -161,7 +162,8 @@ foi = [
   {'gamma3'}          {[70 90]}           {80}                 {[78 82]}                      {8}];
 
 unit = 'cm';
-save('/project/3011085.03/analysis/source/roi.mat', 'roi', 'foi', 'unit');
+if ~stratifyflag
+  save('/project/3011085.03/analysis/source/roi.mat', 'roi', 'foi', 'unit');
 end
 
 % Find effect size in ROIs
