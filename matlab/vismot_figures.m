@@ -4,14 +4,37 @@ subjects = vismot_subjinfo;
 alldir = '/project/3011085.03/';
 
 %% FIGURE 2 - behavior
-filename = [subjects(1).pathname, '/rt/', 'stat_simon.mat'];
+% general behavioral measures
+load list
+
+for k=1:19
+x = load(sprintf('/project/3011085.03/analysis/behaviour/%sbehaviour.mat', list{k}));
+performance(k) = sum(x.correct(:))/840;
+rttmp = x.rt(x.correct);
+rt(k) = mean(rttmp(rttmp~=0));
+end
+mean(performance)
+std(performance)
+
+mean(rt)
+std(rt)
+
+for k=1:19
+subject= vismot_subjinfo(list{k});
+alldata = load(fullfile(subject.pathname,'data',[subject.name,'data']));
+ntrl(k) = numel(unique(alldata.data1.trialinfo(:,2)))  + numel(unique(alldata.data2.trialinfo(:,2))) + numel(unique(alldata.data3.trialinfo(:,2))) + numel(unique(alldata.data4.trialinfo(:,2))) + numel(unique(alldata.data5.trialinfo(:,2)));
+end
+mean(ntrl)
+std(ntrl)
+
+% Figure 1a : SIMON EFFECT
+filename = [subjects(1).pathname, '/stat_behavior_simon.mat'];
 d = load(filename);
-effectsize_ms = round(abs(mean(d.avgC-d.avgIC)));
+effectsize_ms = round(abs(mean(d.avgC-d.avgIC)), 3, 'significant');
 effectsize_perc = round(abs(mean(d.avgC./d.avgIC-1)*100),1);
 sprintf('behavioral advantage congruent trials: %d ms, %s percent', effectsize_ms, num2str(effectsize_perc))
 sprintf('SD = %d, t(%d) = %s, p = %s', round(d.STATS.sd), d.STATS.df, num2str(round(d.STATS.tstat,3, 'significant')), num2str(round(d.P, 3, 'significant')))
 
-% Figure 1a : SIMON EFFECT
 figure;
 cmap = (brewermap(2,'RdBu'));
 f1 = figure;
@@ -30,7 +53,7 @@ box off
 
 % Figure 1b: GRATTON EFFECT
 cmap = brewermap(2, 'RdBu');
-filename = [subjects(1).pathname, '/rt/', 'stat_gratton.mat'];
+filename = [subjects(1).pathname, '/stat_behavior_gratton.mat'];
 d2 = load(filename);
 partialeta2 = 0.827;% see /project/3011085.03/analysis/rt/Mats_output_gratton
 sprintf('partial eta2 = %s, F(2,17) = %s, p = %s',num2str(round(partialeta2, 3, 'significant')), num2str(round(d2.stat{4,5},2)), num2str(round(d2.stat{4,6},3, 'significant')))
@@ -60,16 +83,16 @@ mri = ft_read_mri('single_subj_T1_1mm.nii');
 
 effect_size = mean(d.effectsize_largest_cluster); % get average from 'significant clusters' of raw effect (not 1st level T)
 effect_size_sd = std(d.effectsize_largest_cluster);
-sprintf('effect size M = %s percent (SD = %s percent), p = %d', num2str(round(100*effect_size,1)),num2str(round(100*effect_size_sd,1)), d.stat.posclusters(1).prob)
+sprintf('effect size M = %s percent (SD = %s percent), p = %s', num2str(round(100*effect_size,1)),num2str(round(100*effect_size_sd,2)), num2str(round(d.stat.posclusters(1).prob, 3, 'significant')))
 
 d2 = load(fullfile([alldir, 'analysis/stat_bf_post_stratified.mat']));
-effect_size_stratified = mean(d2.effectsize_largest_cluster); % get average from 'significant clusters' of raw effect (not 1st level T)
-effect_size_stratified_sd = std(d2.effectsize_largest_cluster);
+effect_size_stratified = mean(d2.negeffectsize); % get average from 'significant clusters' of raw effect (not 1st level T)
+effect_size_stratified_sd = std(d2.negeffectsize);
 sprintf('RT-stratified effect size M = %s percent (SD = %s percent), p = %s', num2str(round(100*effect_size_stratified,1)),num2str(round(100*effect_size_stratified_sd,1)), num2str(round(d2.stat.posclusters(1).prob, 3, 'significant')))
 
 % make slice plots of power
 cfg=[];
-cfg.parameter = 'stat';
+cfg.parameter = {'stat'};
 stat_int = ft_sourceinterpolate(cfg, d2.stat, mri);
 
 cmap = flipud(brewermap(64, 'RdBu'));
