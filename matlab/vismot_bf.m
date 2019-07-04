@@ -34,7 +34,7 @@ elseif strcmp(latoi, 'pre')
   if isempty(conditions); conditions = 'previous'; end
 end
 
-freq    = vismot_spectral(subject, 'foilim', [frequency frequency], 'toi', toi, 'balance', true, 'smoothing', smoothing, 'output', 'fourier', 'prewhiten', prewhiten);
+freq    = vismot_spectral(subject, 'foilim', [frequency frequency], 'toi', toi, 'smoothing', smoothing, 'output', 'fourier','dobalance', stratifyflag, 'prewhiten', prewhiten);
 
 if strcmp(latoi, 'post')
   for k = 1:5
