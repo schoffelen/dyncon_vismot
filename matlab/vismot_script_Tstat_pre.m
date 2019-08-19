@@ -101,6 +101,19 @@ for k=1:n
   end  
 end
 raw = tmpraw;
+clear c ic
+for k=1:n
+  c(k,:,:) = (raw{k,1}+raw{k,4})./2;
+  ic(k,:,:) = (raw{k,2} + raw{k,3})./2;
+end
+
+for m=1:numel(freq_idx)
+  c_left(:,m) = c(:,l(m), freq_idx(m));
+  ic_left(:,m) = ic(:,l(m), freq_idx(m));
+  c_right(:,m) = c(:,r(m), freq_idx(m));
+  ic_right(:,m) = ic(:,r(m), freq_idx(m));
+end
+
 for k=1:n
   c_ic(k,:,:) = (raw{k,1}+raw{k,4})./(raw{k,3}+raw{k,2})-1;
 end
@@ -109,6 +122,6 @@ for m=1:numel(freq_idx)
   effectsize_roi_right(:,m) =  c_ic(:,r(m), freq_idx(m));
 end
 
-save('/project/3011085.03/analysis/stat_bf_pre.mat','c_ic', 'l','r','freq_idx', 'sourcemodel', 'source','stat', 'stat_roi', 'd', 'rpow', 'lpow','effectsize_roi_left', 'effectsize_roi_right');
+save('/project/3011085.03/analysis/stat_bf_pre.mat','c_left', 'ic_left', 'c_right', 'ic_right', 'c', 'ic', 'c_ic', 'l','r','freq_idx', 'sourcemodel', 'source','stat', 'stat_roi', 'd', 'rpow', 'lpow','effectsize_roi_left', 'effectsize_roi_right');
 
 
