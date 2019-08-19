@@ -57,10 +57,10 @@ for k=1:numel(l)
   lpow(:,k) = source.stat(:,l(k),freq_idx(k));
   rpow(:,k) = source.stat(:,r(k),freq_idx(k));
 end
-stat_roi = lpow-rpow;
+stat_roi = [lpow rpow];
 
 d =[];
-d.stat = reshape(stat_roi, 19, 1, 12);
+d.stat(:,1,:) = stat_roi;
 d.time = 1:size(stat_roi,2);
 d.dimord = 'rpt_chan_time';
 d.label{1} = 'pre_roi_pow';
@@ -102,13 +102,13 @@ for k=1:n
 end
 raw = tmpraw;
 for k=1:n
-  c_ic(k,:,:) = (raw{k,1}./raw{k,3}-1 + raw{k,4}./raw{k,2}-1)./2;
+  c_ic(k,:,:) = (raw{k,1}+raw{k,4})./(raw{k,3}+raw{k,2})-1;
 end
 for m=1:numel(freq_idx)
   effectsize_roi_left(:,m) = c_ic(:,l(m), freq_idx(m));
   effectsize_roi_right(:,m) =  c_ic(:,r(m), freq_idx(m));
 end
 
-save('/project/3011085.03/analysis/stat_bf_pre.mat', 'l','r','freq_idx', 'sourcemodel', 'source','stat', 'stat_roi', 'd', 'rpow', 'lpow','effectsize_roi_left', 'effectsize_roi_right');
+save('/project/3011085.03/analysis/stat_bf_pre.mat','c_ic', 'l','r','freq_idx', 'sourcemodel', 'source','stat', 'stat_roi', 'd', 'rpow', 'lpow','effectsize_roi_left', 'effectsize_roi_right');
 
 
