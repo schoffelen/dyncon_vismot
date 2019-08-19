@@ -96,6 +96,12 @@ maskpos = mask(ismember(mask, posidx));
 negidx = find(stat.stat<0);
 maskneg = mask(ismember(mask, negidx));
 
+clear c ic
+for k=1:n
+  c(k,:,:) = (raw{k,1}+raw{k,4})./2;
+  ic(k,:,:) = (raw{k,2} + raw{k,3})./2;
+end
+
 for k=1:n
   c_ic(k,:,:) = (raw{k,1}./raw{k,3}-1 + raw{k,4}./raw{k,2}-1)./2;
 end
@@ -119,9 +125,9 @@ for k=1:numel(stat.freq)
 end
 
 if stratifyflag
-  save(fullfile([alldir, 'analysis/stat_bf_post_stratified.mat']), 'stat', 'source', 'sourcemodel', 'foi', 'stat_semhemi', 'poseffectsize', 'negeffectsize', 'effectsize_largest_cluster')
+  save(fullfile([alldir, 'analysis/stat_bf_post_stratified.mat']), 'stat', 'source', 'sourcemodel', 'foi', 'stat_semhemi', 'poseffectsize', 'negeffectsize', 'effectsize_largest_cluster', 'c_ic')
 else
-  save(fullfile([alldir, 'analysis/stat_bf_post.mat']), 'stat', 'source', 'sourcemodel', 'foi', 'stat_semhemi', 'poseffectsize', 'negeffectsize', 'effectsize_largest_cluster')
+  save(fullfile([alldir, 'analysis/stat_bf_post.mat']), 'stat', 'source', 'sourcemodel', 'foi', 'stat_semhemi', 'poseffectsize', 'negeffectsize', 'effectsize_largest_cluster', 'c_ic')
 end
 
 %% Define ROI's by browsing through Ortho Maps
@@ -141,13 +147,13 @@ end
 % Note the FOIs and ROIs here:
 roi = [
   {'REGION'}    {'FREQUENCY BAND'}  {'LOCATION LEFT'}   {'LOCATION RIGHT'}
-  {'occipital'} {'alpha'}           {[-2.6 -9.6 3.2]}   {[2.6 -9.6 3.2]}
-  {'occipital'} {'gamma1'}          {[-3.0 -10.4 0.8]}  {[3.0 -10.4 0.8]}
+  {'occipital'} {'alpha'}           {[-1.8 -9.6 0.4]}   {[1.8 -9.6 0.4]}
+  {'occipital'} {'gamma1'}          {[-3.0 -10.4 0.0]}  {[3.0 -10.4 0.0]}
   {'occipital'} {'gamma2'}          {[-2.6 -9.2 0.8]}   {[2.6 -9.2 0.8]}
-  {'occipital'} {'gamma3'}          {[-3.4 -9.2 1.6]}   {[3.4 -9.2 1.6]}
-  {'parietal'}  {'alpha'}           {[-3.4 -7.6 5.6]}   {[3.4 -7.6 5.6]}
+  {'occipital'} {'gamma3'}          {[-2.6 -10.0 0.8]}   {[2.6 -10.0 0.8]}
+  {'parietal'}  {'alpha'}           {[-3.0 -7.6 5.6]}   {[3.0 -7.6 5.6]}
   {'parietal'}  {'gamma1'}          {[-3.4 -8.8 4.4]}   {[3.4 -8.8 4.4]}
-  {'parietal'}  {'gamma2'}          {[-3.4 -7.6 5.6]}   {[3.4 -7.6 5.6]}
+  {'parietal'}  {'gamma2'}          {[-3.0 -7.6 6.0]}   {[3.0 -7.6 6.0]}
   {'parietal'}  {'gamma3'}          {[-2.6 -8.4 4.8]}   {[2.6 -8.4 4.8]}
   {'motor'}     {'alpha'}           {[-4.6 -0.4 6.4]}   {[4.6 -0.4 6.4]}
   {'motor'}     {'beta'}            {[-3.8 -4.0 5.6]}   {[3.8 -4.0 5.6]}
@@ -184,9 +190,15 @@ for m=1:numel(freq_idx)
   effectsize_roi_right(:,m) =  c_ic(:,r(m), freq_idx(m));
 end
 
+for m=1:numel(freq_idx)
+  c_left(:,m) = c(:,l(m), freq_idx(m));
+  ic_left(:,m) = ic(:,l(m), freq_idx(m));
+  c_right(:,m) = c(:,r(m), freq_idx(m));
+  ic_right(:,m) = ic(:,r(m), freq_idx(m));
+end
 
 if stratifyflag
-  save(fullfile([alldir, 'analysis/stat_bf_post_stratified.mat']), 'effectsize_roi_right','effectsize_roi_left', 'l', 'r', 'freq_idx','-append')
+  save(fullfile([alldir, 'analysis/stat_bf_post_stratified.mat']), 'effectsize_roi_right','effectsize_roi_left', 'l', 'r', 'freq_idx','c', 'ic', 'c_left', 'c_right', 'ic_left', 'ic_right', '-append')
 else
-  save(fullfile([alldir, 'analysis/stat_bf_post.mat']), 'effectsize_roi_right','effectsize_roi_left', 'l', 'r', 'freq_idx','-append')
+  save(fullfile([alldir, 'analysis/stat_bf_post.mat']), 'effectsize_roi_right','effectsize_roi_left', 'l', 'r', 'freq_idx', 'freq_idx','c', 'ic', 'c_left', 'c_right', 'ic_left', 'ic_right', '-append')
 end

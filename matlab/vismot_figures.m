@@ -2,10 +2,11 @@ addpath('/project/3011085.03/scripts/RainCloudPlots/tutorial_matlab/')
 addpath('/project/3011085.03/scripts/Robust_Statistical_Toolbox/')
 subjects = vismot_subjinfo;
 alldir = '/project/3011085.03/';
-
-%% FIGURE 2 - behavior
-% general behavioral measures
+load(fullfile([alldir, 'analysis/source/roi.mat']));
 load list
+
+%% FIGURE 2: behavior
+% general behavioral measures
 
 for k=1:19
 x = load(sprintf('/project/3011085.03/analysis/behaviour/%sbehaviour.mat', list{k}));
@@ -27,7 +28,7 @@ end
 mean(ntrl)
 std(ntrl)
 
-% Figure 1a : SIMON EFFECT
+% Figure 2a : SIMON EFFECT
 filename = [subjects(1).pathname, '/stat_behavior_simon.mat'];
 d = load(filename);
 effectsize_ms = round(abs(mean(d.avgC-d.avgIC)), 3, 'significant');
@@ -75,7 +76,7 @@ legend({'current congruent', 'current incongruent'}, 'Location', 'NorthEast') % 
 
 
 
-%% FIGURE 3 - Post cue power slice plots
+%% FIGURE 3: Post cue power slice plots
 alldir = '/project/3011085.03/';
 load(fullfile([alldir, 'analysis/source/roi.mat']));
 d = load(fullfile([alldir, 'analysis/stat_bf_post.mat']));
@@ -93,7 +94,7 @@ sprintf('RT-stratified effect size M = %s percent (SD = %s percent), p = %s', nu
 % make slice plots of power
 cfg=[];
 cfg.parameter = {'stat'};
-stat_int = ft_sourceinterpolate(cfg, d2.stat, mri);
+stat_int = ft_sourceinterpolate(cfg, d.stat, mri);
 
 cmap = flipud(brewermap(64, 'RdBu'));
 cfgp = [];
@@ -104,188 +105,91 @@ cfgp.maskparameter = cfgp.funparameter;
 cfgp.slicerange = [70 150];
 cfgp.nslices = 16;
 clim = [5 6 5 8 6];
+stat_int.stat(isnan(stat_int.stat)) = 0;
 k=1;
 for f=stat_int.freq
   cfgp.frequency = f;
   cfgp.funcolorlim = [-clim(k) clim(k)];
   ft_sourceplot(cfgp, stat_int);
-  title(sprintf('post-cue power - %d Hz',f))
+%   title(sprintf('post-cue power - %d Hz',f))
   k=k+1;
 end
 
-
-%% FIGURE 4 - post cue power ROI + bar plot
-% raincloud graph of ipsi vs contra ROI pow diff (C./IC)
-idx_left = d2.l;
-idx_right = d2.r;
-
-pow_ipsi = zeros(19,15);
-pow_contra = zeros(19,15);
-zeroidx = [2 7 14];
-pow_ipsi(:, setdiff(1:15, zeroidx)) = d2.effectsize_roi_left;
-pow_contra(:, setdiff(1:15, zeroidx))  = d2.effectsize_roi_right;
-
-cmap = brewermap(2, 'RdBu');
-figure;
-for k = setdiff(1:15, zeroidx)
-    subplot(3,5,k)
-  h1{k} = raincloud_plot(pow_ipsi(:,k), 'box_on', 1, 'color', cmap(1,:), 'alpha', 0.5,...
-     'box_dodge', 1, 'box_dodge_amount', .15, 'dot_dodge_amount', .15,...
-     'box_col_match', 0);
-  h2{k} = raincloud_plot(pow_contra(:,k), 'box_on', 1, 'color', cmap(2,:), 'alpha', 0.5,...
-     'box_dodge', 1, 'box_dodge_amount', .35, 'dot_dodge_amount', .35, 'box_col_match', 0);
-f1 = ksdensity(pow_ipsi(:,k));
-f2 = ksdensity(pow_contra(:,k));
-   maxy = max([f1 f2]);
-   set(gca, 'Ylim', [-maxy maxy])
-end
-
-% ROI plot
-s = d2.stat;
-s.stat = d2.stat.stat(:,1);
-s.freq = 1;
-cmap = brewermap(3, 'Accent');
-location = {'L-occipital', 'R-occipital'; 'L-parietal', 'R-parietal'; 'L-motor', 'R-motor'};
+f=[];
+f.powspctrm = ones(1,10,10);
+f.dimord = 'chan_freq_time';
+f.time = 1:10;
+f.freq = 1:10;
+f.label{1} = 'tmp';
 
 cfgp=[];
-cfgp.funparameter = 'stat';
-cfgp.maskparameter = 'stat';
-cfgp.method = 'surface';
-cfgp.funcolorlim = [-100, 100];
-cfgp.colorbar = 'no';
-cfgp.surfdownsample = 20;
-cfgp.facecolor = 'brain';
+cfgp.colormap = flipud(brewermap(64, 'RdBu'));
+cfgp.zlim = [-8 8];
+figure; ft_singleplotTFR(cfgp, f);
 
-% alpha
-ft_sourceplot(cfgp, s);
-material dull
-p = [1 5 9];
-grad=[];
-grad.label = {'1'};
-for k=1:length(p)
-  grad.chanpos=[s.pos(l(p(k)),:)];
-  grad.elecpos=grad.chanpos;
-  ft_plot_sens(grad,'elecshape','point', 'elecsize', 50, 'facecolor', [cmap(k,:)])
-  
-  grad.chanpos=[s.pos(r(p(k)),:)];
-  grad.elecpos=grad.chanpos;
-  ft_plot_sens(grad,'elecshape','point', 'elecsize', 50, 'facecolor', [cmap(k,:)])
+
+
+
+%% FIGURE 4: post cue power ROI
+
+zeroidx = [2 7 14];
+c_ipsi = zeros(19,15);
+c_ipsi(:, setdiff(1:15, zeroidx)) = d.c_left;
+c_contra = zeros(19,15);
+c_contra(:, setdiff(1:15, zeroidx)) = d.c_right;
+ic_ipsi = zeros(19,15);
+ic_ipsi(:, setdiff(1:15, zeroidx)) = d.ic_left;
+ic_contra = zeros(19,15);
+ic_contra(:, setdiff(1:15, zeroidx)) = d.ic_right;
+
+figure; 
+cnt=1;
+for k = setdiff(1:15, zeroidx)
+  subplot(3,5,k);
+  hold on
+  plot([1 2], [ic_contra(:,k) c_contra(:,k)], '.-', 'color', [0.7 0.7 0.7]);
+  plot([1 2], [mean(ic_contra(:,k)) mean(c_contra(:,k))], '.-k', 'LineWidth',2)
+  plot([3 4], [ic_ipsi(:,k) c_ipsi(:,k)], '.-', 'color', [0.7 0.7 0.7]);
+  plot([3 4], [mean(ic_ipsi(:,k)) mean(c_ipsi(:,k))], '.-k', 'LineWidth',2)
+  xlim([0.5 4.5])
+  cnt=cnt+1;
 end
-view([0,69]);
-view([-90,0]);camlight
 
-% beta
-ft_sourceplot(cfgp, s);
-material dull
-p = [10];
-grad=[];
-grad.label = {'1'};
-for k=1:length(p)
-  grad.chanpos=[s.pos(l(p(k)),:)]+[0 0 1.5];
-  grad.elecpos=grad.chanpos;
-  ft_plot_sens(grad,'elecshape','point', 'elecsize', 40, 'facecolor', [cmap(3,:)])
-  
-  grad.chanpos=[s.pos(r(p(k)),:)]+[0 0 1.5];
-  grad.elecpos=grad.chanpos;
-  ft_plot_sens(grad,'elecshape','point', 'elecsize', 40, 'facecolor', [cmap(3,:)])
-end
-view([0,69]);
-view([-90,0]);camlight
 
-% gamma1
-ft_sourceplot(cfgp, s);
-material dull
-p = [2 6 11];
-grad=[];
-grad.label = {'1'};
-for k=1:length(p)
-  grad.chanpos=[s.pos(l(p(k)),:)];
-  if k==3
-    grad.chanpos = grad.chanpos + [0 0 2];
-  end
-  grad.elecpos=grad.chanpos;
-  ft_plot_sens(grad,'elecshape','point', 'elecsize', 40, 'facecolor', [cmap(k,:)])
-  
-  grad.chanpos=[s.pos(r(p(k)),:)];
-    if k==3
-    grad.chanpos = grad.chanpos + [0 0 2];
-  end
-  grad.elecpos=grad.chanpos;
-  ft_plot_sens(grad,'elecshape','point', 'elecsize', 40, 'facecolor', [cmap(k,:)])
-end
-view([0,69]);
-view([-90,0]);camlight
 
-% gamma2
-ft_sourceplot(cfgp, s);
-material dull
-p = [3 7];
-grad=[];
-grad.label = {'1'};
-for k=1:length(p)
-  grad.chanpos=[s.pos(l(p(k)),:)];
-  if k==1
-    grad.chanpos = grad.chanpos - [0 1 0];
-  end
-  grad.elecpos=grad.chanpos;
-  ft_plot_sens(grad,'elecshape','point', 'elecsize', 40, 'facecolor', [cmap(k,:)])
-  
-  grad.chanpos=[s.pos(r(p(k)),:)];
-  if k==1
-    grad.chanpos = grad.chanpos - [0 1.2 0];
-  end
-  grad.elecpos=grad.chanpos;
-  ft_plot_sens(grad,'elecshape','point', 'elecsize', 40, 'facecolor', [cmap(k,:)])
-end
-view([0,69]);
-view([-90,0]);camlight
-
-% gamma3
-ft_sourceplot(cfgp, s);
-material dull
-p = [4 8 12];
-grad=[];
-grad.label = {'1'};
-for k=1:length(p)
-  grad.chanpos=[s.pos(l(p(k)),:)];
-  grad.elecpos=grad.chanpos;
-  ft_plot_sens(grad,'elecshape','point', 'elecsize', 40, 'facecolor', [cmap(k,:)])
-  
-  grad.chanpos=[s.pos(r(p(k)),:)];
-  grad.elecpos=grad.chanpos;
-  ft_plot_sens(grad,'elecshape','point', 'elecsize', 40, 'facecolor', [cmap(k,:)])
-end
-view([0,69]);
-view([-90,0]);camlight
-
-%% pre cue power
+%% Figure 5: pre cue power
 alldir = '/project/3011085.03/';
 s = load(fullfile([alldir, 'analysis/stat_bf_pre.mat']));
 
-pow_ipsi = zeros(19,15);
-pow_contra = zeros(19,15);
 zeroidx = [2 7 14];
-pow_ipsi(:, setdiff(1:15, zeroidx)) = s.effectsize_roi_left;
-pow_contra(:, setdiff(1:15, zeroidx))  = s.effectsize_roi_right;
+c_ipsi = zeros(19,15);
+c_ipsi(:, setdiff(1:15, zeroidx)) = s.c_left;
+c_contra = zeros(19,15);
+c_contra(:, setdiff(1:15, zeroidx)) = s.c_right;
+ic_ipsi = zeros(19,15);
+ic_ipsi(:, setdiff(1:15, zeroidx)) = s.ic_left;
+ic_contra = zeros(19,15);
+ic_contra(:, setdiff(1:15, zeroidx)) = s.ic_right;
 
-figure;
-cmap = brewermap(2, 'RdBu');
-for k=setdiff(1:15, zeroidx)
-  subplot(3,5,k)
-  h1{k} = raincloud_plot(pow_ipsi(:,k), 'box_on', 1, 'color', cmap(1,:), 'alpha', 0.5,...
-     'box_dodge', 1, 'box_dodge_amount', .15, 'dot_dodge_amount', .15,...
-     'box_col_match', 0);
-  h2{k} = raincloud_plot(pow_contra(:,k), 'box_on', 1, 'color', cmap(2,:), 'alpha', 0.5,...
-     'box_dodge', 1, 'box_dodge_amount', .35, 'dot_dodge_amount', .35, 'box_col_match', 0);
-   f1 = ksdensity(pow_ipsi(:,k));
-f2 = ksdensity(pow_contra(:,k));
-   maxy = max([f1 f2]);
-   set(gca, 'Ylim', [-maxy maxy])
+figure; 
+cnt=1;
+for k = setdiff(1:15, zeroidx)
+  subplot(3,5,k);
+  hold on
+  plot([1 2], [ic_contra(:,k) c_contra(:,k)], '.-', 'color', [0.7 0.7 0.7]);
+  plot([1 2], [mean(ic_contra(:,k)) mean(c_contra(:,k))], '.-k', 'LineWidth',2)
+  plot([3 4], [ic_ipsi(:,k) c_ipsi(:,k)], '.-', 'color', [0.7 0.7 0.7]);
+  plot([3 4], [mean(ic_ipsi(:,k)) mean(c_ipsi(:,k))], '.-k', 'LineWidth',2)
+  xlim([0.5 4.5])
+  title(sprintf('p=%s, p=%s', num2str(round(s.stat.prob(cnt),3)), num2str(round(s.stat.prob(cnt+12),3))))
+  cnt=cnt+1;
 end
 
+sprintf('After correction there is no statistical significant difference between C and IC trials in the pre-cue window, in any ROI')
 
 
-%% Coherence
+
+%% Figure 6: Coherence
 % within-between hemispheres
 c = load('/project/3011085.03/analysis/stat_coh_pre.mat');
 
@@ -382,3 +286,154 @@ for k=1:5
   tmpc(tmpc>0) = 0;
   circularGraph(abs(tmpc), 'Colormap', repmat(cmap(2,:), [6 1]), 'Label', label);
 end
+
+
+%% Figure S1
+d2 = load(fullfile([alldir, 'analysis/stat_bf_post_stratified.mat']));
+
+cfg=[];
+cfg.parameter = {'stat'};
+stat_int = ft_sourceinterpolate(cfg, d2.stat, mri);
+stat_int.stat(isnan(stat_int.stat)) = 0;
+
+cmap = flipud(brewermap(64, 'RdBu'));
+cfgp = [];
+cfgp.funparameter = 'stat';
+cfgp.method = 'slice';
+cfgp.funcolormap = cmap;
+cfgp.maskparameter = cfgp.funparameter;
+cfgp.slicerange = [70 150];
+cfgp.nslices = 16;
+clim = [5 8 6 8 8];
+k=1;
+for f=stat_int.freq
+  cfgp.frequency = f;
+  cfgp.funcolorlim = [-clim(k) clim(k)];
+  ft_sourceplot(cfgp, stat_int);
+%   title(sprintf('post-cue power - %d Hz',f))
+  k=k+1;
+end
+
+%% Figure S2 ROI plot
+s = load(fullfile([alldir, 'analysis/stat_bf_pre.mat'])); l=s.l;r=s.r;
+
+s = d2.stat;
+s.stat = d2.stat.stat(:,1);
+s.freq = 1;
+cmap = brewermap(3, 'Accent');
+location = {'L-occipital', 'R-occipital'; 'L-parietal', 'R-parietal'; 'L-motor', 'R-motor'};
+
+
+cfgp=[];
+cfgp.funparameter = 'stat';
+cfgp.maskparameter = 'stat';
+cfgp.method = 'surface';
+cfgp.funcolorlim = [-100, 100];
+cfgp.colorbar = 'no';
+cfgp.surfdownsample = 20;
+cfgp.facecolor = 'brain';
+
+% alpha
+ft_sourceplot(cfgp, s);
+material dull
+p = [1 5 9];
+grad=[];
+grad.label = {'1'};
+yextra =[0 -1.2 0;0 0 0; 0 0 0];
+for k=1:length(p)
+  grad.chanpos=[s.pos(l(p(k)),:)] + yextra(k,:);
+  grad.elecpos=grad.chanpos;
+  ft_plot_sens(grad,'elecshape','point', 'elecsize', 50, 'facecolor', [cmap(k,:)])
+  
+  grad.chanpos=[s.pos(r(p(k)),:)] + yextra(k,:);
+  grad.elecpos=grad.chanpos;
+  ft_plot_sens(grad,'elecshape','point', 'elecsize', 50, 'facecolor', [cmap(k,:)])
+end
+view([0,69]);
+% view([-90,0]);camlight
+
+% beta
+ft_sourceplot(cfgp, s);
+material dull
+p = [10];
+grad=[];
+grad.label = {'1'};
+for k=1:length(p)
+  grad.chanpos=[s.pos(l(p(k)),:)]+[0 0 1.5];
+  grad.elecpos=grad.chanpos;
+  ft_plot_sens(grad,'elecshape','point', 'elecsize', 40, 'facecolor', [cmap(3,:)])
+  
+  grad.chanpos=[s.pos(r(p(k)),:)]+[0 0 1.5];
+  grad.elecpos=grad.chanpos;
+  ft_plot_sens(grad,'elecshape','point', 'elecsize', 40, 'facecolor', [cmap(3,:)])
+end
+view([0,69]);
+% view([-90,0]);camlight
+
+% gamma1
+ft_sourceplot(cfgp, s);
+material dull
+p = [2 6 11];
+grad=[];
+grad.label = {'1'};
+for k=1:length(p)
+  grad.chanpos=[s.pos(l(p(k)),:)];
+  if k==3
+    grad.chanpos = grad.chanpos + [0 0 2];
+  end
+  grad.elecpos=grad.chanpos;
+  ft_plot_sens(grad,'elecshape','point', 'elecsize', 40, 'facecolor', [cmap(k,:)])
+  
+  grad.chanpos=[s.pos(r(p(k)),:)];
+    if k==3
+    grad.chanpos = grad.chanpos + [0 0 2];
+  end
+  grad.elecpos=grad.chanpos;
+  ft_plot_sens(grad,'elecshape','point', 'elecsize', 40, 'facecolor', [cmap(k,:)])
+end
+view([0,69]);
+% view([-90,0]);camlight
+
+% gamma2
+ft_sourceplot(cfgp, s);
+material dull
+p = [3 7];
+grad=[];
+grad.label = {'1'};
+for k=1:length(p)
+  grad.chanpos=[s.pos(l(p(k)),:)];
+  if k==1
+    grad.chanpos = grad.chanpos - [0 1 0];
+  end
+  grad.elecpos=grad.chanpos;
+  ft_plot_sens(grad,'elecshape','point', 'elecsize', 40, 'facecolor', [cmap(k,:)])
+  
+  grad.chanpos=[s.pos(r(p(k)),:)];
+  if k==1
+    grad.chanpos = grad.chanpos - [0 1.2 0];
+  end
+  grad.elecpos=grad.chanpos;
+  ft_plot_sens(grad,'elecshape','point', 'elecsize', 40, 'facecolor', [cmap(k,:)])
+end
+view([0,69]);
+% view([-90,0]);camlight
+
+% gamma3
+ft_sourceplot(cfgp, s);
+material dull
+p = [4 8 12];
+grad=[];
+grad.label = {'1'};
+yextra1 =[0 -0.5 0;0 0 0; 0 0 0];
+yextra2 =[0 -0.5 0;0 0 0; 0 0 0];
+for k=1:length(p)
+  grad.chanpos=[s.pos(l(p(k)),:)] + yextra2(k,:);
+  grad.elecpos=grad.chanpos;
+  ft_plot_sens(grad,'elecshape','point', 'elecsize', 40, 'facecolor', [cmap(k,:)])
+  
+  grad.chanpos=[s.pos(r(p(k)),:)] + yextra1(k,:);
+  grad.elecpos=grad.chanpos;
+  ft_plot_sens(grad,'elecshape','point', 'elecsize', 40, 'facecolor', [cmap(k,:)])
+end
+view([0,69]);
+% view([-90,0]);camlight
