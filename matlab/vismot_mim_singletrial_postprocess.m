@@ -29,7 +29,7 @@ nfreq = 159;%4;
 Ci = zeros(numel(d), dim, dim, nfreq);
 for k = 1:numel(d)
   k
-  trialnumber(k) = str2num(char(extractBetween(d(k).name,"all_", ".mat")));
+  trialnumber(k) = str2num(char(extractBetween(d(k).name,'all_', '.mat')));
   m = load([d(k).folder,'/', d(k).name]);
   ci = m.mim.mimspctrm;
   Citmp = T*c-(T-1)*ci; % see Womelsdorf et al, 2007, Science
@@ -67,7 +67,7 @@ ntrials = min([sum(conditions==1), sum(conditions==2), sum(conditions==3), sum(c
 tmpidx = [];
 for k=1:5
   tmp = find(conditions==k);
-  P = randperm(ntrials);
+  P = randperm(sum(conditions==k));
   tmpidx = [tmpidx; tmp(P(1:ntrials))];
 end
 Ci = Ci(tmpidx,:,:,:);
@@ -78,7 +78,7 @@ if 0 % both if and else should lead to the same result. But not when reshape dim
   Citmp = reshape(permute(Ci,[2,3,1,4]), [dim, dim, size(Ci,1)*nfreq]);
   Citmp2=zeros(size(Citmp));
   for k=1:size(Citmp,3)
-    Citmp2(:,:,k) = tril(Citmp(:,:,k));
+    Citmp2(:,:,k) = tril(Citmp(:,:,k),-1);
   end
   
   % MAKE SURE DIMENSIONS ARE CORRECT. permute(reshape(Citmp2, [dim, dim,
@@ -89,7 +89,7 @@ if 0 % both if and else should lead to the same result. But not when reshape dim
   data.trial = reshape(Ci_small, [size(Ci,1), 1, dim*dim*nfreq]);
   
 else
-  sel = tril(ones(dim))==1;
+  sel = tril(ones(dim),-1)==1;
   Citmp = reshape(Ci, [size(Ci,1), dim*dim, size(Ci,4)]);
   Citmp = Citmp(:,sel,:);
   Citmp = reshape(Citmp, [size(Citmp,1), 1, size(Citmp,2)*size(Citmp,3)]);
@@ -99,6 +99,7 @@ end
 data.time = 1:size(data.trial,3);
 data.label = {'chan01'};
 data.dimord = 'rpt_chan_time';
+data.trialinfo = conditions(:);
 
 % remove conditions 5
 %{
@@ -110,22 +111,22 @@ conditions(x)=[];
 addpath('/project/3011085.03/scripts/fieldtrip/external/dmlt/')
 cfg=[];
 cfg.method = 'crossvalidate';
-cfg.mva = {'dml.naive'};
+cfg.mva = {dml.naive};
 cfg.statistic = {'confusion', 'accuracy'};
 cfg.design = conditions;
 cfg.type = 'nfold';
-cfg.nfolds = 5;
+cfg.nfolds = 10;
 cfg.resample = 0; % resamples conditions with fewer trials, and throws away oversampled conditions
 stat = ft_timelockstatistics(cfg, data);
 stat.statistic
 
 
-numrandomization = 100;
+numrandomization = 2;
 r=zeros(numrandomization,1);
 for k=1:numrandomization
   k
   cfg.design = conditions(randperm(numel(conditions)));
-  randstat{k} = ft_timelockstatistics(cfg, data);
+  randstat{k} = ft_timelockstatistics(cfg, ft_selectdata(cfgsel, data));
   r(k) = randstat{k}.statistic.accuracy;
 end
 
