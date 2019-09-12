@@ -84,12 +84,11 @@ mri = ft_read_mri('single_subj_T1_1mm.nii');
 
 effect_size = mean(d.effectsize_largest_cluster); % get average from 'significant clusters' of raw effect (not 1st level T)
 effect_size_sd = std(d.effectsize_largest_cluster);
-sprintf('effect size M = %s percent (SD = %s percent), p = %s', num2str(round(100*effect_size,1)),num2str(round(100*effect_size_sd,2)), num2str(round(d.stat.posclusters(1).prob, 3, 'significant')))
-
+sprintf('p = %s, effect size beta M = %s percent (SD = %s percent), gamma1 M = %s percent (SD = %s percent), gamma2 M = %s percent (SD = %s percent), gamma3 M = %s percent (SD = %s percent).', num2str(round(d.stat.posclusters(1).prob,3 , 'significant')), num2str(round(100*effect_size(2),1)),num2str(round(100*effect_size_sd(2),2)),num2str(round(100*effect_size(3),1)),num2str(round(100*effect_size_sd(3),2)),num2str(round(100*effect_size(4),1)),num2str(round(100*effect_size_sd(4),2)),num2str(round(100*effect_size(5),1)),num2str(round(100*effect_size_sd(5),2)))
 d2 = load(fullfile([alldir, 'analysis/stat_bf_post_stratified.mat']));
 effect_size_stratified = mean(d2.effectsize_largest_cluster); % get average from 'significant clusters' of raw effect (not 1st level T)
 effect_size_stratified_sd = std(d2.effectsize_largest_cluster);
-sprintf('RT-stratified effect size M = %s percent (SD = %s percent), p = %s', num2str(round(100*effect_size_stratified,1)),num2str(round(100*effect_size_stratified_sd,1)), num2str(round(d2.stat.posclusters(1).prob, 3, 'significant')))
+sprintf('RT-stratified p = %s, effect size alpha M = %s percent (SD = %s percent), effect size beta M = %s percent (SD = %s percent), gamma1 M = %s percent (SD = %s percent), gamma2 M = %s percent (SD = %s percent), gamma3 M = %s percent (SD = %s percent).', num2str(round(d2.stat.posclusters(1).prob,3 , 'significant')), num2str(round(100*effect_size_stratified(1),1)),num2str(round(100*effect_size_stratified_sd(1),2)), num2str(round(100*effect_size_stratified(2),1)),num2str(round(100*effect_size_stratified_sd(2),2)),num2str(round(100*effect_size_stratified(3),1)),num2str(round(100*effect_size_stratified_sd(3),2)),num2str(round(100*effect_size_stratified(4),1)),num2str(round(100*effect_size_stratified_sd(4),2)),num2str(round(100*effect_size_stratified(5),1)),num2str(round(100*effect_size_stratified_sd(5),2)))
 
 % make slice plots of power
 cfg=[];
@@ -101,7 +100,7 @@ cfgp = [];
 cfgp.funparameter = 'stat';
 cfgp.method = 'slice';
 cfgp.funcolormap = cmap;
-cfgp.maskparameter = cfgp.funparameter;
+% cfgp.maskparameter = cfgp.funparameter;
 cfgp.slicerange = [70 150];
 cfgp.nslices = 16;
 clim = [5 6 5 8 6];
@@ -133,25 +132,32 @@ figure; ft_singleplotTFR(cfgp, f);
 %% FIGURE 4: post cue power ROI
 
 zeroidx = [2 7 14];
+meanpower(:,:,1) = d.c_left; meanpower(:,:,2) = d.c_right; meanpower(:,:,3) = d.ic_left; meanpower(:,:,4) = d.ic_right;
+stdpower = std(meanpower, [], 3);
+meanpower = mean(meanpower,3);
 c_ipsi = zeros(19,15);
-c_ipsi(:, setdiff(1:15, zeroidx)) = d.c_left;
+c_ipsi(:, setdiff(1:15, zeroidx)) = (d.c_left-meanpower)./stdpower;
 c_contra = zeros(19,15);
-c_contra(:, setdiff(1:15, zeroidx)) = d.c_right;
+c_contra(:, setdiff(1:15, zeroidx)) = (d.c_right-meanpower)./stdpower;
 ic_ipsi = zeros(19,15);
-ic_ipsi(:, setdiff(1:15, zeroidx)) = d.ic_left;
+ic_ipsi(:, setdiff(1:15, zeroidx)) = (d.ic_left-meanpower)./stdpower;
 ic_contra = zeros(19,15);
-ic_contra(:, setdiff(1:15, zeroidx)) = d.ic_right;
+ic_contra(:, setdiff(1:15, zeroidx)) = (d.ic_right-meanpower)./stdpower;
 
 figure; 
 cnt=1;
 for k = setdiff(1:15, zeroidx)
   subplot(3,5,k);
   hold on
-  plot([1 2], [ic_contra(:,k) c_contra(:,k)], '.-', 'color', [0.7 0.7 0.7]);
-  plot([1 2], [mean(ic_contra(:,k)) mean(c_contra(:,k))], '.-k', 'LineWidth',2)
-  plot([3 4], [ic_ipsi(:,k) c_ipsi(:,k)], '.-', 'color', [0.7 0.7 0.7]);
-  plot([3 4], [mean(ic_ipsi(:,k)) mean(c_ipsi(:,k))], '.-k', 'LineWidth',2)
+  plot([1 2], [ic_ipsi(:,k) c_ipsi(:,k)], '.-', 'color', [0.7 0.7 0.7]);
+  plot([1 2], [mean(ic_ipsi(:,k)) mean(c_ipsi(:,k))], 'o-k', 'LineWidth',2)
+%   errorbar([1 2], [mean(ic_contra(:,k)) mean(c_contra(:,k))], [std(ic_contra(:,k)) std(c_contra(:,k))])
+
+  plot([3 4], [ic_contra(:,k) c_contra(:,k)], '.-', 'color', [0.7 0.7 0.7]);
+  plot([3 4], [mean(ic_contra(:,k)) mean(c_contra(:,k))], 'o-k', 'LineWidth',2)
+%   errorbar([3 4], [mean(ic_ipsi(:,k)) mean(c_ipsi(:,k))], [std(ic_ipsi(:,k)) std(c_ipsi(:,k))])
   xlim([0.5 4.5])
+  ylim([-2 2])
   cnt=cnt+1;
 end
 
@@ -160,28 +166,36 @@ end
 %% Figure 5: pre cue power
 alldir = '/project/3011085.03/';
 s = load(fullfile([alldir, 'analysis/stat_bf_pre.mat']));
+clear meanpower stdpower
 
 zeroidx = [2 7 14];
+meanpower(:,:,1) = s.c_left; meanpower(:,:,2) = s.c_right; meanpower(:,:,3) = s.ic_left; meanpower(:,:,4) = s.ic_right;
+stdpower = std(meanpower, [], 3);
+meanpower = mean(meanpower,3);
 c_ipsi = zeros(19,15);
-c_ipsi(:, setdiff(1:15, zeroidx)) = s.c_left;
+c_ipsi(:, setdiff(1:15, zeroidx)) = (s.c_left-meanpower)./stdpower;
 c_contra = zeros(19,15);
-c_contra(:, setdiff(1:15, zeroidx)) = s.c_right;
+c_contra(:, setdiff(1:15, zeroidx)) = (s.c_right-meanpower)./stdpower;
 ic_ipsi = zeros(19,15);
-ic_ipsi(:, setdiff(1:15, zeroidx)) = s.ic_left;
+ic_ipsi(:, setdiff(1:15, zeroidx)) = (s.ic_left-meanpower)./stdpower;
 ic_contra = zeros(19,15);
-ic_contra(:, setdiff(1:15, zeroidx)) = s.ic_right;
+ic_contra(:, setdiff(1:15, zeroidx)) = (s.ic_right-meanpower)./stdpower;
+
 
 figure; 
 cnt=1;
 for k = setdiff(1:15, zeroidx)
   subplot(3,5,k);
   hold on
-  plot([1 2], [ic_contra(:,k) c_contra(:,k)], '.-', 'color', [0.7 0.7 0.7]);
-  plot([1 2], [mean(ic_contra(:,k)) mean(c_contra(:,k))], '.-k', 'LineWidth',2)
-  plot([3 4], [ic_ipsi(:,k) c_ipsi(:,k)], '.-', 'color', [0.7 0.7 0.7]);
-  plot([3 4], [mean(ic_ipsi(:,k)) mean(c_ipsi(:,k))], '.-k', 'LineWidth',2)
+  plot([1 2], [ic_ipsi(:,k) c_ipsi(:,k)], '.-', 'color', [0.7 0.7 0.7]);
+  plot([1 2], [mean(ic_ipsi(:,k)) mean(c_ipsi(:,k))], 'o-k', 'LineWidth',2)
+%   errorbar([1 2], [mean(ic_contra(:,k)) mean(c_contra(:,k))], [std(ic_contra(:,k)) std(c_contra(:,k))])
+  plot([3 4], [ic_contra(:,k) c_contra(:,k)], '.-', 'color', [0.7 0.7 0.7]);
+  plot([3 4], [mean(ic_contra(:,k)) mean(c_contra(:,k))], 'o-k', 'LineWidth',2)
+%   errorbar([3 4], [mean(ic_ipsi(:,k)) mean(c_ipsi(:,k))], [std(ic_ipsi(:,k)) std(c_ipsi(:,k))])
   xlim([0.5 4.5])
-  title(sprintf('p=%s, p=%s', num2str(round(s.stat.prob(cnt),3)), num2str(round(s.stat.prob(cnt+12),3))))
+  
+%   title(sprintf('p=%s, p=%s', num2str(round(s.stat.prob(cnt),3)), num2str(round(s.stat.prob(cnt+12),3))))
   cnt=cnt+1;
 end
 
@@ -301,7 +315,7 @@ cfgp = [];
 cfgp.funparameter = 'stat';
 cfgp.method = 'slice';
 cfgp.funcolormap = cmap;
-cfgp.maskparameter = cfgp.funparameter;
+% cfgp.maskparameter = cfgp.funparameter;
 cfgp.slicerange = [70 150];
 cfgp.nslices = 16;
 clim = [5 8 6 8 8];
@@ -437,3 +451,44 @@ for k=1:length(p)
 end
 view([0,69]);
 % view([-90,0]);camlight
+
+%% S3: pre cue power slice
+alldir = '/project/3011085.03/';
+s = load(fullfile([alldir, 'analysis/stat_bf_pre.mat']));
+mri = ft_read_mri('single_subj_T1_1mm.nii');
+
+source = s.source;
+nul=source;
+nul.stat = nul.stat*0;
+
+cfgs=[];
+cfgs.statistic = 'depsamplesT';
+cfgs.parameter = 'stat';
+n=19;
+cfgs.ivar = 1;
+cfgs.uvar = 2;
+cfgs.design = [ones(1,n) ones(1,n)*2;1:n 1:n];
+cfgs.method = 'analytic';
+stat=ft_sourcestatistics(cfgs, source, nul);
+
+cfg=[];
+cfg.parameter = {'stat'};
+stat_int = ft_sourceinterpolate(cfg, stat, mri);
+
+cmap = flipud(brewermap(64, 'RdBu'));
+cfgp = [];
+cfgp.funparameter = 'stat';
+cfgp.method = 'slice';
+cfgp.funcolormap = cmap;
+cfgp.slicerange = [70 150];
+cfgp.nslices = 16;
+lim = [5 5 4 5 5];
+k=1;
+for f=stat_int.freq
+cfgp.frequency = f;
+cfgp.funcolorlim = [-lim(k) lim(k)];
+ft_sourceplot(cfgp, stat_int);
+k=k+1;
+end
+
+
