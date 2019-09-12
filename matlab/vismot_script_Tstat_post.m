@@ -110,7 +110,9 @@ c_ic2 = reshape(c_ic, n, []);
 poseffectsize = mean(c_ic2(:,maskpos),2);
 negeffectsize = mean(c_ic2(:,maskneg),2);
 
-effectsize_largest_cluster = mean(c_ic(:,find(stat.posclusterslabelmat==1)),2);
+for k=1:size(c_ic,3)
+  effectsize_largest_cluster(:,k) = mean(c_ic(:,(stat.posclusterslabelmat(:,k)==1),k),2);
+end
 
 % pool across hemispheres by subtracting the other hemisphere
 stat_semhemi = stat;
@@ -178,7 +180,10 @@ r = zeros(size(roi,1)-1,3);
 % find ROI indices
 for k=1:size(roi,1)-1
   l(k,:) = roi{k+1,3};
-  r(k,:) = roi{k+1,4};
+  r(k,:) = roi{k+1,4};alldir = '/project/3011085.03/';
+load(fullfile([alldir, 'analysis/source/roi.mat']));
+d = load(fullfile([alldir, 'analysis/stat_bf_post.mat']));
+mri = ft_read_mri('single_subj_T1_1mm.nii');
   freq_idx(k) = find(strcmp(roi{k+1,2}, foi([2:end],1)));
 end
 l = find_dipoleindex(sourcemodel, l);
