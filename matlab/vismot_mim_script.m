@@ -38,10 +38,13 @@ if 1
   [mim, parcellation] = vismot_mim_pre(subject,'prewhiten',true,'label',label,'split',split, 'conditions', conditions, 'dobaseline', dobaseline, 'doL1out', doL1out, 'leaveouttrial', leaveouttrial);
   mim = ft_struct2single(mim);
   
+  datadir = '/project_ext/3010029/reproducescript/analysis/';
   if doL1out
-    filename = fullfile(subject.pathname,'mim','singletrial', subject.name, [subject.name,'_mim_pre']);
+        filename = fullfile(datadir,'mim','tmp','singletrial', subject.name, [subject.name,'_mim_pre']);
+%     filename = fullfile(subject.pathname,'mim','singletrial', subject.name, [subject.name,'_mim_pre']);
   else
-    filename = fullfile(subject.pathname,'mim',[subject.name,'_mim_pre']);
+        filename = fullfile(datadir,'mim','tmp', subject.name, [subject.name,'_mim_pre']);
+%     filename = fullfile(subject.pathname,'mim',[subject.name,'_mim_pre']);
   end
   if ~split
     filename = [filename, '_all'];

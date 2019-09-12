@@ -2,9 +2,9 @@ function headmodel = vismot_anatomy_headmodel(subject)
 
 if nargin<1
   % do it for all subjects
-  vismot_subjinfo;
-  for k = [1:3 5:numel(SUBJ)]
-    headmodel = vismot_anatomy_headmodel(SUBJ(k));
+  subjects = vismot_subjinfo;
+  for k = [1:numel(subjects)]
+    headmodel = vismot_anatomy_headmodel(subjects(k).name);
   end
   return;
 end

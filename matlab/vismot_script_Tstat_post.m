@@ -4,21 +4,30 @@ vismot_subjinfo;
 alldir = '/project/3011085.03/';
 datadir = fullfile([alldir, 'analysis/source/']);
 load list;
+if ~exist('stratifyflag', 'var'), stratifyflag = false; end
 
+% Pooled statistic: (left response C-IC minus right response C-IC)
 whichstat = 'statResp';
-frequency = [10 22 38 42 58 62 78 82];%[10 16 24 26 48:4:92];%[4:2:30 40:4:100];
+frequency = [10 22 38 42 58 62 78 82];
 n=19;
 dat = zeros(numel(sourcemodel.inside), numel(frequency), n);
 cnt = 0;
 for k = frequency
   for m = 1:n
-    d = fullfile([datadir, sprintf('%s_source3d4mm_post_%03d_prewhitened.mat', list{m}, k)]);
+    if stratifyflag
+      d = fullfile([datadir, sprintf('%s_source3d4mm_post_%03d_prewhitened_stratified.mat', list{m}, k)]);
+    else
+      d = fullfile([datadir, sprintf('%s_source3d4mm_post_%03d_prewhitened.mat', list{m}, k)]);
+    end
     dum = load(d, 'stat');
+    raw{m, cnt+1} = load(d,'source');
     dat(:,cnt+1, m) = dum.stat.(whichstat);
   end
   clear dum
   cnt=cnt+1;
 end
+
+% make data structure
 foi = { 'alpha', 10, 10
         'beta', 22, 22
         'gamma1', [38 42], 40
@@ -29,6 +38,8 @@ dat = permute(dat, [3,1,2]);
 source = sourcemodel;
 source.dimord = 'rpt_pos_freq';
 source.freq = cat(2,foi{:,end});
+
+% fill data structure. Average within bands.
 l=0;
 for k=1:size(foi,1)
   freqidx = find(ismember(foi{k,2}, frequency));
@@ -38,6 +49,7 @@ for k=1:size(foi,1)
   source.stat(:,:,k) = nanmean(dat(:,:,freqidx),3);
 end
 
+% compare with zero
 nul = source;
 nul.stat(:)=0;
 source.avg = squeeze(nanmean(source.stat,1));
@@ -51,13 +63,50 @@ cfgs.ivar = 1;
 cfgs.uvar = 2;
 cfgs.design = [ones(1,n) ones(1,n)*2;1:n 1:n];
 cfgs.correctm = 'cluster';
-cfgs.numrandomization = 1000;
+cfgs.numrandomization = 10000;
 cfgs.clusteralpha = 0.025;
 cfgs.correcttail = 'prob';
 stat = ft_sourcestatistics(cfgs, source, nul);
 
-save(fullfile([alldir, 'analysis/stat_bf_post.mat']), 'stat', 'source', 'sourcemodel', 'foi')
+% hemiflip raw 4-2 conditions
+for k=1:n
+  for f=1:8
+    for c=[2 4]
+      raw{k,f}.source(c).avg.dim = raw{k,f}.source(c).dim;
+      raw{k,f}.source(c).avg = hemiflip(raw{k,f}.source(c).avg, 'pow');
+    end
+  end
+end
 
+% calculate raw effect size
+for k=1:n
+  for c=1:4
+    tmpraw{k,c}(:,1) = raw{k,1}.source(c).avg.pow; % alpha
+    tmpraw{k,c}(:,2) = raw{k,2}.source(c).avg.pow; % beta
+    tmpraw{k,c}(:,3) = nanmean([raw{k,3}.source(c).avg.pow, raw{k,4}.source(c).avg.pow],2); % gamma 1
+    tmpraw{k,c}(:,4) = nanmean([raw{k,5}.source(c).avg.pow, raw{k,6}.source(c).avg.pow],2); % gamma 2
+    tmpraw{k,c}(:,5) = nanmean([raw{k,7}.source(c).avg.pow, raw{k,8}.source(c).avg.pow],2); % gamma 3
+  end  
+end
+raw = tmpraw;
+
+mask = find(stat.mask==1);
+posidx = find(stat.stat>0);
+maskpos = mask(ismember(mask, posidx));
+negidx = find(stat.stat<0);
+maskneg = mask(ismember(mask, negidx));
+
+for k=1:n
+  c_ic(k,:,:) = (raw{k,1}./raw{k,3}-1 + raw{k,4}./raw{k,2}-1)./2;
+end
+c_ic2 = reshape(c_ic, n, []);
+
+poseffectsize = mean(c_ic2(:,maskpos),2);
+negeffectsize = mean(c_ic2(:,maskneg),2);
+
+effectsize_largest_cluster = mean(c_ic(:,find(stat.posclusterslabelmat==1)),2);
+
+% pool across hemispheres by subtracting the other hemisphere
 stat_semhemi = stat;
 for k=1:numel(stat.freq)
   tmpx=stat.stat(:,k);
@@ -69,65 +118,75 @@ for k=1:numel(stat.freq)
   clear dum tmpx
 end
 
-cmap = flipud(brewermap(64,'RdBu'));
-cfgp=[];
-cfgp.funcolormap = cmap;
-cfgp.method     = 'ortho';
-cfgp.funparameter = 'stat';
-cfgp.location = 'max';
-for k=1:numel(stat_semhemi.freq)
-    cfgp.frequency = stat.freq(k);
-    ft_sourceplot(cfgp, stat_semhemi)
+if stratifyflag
+  save(fullfile([alldir, 'analysis/stat_bf_post_stratified.mat']), 'stat', 'source', 'sourcemodel', 'foi', 'stat_semhemi', 'poseffectsize', 'negeffectsize', 'effectsize_largest_cluster')
+else
+  save(fullfile([alldir, 'analysis/stat_bf_post.mat']), 'stat', 'source', 'sourcemodel', 'foi', 'stat_semhemi', 'poseffectsize', 'negeffectsize', 'effectsize_largest_cluster')
 end
-
 
 %% Define ROI's by browsing through Ortho Maps
-source = ft_convert_units(source, 'mm');
+if ~stratifyflag
+  cmap = flipud(brewermap(64,'RdBu'));
+  cfgp=[];
+  cfgp.funcolormap = cmap;
+  cfgp.method     = 'ortho';
+  cfgp.funparameter = 'stat';
+  cfgp.location = 'max';
+  for k=1:numel(stat_semhemi.freq)
+    cfgp.frequency = stat.freq(k);
+    ft_sourceplot(cfgp, stat_semhemi)
+  end
+end
 
-cfgp=[];
-cfgp.funcolormap = cmap;
-cfgp.maskstyle = 'colormix';
-cfgp.method     = 'ortho';
-cfgp.funparameter = 'stat';
-cfgp.maskparameter = 'stat';
+% Note the FOIs and ROIs here:
+roi = [
+  {'REGION'}    {'FREQUENCY BAND'}  {'LOCATION LEFT'}   {'LOCATION RIGHT'}
+  {'occipital'} {'alpha'}           {[-2.6 -9.6 3.2]}   {[2.6 -9.6 3.2]}
+  {'occipital'} {'gamma1'}          {[-3.0 -10.4 0.8]}  {[3.0 -10.4 0.8]}
+  {'occipital'} {'gamma2'}          {[-2.6 -9.2 0.8]}   {[2.6 -9.2 0.8]}
+  {'occipital'} {'gamma3'}          {[-3.4 -9.2 1.6]}   {[3.4 -9.2 1.6]}
+  {'parietal'}  {'alpha'}           {[-3.4 -7.6 5.6]}   {[3.4 -7.6 5.6]}
+  {'parietal'}  {'gamma1'}          {[-3.4 -8.8 4.4]}   {[3.4 -8.8 4.4]}
+  {'parietal'}  {'gamma2'}          {[-3.4 -7.6 5.6]}   {[3.4 -7.6 5.6]}
+  {'parietal'}  {'gamma3'}          {[-2.6 -8.4 4.8]}   {[2.6 -8.4 4.8]}
+  {'motor'}     {'alpha'}           {[-4.6 -0.4 6.4]}   {[4.6 -0.4 6.4]}
+  {'motor'}     {'beta'}            {[-3.8 -4.0 5.6]}   {[3.8 -4.0 5.6]}
+  {'motor'}     {'gamma1'}          {[-4.6 -3.6 5.6]}   {[4.6 -3.6 5.6]}
+  {'motor'}     {'gamma3'}          {[-4.2 -3.6 7.2]}   {[4.2 -3.6 7.2]}];
+foi = [
+  {'FREQUENCY BAND'}  {'FREQUENCY RANGE'} {'CENTER FREQUENCY'} {'REPRESENTATIVE FREQUENCIES'} {'SMOOTHING'}
+  {'alpha' }          {[8 12]}            {10}                 {10}                           {2}
+  {'beta'  }          {[14 30]}           {22}                 {22}                           {8}
+  {'gamma1'}          {[30 50]}           {40}                 {[38 42]}                      {8}
+  {'gamma2'}          {[50 70]}           {60}                 {[58 62]}                      {8}
+  {'gamma3'}          {[70 90]}           {80}                 {[78 82]}                      {8}];
 
-cfgp.frequency = frequency(1);
-cfgp.location='max';
-ft_sourceplot(cfgp, source);
+unit = 'cm';
+if ~stratifyflag
+  save('/project/3011085.03/analysis/source/roi.mat', 'roi', 'foi', 'unit');
+end
+
+% Find effect size in ROIs
+l = zeros(size(roi,1)-1,3);
+r = zeros(size(roi,1)-1,3);
+% find ROI indices
+for k=1:size(roi,1)-1
+  l(k,:) = roi{k+1,3};
+  r(k,:) = roi{k+1,4};
+  freq_idx(k) = find(strcmp(roi{k+1,2}, foi([2:end],1)));
+end
+l = find_dipoleindex(sourcemodel, l);
+r = find_dipoleindex(sourcemodel, r);
 
 
-%% Make tval bar graph of defined ROIs and FOIs
-load('/project/3011085.03/analysis/source/roi.mat', 'ROI');
-filename = fullfile(['/project/3011085.03/', 'analysis/', 'freq/', 'post_cue_pow_stat.mat']);
-load(filename, 'source_int', 'source', 'stat', 'frequency','foi');
-
-for k=1:3
-    idx_left(k) = find_dipoleindex(source, ROI{k,2});
-    idx_right(k) = find_dipoleindex(source, ROI{k,3});
+for m=1:numel(freq_idx)
+  effectsize_roi_left(:,m) = c_ic(:,l(m), freq_idx(m));
+  effectsize_roi_right(:,m) =  c_ic(:,r(m), freq_idx(m));
 end
 
 
-figure;
-% occipital
-subplot(1,2,1);
-y = [source.stat(idx_left(1),2), source.stat(idx_left(1),5); source.stat(idx_right(1),2), source.stat(idx_right(1),5)]; 
-bar(y);
-set(gca,'xticklabel',{'left', 'right'});
-legend({'alpha', 'gamma1'}, 'location', 'northwest')
-title('40-60 Hz')
-
-% parietal
-subplot(1,3,2);
-y = [source.stat(idx_left(2),2), source.stat(idx_left(2),5) source.stat(idx_left(2),6); source.stat(idx_right(2),2), source.stat(idx_right(2),5) source.stat(idx_right(2),6)]; 
-bar(y);
-set(gca,'xticklabel',{'left', 'right'});
-legend({'alpha', 'gamma1', 'gamma2'}, 'location', 'northwest')
-title('parietal')
-
-% motor
-subplot(1,3,3);
-y = [source.stat(idx_left(3),4), source.stat(idx_left(3),6); source.stat(idx_right(3),4), source.stat(idx_right(3),6)]; 
-bar(y);
-set(gca,'xticklabel',{'left', 'right'});
-legend({'beta2', 'gamma2'}, 'location', 'northwest')
-title('motor')
+if stratifyflag
+  save(fullfile([alldir, 'analysis/stat_bf_post_stratified.mat']), 'effectsize_roi_right','effectsize_roi_left', 'l', 'r', 'freq_idx','-append')
+else
+  save(fullfile([alldir, 'analysis/stat_bf_post.mat']), 'effectsize_roi_right','effectsize_roi_left', 'l', 'r', 'freq_idx','-append')
+end

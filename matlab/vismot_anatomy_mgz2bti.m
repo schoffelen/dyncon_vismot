@@ -1,16 +1,20 @@
-function vismot_anatomy_mgz2bti
+function vismot_anatomy_mgz2bti(subject)
 
 global ft_default;
 ft_default.checksize = inf;
 
-subjinfo;
+if nargin<1
+  subject = vismot_subjinfo;
+elseif ischar(subject)
+  subject = vismot_subjinfo(subject);
+end
 
-for k = [1:3 5:numel(SUBJ)]
-  if exist(fullfile(SUBJ(k).pathname,'mri',[SUBJ(k).name,'_transform_vox2bti.mat']),'file')
-    continue;
+for k = [1:numel(subject)]
+  if exist(fullfile(subject(k).pathname,'mri',[subject(k).name,'_transform_vox2bti.mat']),'file')
+%     continue;
   end
   
-  fname = fullfile(SUBJ(k).pathname,'mri',SUBJ(k).name);
+  fname = fullfile(subject(k).pathname,'mri',subject(k).name);
   mri   = ft_read_mri([fname,'.mgz']);
   
   cfg = [];
@@ -18,13 +22,14 @@ for k = [1:3 5:numel(SUBJ)]
   mri = ft_volumerealign(cfg, mri);
   transform_interactive = mri.transform;
   
-  hsfile = fullfile(SUBJ(k).rawpath,SUBJ(k).name,SUBJ(k).scanname,SUBJ(k).sessionname,SUBJ(k).runnames{1},'hs_file');
+  hsfile = fullfile(subject(k).rawpath,subject(k).name,subject(k).scanname,subject(k).sessionname,subject(k).runnames{1},'hs_file');
           
   cfg           = [];
   cfg.method    = 'headshape';
   cfg.headshape.headshape = ft_read_headshape(hsfile);
   cfg.headshape.icp       = 1;
   cfg.headshape.interactive = 0;
+  cfg.coordsys = 'bti';
   mri           = ft_volumerealign(cfg, mri);
   
   hs     = mri.cfg.headshape.headshape;

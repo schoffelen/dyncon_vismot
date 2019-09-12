@@ -39,7 +39,11 @@ for k = 1:size(leadfield.pos,1)
 end
 
 tlck = tlckpre(1);
-tlck.cov = (tlckpre(1).cov+tlckpre(2).cov+tlckpre(3).cov+tlckpre(4).cov+tlckpre(5).cov)./5;
+if numel(tlckpre)==5
+  tlck.cov = (tlckpre(1).cov+tlckpre(2).cov+tlckpre(3).cov+tlckpre(4).cov+tlckpre(5).cov)./5;
+elseif numel(tlckpre)==4
+  tlck.cov = (tlckpre(1).cov+tlckpre(2).cov+tlckpre(3).cov+tlckpre(4).cov)./5;
+end
 
 cfg                 = [];
 cfg.grid            = rmfield(leadfield, 'leadfield');

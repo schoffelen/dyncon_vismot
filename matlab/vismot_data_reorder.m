@@ -6,6 +6,7 @@ switch conditions
     dataout = datain;
   case 'previous'
     % order according to previous trial.
+    datain=removefields(datain, 'trl');
     
     % sanity check on input
     if numel(fieldnames(datain))~=5
@@ -61,7 +62,9 @@ switch conditions
     
   case 'current_previous'
     % order according to current trial, conditioned on previous
-    
+    trl = datain.trl';
+    trl = trl(:); % this vector contains conditions of all trials in chronological order
+    datain = removefields(datain, 'trl');
     % sanity check on input
     if numel(fieldnames(datain))~=5
       warning('unexpected number of data arguments in input');
@@ -84,9 +87,8 @@ switch conditions
     
     prevc = zeros(numel(data.trial),1);
     for k = 1:numel(c)
-      sel = find(t==t(k)-1);
-      if numel(sel)==1
-        prevc(k) = c(sel);
+      if t(k)~=1
+        prevc(k) = trl(t(k)-1);
       end
     end
     % add the condition of the previous trial to the trialinfo.
@@ -94,7 +96,7 @@ switch conditions
     
     % remove trials that were not preceded by a different trial, but
     % instead were preceded by the baseline (trials were presented in
-    % blocks of 5).
+    % blocks of 4).
     cfg=[];
     trialnumber = data.trialinfo(:,2);
     not_first_trial_of_block = find(mod(trialnumber, 4)~=1);
@@ -104,19 +106,31 @@ switch conditions
     prevc = prevc(not_first_trial_of_block,:);
     
     cfg=[];
-    cfg.trials = find((c==1 | c==4) & (prevc==1 | prevc==4)); % C-C
-    dataout.data1 = ft_selectdata(cfg, data);
-    cfg.trials = find((c==1 | c==4) & (prevc==2 | prevc==3)); % C-IC
-    dataout.data2 = ft_selectdata(cfg, data);
-    cfg.trials = find((c==1 | c==4) & prevc==5); % C-N
-    dataout.data3 = ft_selectdata(cfg, data);
+    cfg.trials = find((c==1) & (prevc==1 | prevc==4)); % C-C
+    dataout.data1L = ft_selectdata(cfg, data);
+    cfg.trials = find((c==4) & (prevc==1 | prevc==4)); % C-C
+    dataout.data1R = ft_selectdata(cfg, data);
+    cfg.trials = find((c==1) & (prevc==2 | prevc==3)); % C-IC
+    dataout.data2L = ft_selectdata(cfg, data);
+    cfg.trials = find((c==4) & (prevc==2 | prevc==3)); % C-IC
+    dataout.data2R = ft_selectdata(cfg, data);
+    cfg.trials = find((c==1) & prevc==5); % C-N
+    dataout.data3L = ft_selectdata(cfg, data);
+    cfg.trials = find((c==4) & prevc==5); % C-N
+    dataout.data3R = ft_selectdata(cfg, data);
     
-    cfg.trials = find((c==2 | c==3) & (prevc==1 | prevc==4)); % IC-C
-    dataout.data4 = ft_selectdata(cfg, data);
-    cfg.trials = find((c==2 | c==3) & (prevc==2 | prevc==3)); % IC-IC
-    dataout.data5 = ft_selectdata(cfg, data);
-    cfg.trials = find((c==2 | c==3) & prevc==5); % IC-N
-    dataout.data6 = ft_selectdata(cfg, data);
+    cfg.trials = find((c==3) & (prevc==1 | prevc==4)); % IC-C
+    dataout.data4L = ft_selectdata(cfg, data);
+    cfg.trials = find((c==2) & (prevc==1 | prevc==4)); % IC-C
+    dataout.data4R = ft_selectdata(cfg, data);
+    cfg.trials = find((c==3) & (prevc==2 | prevc==3)); % IC-IC
+    dataout.data5L = ft_selectdata(cfg, data);
+    cfg.trials = find((c==2) & (prevc==2 | prevc==3)); % IC-IC
+    dataout.data5R = ft_selectdata(cfg, data);
+    cfg.trials = find((c==3) & prevc==5); % IC-N
+    dataout.data6L = ft_selectdata(cfg, data);
+    cfg.trials = find((c==2) & prevc==5); % IC-N
+    dataout.data6R = ft_selectdata(cfg, data);
     
     cfg.trials = find(c==5 & (prevc==1 | prevc==4)); % N-C
     dataout.data7 = ft_selectdata(cfg, data);

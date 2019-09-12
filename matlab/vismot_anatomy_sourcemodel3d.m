@@ -1,13 +1,13 @@
 function [sourcemodel] = vismot_anatomy_sourcemodel3d(subject, resolution)
 
-% MOUS_ANATOMY_SOURCEMODEL3D computes a 3D regular grid with 
+% VISMOT_ANATOMY_SOURCEMODEL3D computes a 3D regular grid with 
 % specified resolution based on an inverse warp of a template
 % grid in MNI space.
-%
-% Changelog: 26-02-2013: use templates in MOUS/meg/templates/ directory.
-% This means recomputing all sourcemodels for all subjects. Reason: the
-% default sourcemodels in FieldTrip are not fully covering the top of the
-% brain.
+
+if ischar(subject)
+  subject = vismot_subjinfo(subject);
+end
+
 
 % load the mri + coreg
 mri = ft_read_mri(fullfile(subject.pathname,'mri',subject.name,'mri',sprintf('%s.mgz',subject.name)));
@@ -26,3 +26,6 @@ sourcemodel = ft_prepare_sourcemodel(cfg);
 % remove the mri-structure from grid.cfg
 sourcemodel.cfg = rmfield(sourcemodel.cfg, 'mri');
 sourcemodel.cfg = rmfield(sourcemodel.cfg, 'callinfo');
+
+save(fullfile(subject.pathname,'grid',sprintf('%s_sourcemodel3d%dmm',subject.name, resolution)),'sourcemodel');
+

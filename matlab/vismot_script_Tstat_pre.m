@@ -10,10 +10,11 @@ frequency = [10 22 38 42 58 62 78 82];
 n=19;
 dat = zeros(74784, numel(frequency), n);
 cnt = 0;
-for k = frequency
+for k = fliplr(frequency)
   for m = 1:n
     d = fullfile([datadir, sprintf('%s_source3d4mm_pre_%03d_prewhitened.mat', list{m}, k)]);
     dum = load(d, 'stat');
+    raw{m, cnt+1} = load(d,'source');
     dat(:, cnt+1,m) = dum.stat.(whichstat);
   end
   clear dum
@@ -38,41 +39,33 @@ for k=1:size(foi,1)
   source.stat(:,:,k) = nanmean(dat(:,:,freqidx),3);
 end
 
-l = [
--2.6 -9.6 3.2	% occ alpha
--3.0 -10.4 0.8 % occ gam1
--2.6 -9.2 0.8 % occ gam2
--3.4 -9.2 1.6 % occ gam3
--3.4 -7.6 5.6 % par alpha
--3.4 -8.8 4.4 % par gam1
--3.4 -7.6 5.6 % par gam2
--2.6 -8.4 4.8 % par gam3
--4.6 -0.4 6.4 % mot alpha
--3.8 -4.0 5.6 % mot beta 
--4.6 -3.6 5.6 % mot gam1
--4.2 -3.6 7.2]; % mot gam3
 
-freq_idx = [1 3 4 5 1 3 4 5 1 2 3 5]';
-
-r=l; 
-r(:,1) = -r(:,1);
+load(fullfile([alldir, 'analysis/source/roi.mat']));
+l = zeros(size(roi,1)-1,3);
+r = zeros(size(roi,1)-1,3);
+% find ROI indices
+for k=1:size(roi,1)-1
+  l(k,:) = roi{k+1,3};
+  r(k,:) = roi{k+1,4};
+  freq_idx(k) = find(strcmp(roi{k+1,2}, foi([2:end],1)));
+end
 l = find_dipoleindex(sourcemodel, l);
 r = find_dipoleindex(sourcemodel, r);
 
 stat_roi = nan(n,numel(l), 1);
 for k=1:numel(l)
-  stat_roi(:,k) = (source.stat(:,l(k),freq_idx(k))-source.stat(:,r(k),freq_idx(k)))./2;
+  lpow(:,k) = source.stat(:,l(k),freq_idx(k));
+  rpow(:,k) = source.stat(:,r(k),freq_idx(k));
 end
+stat_roi = lpow-rpow;
 
-source.freq=0;
-source.stat(:,:,2:end)=[];
+d =[];
+d.stat = reshape(stat_roi, 19, 1, 12);
+d.time = 1:size(stat_roi,2);
+d.dimord = 'rpt_chan_time';
+d.label{1} = 'pre_roi_pow';
 
-source.stat(:)=nan;
-source.stat(:,1:numel(l),:) = stat_roi;
-source.inside(:) = 0;
-source.inside(1:numel(l))=1;
-
-nul = source;
+nul = d;
 nul.stat=0*nul.stat;
 
 cfgs=[];
@@ -83,11 +76,39 @@ cfgs.alpha = 0.05;
 cfgs.ivar = 1;
 cfgs.uvar = 2;
 cfgs.design = [ones(1,n) ones(1,n)*2;1:n 1:n];
-cfgs.correctm = 'bonferoni';
+cfgs.correctm = 'bonferroni';
 cfgs.numrandomization = 10000;
 cfgs.correcttail = 'prob';
-stat = ft_sourcestatistics(cfgs, source, nul);
+stat = ft_timelockstatistics(cfgs, d, nul);
 
-save('/project/3011085.03/analysis/stat_bf_pre.mat', 'l','r','freq_idx', 'sourcemodel', 'source','stat');
+% hemiflip raw 4-2 conditions
+for k=1:n
+  for f=1:8
+    for c=[2 4]
+      raw{k,f}.source(c).avg.dim = raw{k,f}.source(c).dim;
+      raw{k,f}.source(c).avg = hemiflip(raw{k,f}.source(c).avg, 'pow');
+    end
+  end
+end
+% average within frequency bands
+for k=1:n
+  for c=1:4
+    tmpraw{k,c}(:,1) = raw{k,1}.source(c).avg.pow; % alpha
+    tmpraw{k,c}(:,2) = raw{k,2}.source(c).avg.pow; % beta
+    tmpraw{k,c}(:,3) = nanmean([raw{k,3}.source(c).avg.pow, raw{k,4}.source(c).avg.pow],2); % gamma 1
+    tmpraw{k,c}(:,4) = nanmean([raw{k,5}.source(c).avg.pow, raw{k,6}.source(c).avg.pow],2); % gamma 2
+    tmpraw{k,c}(:,5) = nanmean([raw{k,7}.source(c).avg.pow, raw{k,8}.source(c).avg.pow],2); % gamma 3
+  end  
+end
+raw = tmpraw;
+for k=1:n
+  c_ic(k,:,:) = (raw{k,1}./raw{k,3}-1 + raw{k,4}./raw{k,2}-1)./2;
+end
+for m=1:numel(freq_idx)
+  effectsize_roi_left(:,m) = c_ic(:,l(m), freq_idx(m));
+  effectsize_roi_right(:,m) =  c_ic(:,r(m), freq_idx(m));
+end
+
+save('/project/3011085.03/analysis/stat_bf_pre.mat', 'l','r','freq_idx', 'sourcemodel', 'source','stat', 'stat_roi', 'd', 'rpow', 'lpow','effectsize_roi_left', 'effectsize_roi_right');
 
 

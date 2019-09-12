@@ -7,7 +7,7 @@ elseif nargin<4,
   ecg         = [];
 end
 
-hdr   = read_header(fname);
+hdr   = ft_read_header(fname);
   
 trllong      = trl;
 trllong(:,1) = trllong(:,1)-round(0.5*hdr.Fs);
@@ -18,7 +18,7 @@ trllong(:,3) = trl(:,3)-round(0.5*hdr.Fs);
 cfg          = [];
 cfg.trl      = trllong;
 cfg.datafile = fname;
-cfg          = dataset2files(cfg);
+cfg          = ft_checkconfig(cfg, 'dataset2files', 'yes');
 
 if denoiseflag && isempty(ecg),
   fprintf('denoising the data\n');
@@ -42,7 +42,7 @@ elseif ~isempty(ecg),
 else
   %no changes to cfg
 end
-data                   = preprocessing(cfg);
+data                   = ft_preprocessing(cfg);
 
 cfg                          = [];
 cfg.trl                      = trllong;
@@ -60,4 +60,4 @@ cfg.artfctdef.eog.artpadding = 0.1;
 cfg.artfctdef.eog.feedback   = 'yes';
 cfg.artfctdef.type           = 'eog';
 cfg.artfctdef.reject         = 'partial';
-cfg                          = artifact_eog(cfg, data);
+cfg                          = ft_artifact_eog(cfg, data);

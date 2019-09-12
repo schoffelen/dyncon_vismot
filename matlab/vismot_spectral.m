@@ -18,6 +18,7 @@ dobalance   = istrue(ft_getopt(varargin, 'balance',    false)); %balance the num
 dobaseline  = istrue(ft_getopt(varargin, 'dobaseline', false)); % only analyze trials that were not preceded by a previous trial, but by a baseline (only works in conditons previous)
 doL1out       = istrue(ft_getopt(varargin, 'doL1out', false));
 leaveouttrial = ft_getopt(varargin, 'leaveouttrial', false);
+keeptrials = ft_getopt(varargin, 'keeptrials', 'yes');
 
 dospectral = true;
 docsd      = false;
@@ -54,9 +55,11 @@ alldata = load(fullfile(subject.pathname,'data',[subject.name,'data']));
 if dobaseline
   alldata = vismot_data_reorder_baseline(alldata, conditions);
 else
+  alldata.trl = subject.trl;
   alldata = vismot_data_reorder(alldata, conditions);
 end
 if doL1out
+%   alldata=removefields(alldata,'data5');
   fd = fieldnames(alldata);
   for k = 1:numel(fd)
     data = alldata.(fd{k});
@@ -88,9 +91,12 @@ for k = 1:numel(fd)
     data = alldata.(fd{k});
     cfg           = [];
     cfg.toilim    = toilim(m,:);
-    cfg.minlength = 0.4;
-    data          = ft_redefinetrial(cfg, data); % note: this should actually use ft_selectdata, but for some reason this does not work robustly, due to rounding issues of time axes or so
-    
+    if strcmp(conditions, 'current_previous')
+      cfg.minlength = 0.25;
+    else
+    if smoothing<=2,cfg.minlength = 0.5; else cfg.minlength = 0.25; end
+    end
+      data          = ft_redefinetrial(cfg, data); % note: this should actually use ft_selectdata, but for some reason this does not work robustly, due to rounding issues of time axes or so
     cfg           = [];
     cfg.detrend   = 'yes';
     data          = ft_preprocessing(cfg, data);
@@ -115,6 +121,7 @@ if dospectral
   cfg.foilim  = foilim;
   cfg.taper   = taper;
   cfg.tapsmofrq = smoothing;
+  cfg.keeptrials = keeptrials;
   
   if doprewhiten
     load(fullfile(subject.pathname,'data',[subject.name,'emptyroom']));
