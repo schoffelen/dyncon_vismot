@@ -27,7 +27,7 @@ if ~exist('roi', 'var') && ~exist('refindx', 'var')
   
   % use the rois defined in the file, at present with hard coded path
   % (suboptimal)
-  d = load('/project/3011085.03/analysis/source/roi.mat');
+  d = load('/project/3011085.03/analysis/roi.mat');
   if iscell(d.roi)
     % take the frequency band specific location as representative of the region.
     if isfield(d, 'foi') && iscell(d.foi) 
@@ -52,6 +52,11 @@ if ~exist('roi', 'var') && ~exist('refindx', 'var')
       roi(m,:) = d.roi{m+1,3};
       roi(m+size(d.roi,1)-1,:) = d.roi{m+1,4};
     end
+  else
+    % roi is a matrix of positions for conditions 1 and 3. Mirror it in the
+    % x plane to also get the positions for conditions 2 and 4
+    roi = d.roi;
+    roi = [roi; [-1 1 1].*roi];
   end
   if strcmp(d.unit, 'mm')
     roi = roi./10; % assume that the values were in mm, convert to cm
@@ -72,10 +77,17 @@ if ~exist('refindx', 'var')
   else
     insidevec = sourcemodel.inside;
   end
-  refindx = nan(size(roi,1),1);
-  for m = 1:size(roi,1)
-    [~,refindx(m)] = min( sum((insidepos-roi(m,:)).^2,2) ); % find the index of each ROI in insidepos.
-  end
+%   refindx = nan(size(roi,1),1);
+%   for m = 1:size(roi,1)
+%     [~,refindx(m)] = min( sum((insidepos-roi(m,:)).^2,2) ); % find the index of each ROI in insidepos.
+%   end
+tmprefindx = find_dipoleindex(sourcemodel, roi); % finds index of positions in sourcemodel.pos
+% we need index in insidepos:
+tmpidx = 1:size(sourcemodel.pos,1);
+tmpidx=tmpidx(insidevec);
+for k=1:numel(tmprefindx)
+  [~, refindx(k)] = ismember(tmprefindx(k), tmpidx);
+end
   
   if include_neighb
     % exclude neighbors multiple copies of same neighbors and non-direct
@@ -88,7 +100,6 @@ if ~exist('refindx', 'var')
   ref.refindx = refindx;
   ref.n_neighbors = n_neighbors;
   ref.index_orig_seed = index_orig_seed;
-  % refindx = find_dipoleindex(sourcemodel, roi); % Does not work yet.
 end
 
 
