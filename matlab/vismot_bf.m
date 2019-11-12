@@ -186,8 +186,8 @@ if stratifyflag
     % stratify the trials based on the RTs
     idx1 = find(ismember(freq.trialinfo(:,1), contrasts(k,1)) & freq.trialinfo(:,end)==1);
     idx2 = find(ismember(freq.trialinfo(:,1), contrasts(k,2)) & freq.trialinfo(:,end)==1);
-    RT = freq.trialinfo([idx1 idx2],3);
-    c  = freq.trialinfo([idx1 idx2],1);
+    RT = freq.trialinfo([idx1; idx2],3);
+    c  = freq.trialinfo([idx1; idx2],1);
     
     tmpcfg        = [];
     tmpcfg.numbin = 5;
