@@ -17,7 +17,7 @@ if ~exist('singletrialpow'); singletrialpow = false; end
 subject = vismot_subjinfo(subjectname);
 
 load(fullfile(subject.pathname,'grid',sprintf('%s_sourcemodel3d4mm',subject.name)),'sourcemodel');
-[source, stat, filter] = vismot_bf(subject,'frequency',frequency,'sourcemodel',sourcemodel,'prewhiten',prewhiten, 'lambda', lambda, 'nrand', nrand, 'latoi', latoi, 'stratifyflag', stratifyflag);
+[source, stat, filter] = vismot_bf(subject,'frequency',frequency, 'smoothing', smoothing, 'sourcemodel',sourcemodel,'prewhiten',prewhiten, 'lambda', lambda, 'nrand', nrand, 'latoi', latoi, 'stratifyflag', stratifyflag);
 
 %% post process stats
 filename = fullfile(subject.pathname,'source', [subject.name,sprintf('_source3d4mm_%s_', latoi), num2str(frequency,'%03d')]);
