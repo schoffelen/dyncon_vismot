@@ -57,6 +57,7 @@ if dobaseline
 else
   alldata.trl = subject.trl;
   alldata = vismot_data_reorder(alldata, conditions);
+  alldata = removefields(alldata, 'trl');
 end
 if doL1out
 %   alldata=removefields(alldata,'data5');
@@ -94,7 +95,7 @@ for k = 1:numel(fd)
     if strcmp(conditions, 'current_previous')
       cfg.minlength = 0.25;
     else
-    if smoothing<=2,cfg.minlength = 0.5; else cfg.minlength = 0.25; end
+      if smoothing<=2,cfg.minlength = 0.5; else cfg.minlength = 0.25; end
     end
       data          = ft_redefinetrial(cfg, data); % note: this should actually use ft_selectdata, but for some reason this does not work robustly, due to rounding issues of time axes or so
     cfg           = [];
