@@ -58,11 +58,11 @@ else
 end
 
 % hemiflip right handed response/ right hemifield
-if isfield(stat42, 'statsmooth')
-  parameter = {'stat', 'statsmooth'};
-else
-  parameter = 'stat';
-end
+% if isfield(stat42, 'statsmooth')
+%   parameter = {'stat', 'statsmooth'};
+% else
+  parameter = {'stat', 'yuen_x1', 'yuen_x2', 'yuen_d'};
+% end
 tmp42 = hemiflip(stat42, parameter);
 tmp43 = hemiflip(stat43, parameter);
 tmp25 = hemiflip(stat25, parameter);
@@ -82,8 +82,14 @@ statICvsN      = stat35;
 statICvsN.stat = (statICvsN.stat + tmp25.stat)/2;
 
 %save(filename, 'source', 'stat13', 'stat42','stat12', 'stat43','stat15','stat25','stat35','stat45', 'statResp', 'statHemi', 'statCvsN', 'statICvsN', 'statCvsIC', 'smoothing');
+yuenD_13 = stat13.yuen_d;
+yuenD_42 = stat42.yuen_d;
 
 stat = rmfield(stat13,'stat');
+stat.stat1 = stat13.yuen_x1./stat13.yuen_d;
+stat.stat3 = stat13.yuen_x2./stat13.yuen_d;
+stat.stat4 = stat42.yuen_x1./stat42.yuen_d;
+stat.stat2 = stat42.yuen_x2./stat42.yuen_d;
 stat.stat13 = stat13.stat;
 stat.stat42 = stat42.stat;
 stat.stat12 = stat12.stat;
@@ -100,7 +106,8 @@ stat.statCvsIC = statCvsIC.stat;
 stat.statCvsIC2 = statCvsIC2.stat;
 
 
-save(filename, 'source','stat', 'smoothing', 'lambda', 'stat_resamp', 'nrand');
+save(filename, 'source','stat', 'smoothing', 'lambda', 'stat_resamp', 'nrand','yuenD_13', 'yuenD_42');
+
 
 % compute single trial source power
 if singletrialpow

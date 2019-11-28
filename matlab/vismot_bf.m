@@ -317,6 +317,10 @@ if strcmp(latoi, 'post') || (strcmp(latoi, 'pre') && strcmp(conditions, 'previou
   cfgs.design(s.trialinfo(:,idx)==contrast(1)) = 1;
   cfgs.design(s.trialinfo(:,idx)==contrast(2)) = 2;
   stat                        = ft_sourcestatistics(cfgs, s);
+  [y,x1,x2,d] = vismot_yuent(s.pow(:,cfgs.design==1), s.pow(:,cfgs.design==2), 0.2, 2);
+  stat.yuen_x1 = x1;
+  stat.yuen_x2 = x2;
+  stat.yuen_d  = d;
   stat                        = rmfield(stat, {'prob', 'cirange', 'mask'});
   
   % save some memory on disk
