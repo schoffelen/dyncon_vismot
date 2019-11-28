@@ -5,72 +5,85 @@ alldir = '/project/3011085.03/';
 datadir = fullfile([alldir, 'analysis/source/']);
 load list;
 if ~exist('stratifyflag', 'var'), stratifyflag = true; end
+if ~exist('toi', 'var'), toi = 'post'; end
 
-% Pooled statistic: (left response C-IC minus right response C-IC)
-whichstat = 'statResp';
 frequency = [6 10 22 38 42 58 62 78 82];
 n=19;
-dat = zeros(numel(sourcemodel.inside), numel(frequency), n);
+dat1 = zeros(numel(sourcemodel.inside), numel(frequency), n);
+dat2 = zeros(numel(sourcemodel.inside), numel(frequency), n);
+raw = zeros(4,numel(sourcemodel.inside), numel(frequency), n);
 cnt = 0;
 for k = frequency
   for m = 1:n
-    if stratifyflag
-      d = fullfile([datadir, sprintf('%s_source3d4mm_post_%03d_prewhitened_stratified.mat', list{m}, k)]);
-    else
-      d = fullfile([datadir, sprintf('%s_source3d4mm_post_%03d_prewhitened.mat', list{m}, k)]);
+    switch toi
+      case 'post'
+        if stratifyflag
+          d = fullfile([datadir, sprintf('%s_source3d4mm_post_%03d_prewhitened_stratified.mat', list{m}, k)]);
+        else
+          d = fullfile([datadir, sprintf('%s_source3d4mm_post_%03d_prewhitened.mat', list{m}, k)]);
+        end
+      case 'pre'
+        d = fullfile([datadir, sprintf('%s_source3d4mm_pre_%03d_prewhitened.mat', list{m}, k)]);
     end
-    dum = load(d, 'stat');
-    raw{m, cnt+1} = load(d,'source');
-    dat(:,cnt+1, m) = dum.stat.(whichstat);
+    dum = load(d, 'stat', 'yuenD_13','yuenD_42');
+    dum.stat = hemiflip(dum.stat, {'stat4', 'stat2'});
+    dum.dim=dum.stat.dim;
+    dum = hemiflip(dum, 'yuenD_42');
+    raw(1,:,cnt+1,m) = dum.stat.stat1.*dum.yuenD_13;
+    raw(2,:,cnt+1,m) = dum.stat.stat2.*dum.yuenD_42;
+    raw(3,:,cnt+1,m) = dum.stat.stat3.*dum.yuenD_13;
+    raw(4,:,cnt+1,m) = dum.stat.stat4.*dum.yuenD_42;
+    dat1(:,cnt+1, m) = (dum.stat.stat1 + dum.stat.stat4)./2;
+    dat2(:,cnt+1, m) = (dum.stat.stat3 + dum.stat.stat2)./2;
   end
   clear dum
   cnt=cnt+1;
 end
 
 % make data structure
-foi = { 'theta', 6, 6
+freqs = { 'theta', 6, 6
   'alpha', 10, 10
   'beta', 22, 22
   'gamma1', [38 42], 40
   'gamma2', [58 62], 60
   'gamma3', [78 82], 80};
 
-dat = permute(dat, [3,1,2]);
-source = sourcemodel;
-source.dimord = 'rpt_pos_freq';
-source.freq = cat(2,foi{:,end});
+dat1 = permute(dat1, [3,1,2]);
+dat2 = permute(dat2, [3,1,2]);
+source1 = sourcemodel;
+source1.dimord = 'rpt_pos_freq';
+source1.freq = cat(2,freqs{:,end});
+source2=source1;
 
 % fill data structure. Average within bands.
 m=0;
-for k=1:size(foi,1)
-  freqidx = find(ismember(foi{k,2}, frequency));
+for k=1:size(freqs,1)
+  freqidx = find(ismember(freqs{k,2}, frequency));
   lmin = m+1;
   m = max([m+freqidx]);
   freqidx = freqidx+(lmin-1);
-  source.stat(:,:,k) = nanmean(dat(:,:,freqidx),3);
+  source1.stat(:,:,k) = nanmean(dat1(:,:,freqidx),3);
+  source2.stat(:,:,k) = nanmean(dat2(:,:,freqidx),3);
 end
-
-% compare with zero
-nul = source;
-nul.stat = nul.stat*0;
-source.avg = squeeze(nanmean(source.stat,1));
 
 % make the source's inside symmetrical
-tmp=zeros(source.dim);
-tmp(source.inside)=1;
+% make the source's inside symmetrical
+tmp=zeros(source1.dim);
+tmp(source1.inside)=1;
 tmp=flip(tmp,1);
-tmp(source.inside)=tmp(source.inside)+1;
-for k=1:19
-  for m = 1:6
-    tmp=reshape(source.stat(k,:,m),source.dim);
-    source.stat(k,:,m)=tmp(:);
-  end
-end
-
+tmp(source1.inside)=tmp(source1.inside)+1;
+tmp(tmp<2) = 0;
+tmp(tmp==2) = 1;
+source1.inside = tmp(:);
+source1.stat(:,source1.inside==0,:) = nan;
+source2.inside = tmp(:);
+source2.stat(:,source2.inside==0,:) = nan;
 
 cfgs=[];
 cfgs.method = 'montecarlo';
 cfgs.statistic = 'statfun_yuenTtest';
+cfgs.yuen.type = 'depsamples';
+cfgs.yuen.percent = 0.1;
 cfgs.parameter = 'stat';
 cfgs.alpha = 0.05;
 cfgs.ivar = 1;
@@ -78,37 +91,22 @@ cfgs.uvar = 2;
 cfgs.design = [ones(1,n) ones(1,n)*2;1:n 1:n];
 cfgs.correctm = 'cluster';
 cfgs.numrandomization = 10000;
-cfgs.clusteralpha = 0.025;
+cfgs.clusteralpha = 0.05;
 cfgs.correcttail = 'prob';
-cfgs.clusterstatistic = 'max';
+cfgs.clusterstatistic = 'maxsum';
 cfgs.clusterthreshold = 'nonparametric_individual';
 for k=1:6
   cfg=[];
-  cfg.frequency = source.freq(k);
-  stat{k} = ft_sourcestatistics(cfgs, ft_selectdata(cfg, source), ft_selectdata(cfg, nul));
-end
-
-% hemiflip raw 4-2 conditions
-for k=1:n
-  for f=1:9
-    for c=[2 4]
-      raw{k,f}.source(c).avg.dim = raw{k,f}.source(c).dim;
-      raw{k,f}.source(c).avg = hemiflip(raw{k,f}.source(c).avg, 'pow');
-    end
-  end
+  cfg.frequency = source1.freq(k);
+  stat{k} = ft_sourcestatistics(cfgs, ft_selectdata(cfg, source1), ft_selectdata(cfg, source2));
 end
 
 % calculate raw effect size
-for k=1:n
-  for c=1:4
-    tmpraw{k,c}(:,1) = raw{k,1}.source(c).avg.pow; % alpha
-    tmpraw{k,c}(:,2) = raw{k,2}.source(c).avg.pow; % alpha
-    tmpraw{k,c}(:,3) = raw{k,3}.source(c).avg.pow; % beta
-    tmpraw{k,c}(:,4) = nanmean([raw{k,4}.source(c).avg.pow, raw{k,5}.source(c).avg.pow],2); % gamma 1
-    tmpraw{k,c}(:,5) = nanmean([raw{k,6}.source(c).avg.pow, raw{k,7}.source(c).avg.pow],2); % gamma 2
-    tmpraw{k,c}(:,6) = nanmean([raw{k,8}.source(c).avg.pow, raw{k,9}.source(c).avg.pow],2); % gamma 3
-  end
-end
+tmpraw = nan(size(raw)); tmpraw(:,:,size(freqs,1)+1:end,:)=[];
+tmpraw(:,:,1:3,:) = raw(:,:,1:3,:); % theta, alpha, beta
+tmpraw(:,:,4,:) = nanmean(raw(:,:,4:5,:),3); % gamma 1
+tmpraw(:,:,5,:) = nanmean(raw(:,:,6:7,:),3); % gamma 2
+tmpraw(:,:,6,:) = nanmean(raw(:,:,8:9,:),3); % gamma 3
 raw = tmpraw;
 
 for k=1:numel(stat)
@@ -117,148 +115,30 @@ for k=1:numel(stat)
 end
 
 clear c ic
-for k=1:n
-  c(k,:,:) = (raw{k,1}+raw{k,4})./2;
-  ic(k,:,:) = (raw{k,2} + raw{k,3})./2;
-end
-
-for k=1:n
-  c_ic(k,:,:) = (raw{k,1}./raw{k,3}-1 + raw{k,4}./raw{k,2}-1)./2;
-end
+c = squeeze((raw(1,:,:,:) + raw(4,:,:,:))./2);
+ic = squeeze((raw(3,:,:,:) + raw(2,:,:,:))./2);
+c_ic = c./ic-1;
 
 for k=1:6
-  poseffectsize(:,k) = mean(c_ic(:,maskpos{k},k),2);
-  negeffectsize(:,k) = mean(c_ic(:,maskneg{k},k),2);
+  poseffectsize(:,k) = squeeze(mean(c_ic(maskpos{k},k,:),1));
+  negeffectsize(:,k) = squeeze(mean(c_ic(maskneg{k},k,:),1));
 end
 
 for k=1:numel(stat)
-  effectsize_largest_cluster_pos(:,k) = mean(c_ic(:,(stat{k}.posclusterslabelmat==1),k),2);
-  effectsize_largest_cluster_neg(:,k) = mean(c_ic(:,(stat{k}.negclusterslabelmat==1),k),2);
+  effectsize_largest_cluster_pos(:,k) = mean(c_ic(stat{k}.posclusterslabelmat==1,k,:),1);
+  effectsize_largest_cluster_neg(:,k) = mean(c_ic(stat{k}.negclusterslabelmat==1,k,:),1);
 end
 
-% pool across hemispheres by subtracting the other hemisphere
-for k=1:numel(stat)
-  stat_semhemi{k} = stat{k};
-  
-  tmpx=stat{k}.stat;
-  dum=nan(sourcemodel.dim);
-  dum=reshape(tmpx,sourcemodel.dim);
-  dum(~sourcemodel.inside)=nan;
-  dum=dum-flip(dum,1);
-  stat_semhemi{k}.stat = dum(:)/2;
-  clear dum tmpx
+switch toi
+  case 'post'
+    if stratifyflag
+      filename = fullfile([alldir, 'analysis/stat_bf_post_stratified.mat']);
+    else
+      filename = fullfile([alldir, 'analysis/stat_bf_post']);
+    end
+  case 'pre'
+    filename = fullfile([alldir, 'analysis/stat_bf_pre_wholebrain']);
 end
-
-if stratifyflag
-  save(fullfile([alldir, 'analysis/stat_bf_post_stratified.mat']), 'stat','c','ic', 'source', 'sourcemodel', 'foi', 'stat_semhemi', 'poseffectsize', 'negeffectsize', 'effectsize_largest_cluster_pos','effectsize_largest_cluster_neg', 'c_ic')
-else
-  save(fullfile([alldir, 'analysis/stat_bf_post.mat']), 'stat', 'source', 'sourcemodel', 'foi', 'stat_semhemi', 'poseffectsize', 'negeffectsize', 'effectsize_largest_cluster_pos','effectsize_largest_cluster_neg', 'c_ic')
-end
-
-%% Define ROI's by browsing through Ortho Maps
-if stratifyflag
-  cmap = flipud(brewermap(64,'RdBu'));
-  cfgp=[];
-  cfgp.funcolormap = cmap;
-  cfgp.method     = 'ortho';
-  cfgp.funparameter = 'stat';
-  cfgp.location = 'max';
-  for k=1:numel(stat)
-    ft_sourceplot(cfgp, stat_semhemi{k})
-  end
-end
-
-% Note the FOIs and ROIs here:
-% roi for left hand response, unit cm
-roi = [-0.6   2.0  3.2 % theta frontal midline
-  1.0  -8.8  0.4 % alpha occipital contra
-  -1.4  -9.6  2.4 % alpha occipital ipsi
-  1.4  -4.4  8.4 % alpha parietal contra
-  -4.2  -1.6  6.4 % alpha motor ipsi
-  -3.4  -8.8  4.0 % beta occipital ipsi
-  -5.8   1.6  4.0 % beta premotor ipsi
-  3.4  -2.8  8.0 % beta motor contra
-  -4.2  -4.4  5.6 % beta motor ipsi
-  -2.6  -8.8  0.4 % gamma1 occipital ipsi
-  4.2  -7.6  4.0 % gamma1 par contra
-  2.6  -10.0 0.0 % gamma2 occipital contra
-  -3.8  -9.6 -0.4 % gamma2 occipital ipsi
-  3.4  -7.2  5.6 % gamma2 parietal contra
-  -3.8  -5.6  6.8 % gamma2 parietal ipsi
-  3.0  -5.6  8.0 % gamma3 parietal contra
-  4.6  -2.4  6.4 % gamma3 motor contra
-  -2.6  -2.4  7.6 ];% gamma3 motor ipsi
-
-description = [{'theta frontal midline'}
-  {'alpha occipital contra'}
-  {'alpha occipital ipsi'}
-  {'alpha parietal contra'}
-  {'alpha motor ipsi'}
-  {'beta occipital ipsi'}
-  {'beta premotor ipsi'}
-  {'beta motor contra'}
-  {'beta motor ipsi'}
-  {'gamma1 occipital ipsi'}
-  {'gamma1 par contra'}
-  {'gamma2 occipital contra'}
-  {'gamma2 occipital ipsi'}
-  {'gamma2 parietal contra'}
-  {'gamma2 parietal ipsi'}
-  {'gamma3 parietal contra'}
-  {'gamma3 motor contra'}
-  {'gamma3 motor ipsi'}];
-foi = [6 10 10 10 10 22 22 22 22 40 40 60 60 60 60 80 80 80]';
-
-% create matrices that correspond to the connections for which we want to
-% test coherence. That is: all connections where at least one of the two
-% ROIs has an post-cue power effect (e.g. theta-ROI to all, but not
-% all-to-all)
-for k=1:size(freqs,1)
-  roi_to_roi{k} = nan(size(roi,1));
-end
-f = cat(1,freqs{:,3});
-for k=1:size(freqs,1)
-  tmpidx = find(foi==f(k));
-  for m=1:numel(tmpidx)
-    roi_to_roi{k}(tmpidx(m),:)=1;
-    roi_to_roi{k}(:,tmpidx(m))=1;
-  end
-  % do not take the diagonal
-  dum = diag(diag(nan(size(roi,1)))); dum(~isnan(dum))=1;
-  roi_to_roi{k} = roi_to_roi{k}.*dum;
-  
-  % take only the lower part of the triangle
-  dum = ones(size(roi,1));
-  roi_to_roi{k}(find(triu(dum))) = nan;
-end
-unit = 'cm';
-if stratifyflag
-  save('/project/3011085.03/analysis/roi.mat', 'roi', 'description', 'unit', 'foi', 'roi_to_roi');
-end
+save(filename, 'cfgs', 'stat','c','ic', 'source1','source2', 'sourcemodel', 'freqs', 'poseffectsize', 'negeffectsize', 'effectsize_largest_cluster_pos','effectsize_largest_cluster_neg', 'c_ic')
 
 
-% Find effect size in ROIs
-% find ROI indices
-idx = find_dipoleindex(sourcemodel, [roi; roi.*[-1 1 1]]);
-freqs = [6 10 22 40 60 80];
-foi = [foi; foi];
-for k=1:numel(foi)
-  freq_idx(k) = find(freqs==foi(k));
-end
-for m=1:numel(foi)
-  effectsize_roi(:,m) = c_ic(:,idx(m), freq_idx(m));
-end
-
-for m=1:numel(freq_idx)
-  tmpc(:,m) = c(:,idx(m), freq_idx(m));
-  tmpic(:,m) = ic(:,idx(m), freq_idx(m));
-end
-ic=tmpic;
-c=tmpc;
-
-if stratifyflag
-  filename = fullfile([alldir, 'analysis/stat_bf_post_stratified.mat']);
-else
-  filename = fullfile([alldir, 'analysis/stat_bf_post.mat']);
-end
-save(filename, 'effectsize_roi', 'idx', 'freq_idx','c', 'ic', '-append')
