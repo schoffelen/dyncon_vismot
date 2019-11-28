@@ -71,11 +71,13 @@ end
 vismot_rt
 
 % post cue power
-vismot_execute_pipeline('vismot_script_Tstat_post', [], {'stratifyflag', true}) % stratified for RT
-vismot_execute_pipeline('vismot_script_Tstat_post', [], {'stratifyflag', false}) % not stratified
+vismot_execute_pipeline('vismot_script_Tstat_wholebrain', [], {'stratifyflag', true}, {'toi', 'post'}) % stratified for RT
+vismot_execute_pipeline('vismot_script_Tstat_wholebrain', [], {'stratifyflag', false}, {'toi', 'post'}) % not stratified
+vismot_execute_pipeline('vismot_define_roi', []);
 
 % pre cue power
-vismot_execute_pipeline('vismot_script_Tstat_pre', [])
+vismot_execute_pipeline('vismot_script_Tstat_wholebrain', [],  {'stratifyflag', false}, {'toi', 'pre'})
+vismot_execute_pipeline('vismot_script_Tstat_roi', [])
 
 % pre cue coherence
 vismot_execute_pipeline('vismot_script_Tstat_coh', [])
