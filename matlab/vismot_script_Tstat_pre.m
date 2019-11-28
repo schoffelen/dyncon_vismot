@@ -5,24 +5,31 @@ alldir = '/project/3011085.03/';
 datadir = fullfile([alldir, 'analysis/source/']);
 load list;
 
-whichstat = {'stat13', 'stat42'};
 frequency = [6 10 22 38 42 58 62 78 82];
 n=19;
-dat{1} = zeros(74784, numel(frequency), n);
-dat{2} = zeros(74784, numel(frequency), n);
+dat1 = zeros(numel(sourcemodel.inside), numel(frequency), n);
+dat2 = zeros(numel(sourcemodel.inside), numel(frequency), n);
+raw = zeros(4,numel(sourcemodel.inside), numel(frequency), n);
 cnt = 0;
 for k = frequency
   for m = 1:n
     d = fullfile([datadir, sprintf('%s_source3d4mm_pre_%03d_prewhitened.mat', list{m}, k)]);
-    dum = load(d, 'stat');
-    raw{m, cnt+1} = load(d,'source');
-    for l=1:2
-      dat{l}(:, cnt+1,m) = dum.stat.(whichstat{l});
-    end
+    dum = load(d, 'stat', 'yuenD_13','yuenD_42');
+    dum.stat = hemiflip(dum.stat, {'stat4', 'stat2'});
+    dum.dim=dum.stat.dim;
+    dum = hemiflip(dum, 'yuenD_42');
+    raw(1,:,cnt+1,m) = dum.stat.stat1.*dum.yuenD_13;
+    raw(2,:,cnt+1,m) = dum.stat.stat2.*dum.yuenD_42;
+    raw(3,:,cnt+1,m) = dum.stat.stat3.*dum.yuenD_13;
+    raw(4,:,cnt+1,m) = dum.stat.stat4.*dum.yuenD_42;
+    dat1(:,cnt+1, m) = (dum.stat.stat1 + dum.stat.stat4)./2;
+    dat2(:,cnt+1, m) = (dum.stat.stat3 + dum.stat.stat2)./2;
   end
   clear dum
   cnt=cnt+1;
 end
+
+% make data structure
 freqs = { 'theta', 6, 6
   'alpha', 10, 10
   'beta', 22, 22
@@ -30,46 +37,48 @@ freqs = { 'theta', 6, 6
   'gamma2', [58 62], 60
   'gamma3', [78 82], 80};
 
-for l=1:numel(dat)
-  dat{l} = permute(dat{l}, [3,1,2]);
-  source{l} = sourcemodel;
-  source{l}.dimord = 'rpt_pos_freq';
-  source{l}.freq = cat(2,freqs{:, end});
-  
-  m=0;
-  for k=1:size(freqs,1)
-    freqidx = find(ismember(freqs{k,2}, frequency));
-    lmin = m+1;
-    m = max([m+freqidx]);
-    freqidx = freqidx+(lmin-1);
-    source{l}.stat(:,:,k) = nanmean(dat{l}(:,:,freqidx),3);
-  end
+dat1 = permute(dat1, [3,1,2]);
+dat2 = permute(dat2, [3,1,2]);
+source1 = sourcemodel;
+source1.dimord = 'rpt_pos_freq';
+source1.freq = cat(2,freqs{:,end});
+source2=source1;
+
+m=0;
+for k=1:size(freqs,1)
+  freqidx = find(ismember(freqs{k,2}, frequency));
+  lmin = m+1;
+  m = max([m+freqidx]);
+  freqidx = freqidx+(lmin-1);
+  source1.stat(:,:,k) = nanmean(dat1(:,:,freqidx),3);
+  source2.stat(:,:,k) = nanmean(dat2(:,:,freqidx),3);
 end
-clear dat
+
 
 clear foi
 load(fullfile([alldir, 'analysis/roi.mat']));
 
-roi_idx = find_dipoleindex(sourcemodel, [roi; roi.*[-1 1 1]]);
+roi_idx = find_dipoleindex(sourcemodel, roi);
 for k=1:size(roi,1)
   tmpidx = find(foi(k)==cat(1,freqs{:, end}));
-  tmpstat_roi13(:,k) = source{1}.stat(:,roi_idx(k),tmpidx);
-  tmpstat_roi42(:,k) = source{2}.stat(:,roi_idx(k+size(roi,1)),tmpidx);
+  tmpstat_roiC(:,k) = source1.stat(:,roi_idx(k),tmpidx);
+  tmpstat_roiIC(:,k) = source2.stat(:,roi_idx(k),tmpidx);
 end
-stat_roi = (tmpstat_roi13 + tmpstat_roi42)./2;
 
-d =[];
-d.stat(:,1,:) = stat_roi;
-d.time = 1:size(stat_roi,2);
-d.dimord = 'rpt_chan_time';
-d.label{1} = 'pre_roi_pow';
+s1 =[];
+s1.stat(:,1,:) = tmpstat_roiC;
+s1.time = 1:size(tmpstat_roiC,2);
+s1.dimord = 'rpt_chan_time';
+s1.label{1} = 'pre_roi_pow';
 
-nul = d;
-nul.stat=0*nul.stat;
+s2 = rmfield(s1, 'stat');
+s2.stat(:,1,:) = tmpstat_roiIC;
 
 cfgs=[];
 cfgs.method = 'montecarlo';
 cfgs.statistic = 'statfun_yuenTtest';
+cfgs.yuen.type = 'depsamples';
+cfgs.yuen.percent = 0.1;
 cfgs.parameter = 'stat';
 cfgs.alpha = 0.05;
 cfgs.ivar = 1;
@@ -79,42 +88,29 @@ cfgs.correctm = 'bonferroni';
 cfgs.numrandomization = 10000;
 cfgs.correcttail = 'prob';
 
-stat = ft_timelockstatistics(cfgs, d, nul);
+stat = ft_timelockstatistics(cfgs, s1, s2);
 
-% average raw power within frequency bands for each condition
-for k=1:n
-  for c=1:4
-    tmpraw{k,c}(:,1) = raw{k,1}.source(c).avg.pow; % theta
-    tmpraw{k,c}(:,2) = raw{k,2}.source(c).avg.pow; % alpha
-    tmpraw{k,c}(:,3) = raw{k,3}.source(c).avg.pow; % beta
-    tmpraw{k,c}(:,4) = nanmean([raw{k,4}.source(c).avg.pow, raw{k,5}.source(c).avg.pow],2); % gamma 1
-    tmpraw{k,c}(:,5) = nanmean([raw{k,6}.source(c).avg.pow, raw{k,7}.source(c).avg.pow],2); % gamma 2
-    tmpraw{k,c}(:,6) = nanmean([raw{k,8}.source(c).avg.pow, raw{k,9}.source(c).avg.pow],2); % gamma 3
-  end
-end
+% calculate raw effect size
+tmpraw = nan(size(raw)); tmpraw(:,:,size(freqs,1)+1:end,:)=[];
+tmpraw(:,:,1:3,:) = raw(:,:,1:3,:); % theta, alpha, beta
+tmpraw(:,:,4,:) = nanmean(raw(:,:,4:5,:),3); % gamma 1
+tmpraw(:,:,5,:) = nanmean(raw(:,:,6:7,:),3); % gamma 2
+tmpraw(:,:,6,:) = nanmean(raw(:,:,8:9,:),3); % gamma 3
 raw = tmpraw;
 clear tmpraw
 
 tmpraw = nan(4, n, size(roi,1));
-for s=1:n
-  for k=1:size(roi,1)
-    tmpidx = find(foi(k)==cat(1,freqs{:, end}));
-    for l=[1 3]
-      tmpraw(l,s,k) = raw{s,l}(roi_idx(k),tmpidx);
-    end
-    for l=[2 4]
-      tmpraw(l,s,k) = raw{s,l}(roi_idx(k+size(roi,1)),tmpidx);
-    end
-  end
+for k=1:size(roi,1)
+  tmpidx = find(foi(k)==cat(1,freqs{:, end}));
+  tmpraw(:,:,k) = squeeze(raw(:,roi_idx(k),tmpidx,:));
 end
+raw=tmpraw;
 
-
-clear c ic
-
-c = (squeeze(tmpraw(1,:,:)+tmpraw(4,:,:)))./2;
-ic = (squeeze(tmpraw(3,:,:)+tmpraw(2,:,:)))./2;
+c = squeeze((raw(1,:,:) + raw(4,:,:))./2);
+ic = squeeze((raw(3,:,:) + raw(2,:,:))./2);
 c_ic = c./ic-1;
 
-save('/project/3011085.03/analysis/stat_bf_pre.mat', 'c', 'ic', 'c_ic','description', 'sourcemodel','stat', 'stat_roi', 'd');
+filename = [alldir, 'analysis/stat_bf_pre.mat'];
+save(filename, 'c', 'ic', 'c_ic','description', 'sourcemodel','stat', 'stat_roi', 'd', 'raw');
 
 
