@@ -104,18 +104,20 @@ allcohC = cat(1, allcohC{:});
 allcohIC = cat(1, allcohIC{:});
 
 
-data = [];
-data.label = {'coh'};
-data.time = 1:size(allconnectivity,2);
-data.trial = reshape(allconnectivity, [n 1 size(allconnectivity,2)]);
-data.dimord = 'rpt_chan_time';
+data1 = [];
+data1.label = {'coh'};
+data1.time = 1:size(allconnectivity,2);
+data1.trial = reshape(allcohC, [n 1 size(allcohC,2)]);
+data1.dimord = 'rpt_chan_time';
 
-nul = data;
-nul.trial = nul.trial*0;
+data2 = rmfield(data1, 'trial');
+data2.trial = reshape(allcohIC, [n 1 size(allcohIC,2)]);
 
 cfgs=[];
 cfgs.method = 'montecarlo';
 cfgs.statistic = 'statfun_yuenTtest';
+cfgs.yuen.type = 'depsamples';
+cfgs.yuen.percent = 0.1;
 cfgs.parameter = 'trial';
 cfgs.alpha = 0.05;
 cfgs.ivar = 1;
@@ -124,7 +126,7 @@ cfgs.design = [ones(1,n) ones(1,n)*2;1:n 1:n];
 cfgs.correctm = 'bonferroni';
 cfgs.numrandomization = 20000;
 cfgs.correcttail = 'prob';
-stat = ft_timelockstatistics(cfgs, data, nul);
+stat = ft_timelockstatistics(cfgs, data1, data2);
 
 % structure the results into summary statistics.
 if 1%any(stat.prob<cfgs.alpha)
@@ -160,5 +162,5 @@ else
   effect=[];
 end
     
-save(fullfile([alldir, sprintf('analysis/stat_coh_%s.mat', toi)]), 'stat', 'allconnectivity', 'data', 'ncomparisson', 'zx', 'allcohC', 'allcohIC', 'effect', 'idx_sign_corrected', 'idx_sign_uncorrected');
+save(fullfile([alldir, sprintf('analysis/stat_coh_%s.mat', toi)]), 'stat', 'allconnectivity', 'data1','data2', 'ncomparisson', 'zx', 'allcohC', 'allcohIC', 'effect', 'idx_sign_corrected', 'idx_sign_uncorrected');
 
