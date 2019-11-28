@@ -5,12 +5,12 @@ function dataout = hemiflip(datain, parameter)
 % parameter(s) to be flipped.
 % NOTE: only works when parameter is 2D array.
 
-ntrials = size(datain.(parameter),2);
 
 dataout = datain;
 if iscell(parameter)
     for k=1:numel(parameter)
         p = parameter{k};
+        ntrials = size(datain.(p),2);
         if isfield(datain, 'tri')
             n = size(datain.(p),1)./2;
             dataout.(p) = datain.(p)([n+(1:n) 1:n],:);
@@ -25,9 +25,12 @@ else
         n = size(datain.(parameter),1)./2;
         dataout.(parameter) = datain.(parameter)([n+(1:n) 1:n],:);
     elseif isfield(datain, 'dim')
+      ntrials = size(datain.(parameter),2);
         for m=1:ntrials
             dataout.(parameter)(:,m) = reshape(flip(reshape(datain.(parameter)(:,m), datain.dim),1),[],1);
         end
+    else
+      error('hemiflip failed: there is no tri or dim field')
     end
 end
 
