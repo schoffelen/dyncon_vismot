@@ -102,3 +102,84 @@ df = stat{4,3};
   
 filename = [subjects(1).pathname, 'stat_behavior_gratton.mat'];
 save(filename, 'dataprev', 'avgC_C', 'avgC_IC', 'avgIC_C', 'avgIC_IC', 'avgN_C', 'avgN_IC', 'stat', 'p','F','df')
+
+
+
+
+%% Does this effect hold if the opposite response is required?
+% MATCH IN RESPONSE HAND
+for k=1:numel(list)
+  % current congruent
+  idxC_C = (dataprev{k}(:,1)==1 & dataprev{k}(:,4)==1) | (dataprev{k}(:,1)==4 & dataprev{k}(:,4)==4);
+  idxN_C = (dataprev{k}(:,1)==1 & dataprev{k}(:,4)==5) | (dataprev{k}(:,1)==4 & dataprev{k}(:,4)==5);
+  idxIC_C = (dataprev{k}(:,1)==1 & dataprev{k}(:,4)==3) | (dataprev{k}(:,1)==4 & dataprev{k}(:,4)==2);
+  
+  %current incongruent
+  idxIC_IC = (dataprev{k}(:,1)==3 & dataprev{k}(:,4)==3) | (dataprev{k}(:,1)==2 & dataprev{k}(:,4)==2);   
+  idxN_IC = (dataprev{k}(:,1)==3 & dataprev{k}(:,4)==5) | (dataprev{k}(:,1)==2 & dataprev{k}(:,4)==5);
+  idxC_IC = (dataprev{k}(:,1)==3 & dataprev{k}(:,4)==1) | (dataprev{k}(:,1)==2 & dataprev{k}(:,4)==4);
+  
+  avgC_C(k) = mean(dataprev{k}(idxC_C,end));
+  avgN_C(k) = mean(dataprev{k}(idxN_C,end));
+  avgIC_C(k) = mean(dataprev{k}(idxIC_C,end));
+ 
+  avgIC_IC(k) = mean(dataprev{k}(idxIC_IC,end));
+  avgN_IC(k) = mean(dataprev{k}(idxN_IC,end));
+  avgC_IC(k) = mean(dataprev{k}(idxC_IC,end));
+end
+ncond1=2;
+ncond2=2;
+n = numel(list);
+
+S=1:n;
+S = repmat(S, [1 ncond1*ncond2]);
+F1 = [1*ones(1,n*ncond2), 2*ones(1,n*ncond2)];
+F2 = repmat([1*ones(1,n) 2*ones(1,n)], [1 2]);
+Y = [avgC_C avgIC_C avgC_IC avgIC_IC];
+factnames = {'current', 'previous'};
+stat = rm_anova2(Y, S, F1, F2, factnames)
+p = stat{4,6};
+F = stat{4,5};
+df = stat{4,3};
+  
+filename = [subjects(1).pathname, 'stat_behavior_gratton_responsesame.mat'];
+save(filename, 'dataprev', 'avgC_C', 'avgC_IC', 'avgIC_C', 'avgIC_IC', 'avgN_C', 'avgN_IC', 'stat', 'p','F','df')
+
+
+% NO MATCH IN RESPONSE
+for k=1:numel(list)
+  % current congruent
+  idxC_C = (dataprev{k}(:,1)==1 & dataprev{k}(:,4)==4) | (dataprev{k}(:,1)==4 & dataprev{k}(:,4)==1);
+  idxN_C = (dataprev{k}(:,1)==1 & dataprev{k}(:,4)==5) | (dataprev{k}(:,1)==4 & dataprev{k}(:,4)==5);
+  idxIC_C = (dataprev{k}(:,1)==1 & dataprev{k}(:,4)==2) | (dataprev{k}(:,1)==4 & dataprev{k}(:,4)==3);
+  
+  %current incongruent
+  idxIC_IC = (dataprev{k}(:,1)==3 & dataprev{k}(:,4)==2) | (dataprev{k}(:,1)==2 & dataprev{k}(:,4)==3);
+  idxN_IC = (dataprev{k}(:,1)==3 & dataprev{k}(:,4)==5) | (dataprev{k}(:,1)==2 & dataprev{k}(:,4)==5);
+  idxC_IC = (dataprev{k}(:,1)==3 & dataprev{k}(:,4)==4) | (dataprev{k}(:,1)==2 & dataprev{k}(:,4)==1);
+  
+  avgC_C(k) = mean(dataprev{k}(idxC_C,end));
+  avgN_C(k) = mean(dataprev{k}(idxN_C,end));
+  avgIC_C(k) = mean(dataprev{k}(idxIC_C,end));
+ 
+  avgIC_IC(k) = mean(dataprev{k}(idxIC_IC,end));
+  avgN_IC(k) = mean(dataprev{k}(idxN_IC,end));
+  avgC_IC(k) = mean(dataprev{k}(idxC_IC,end));
+end
+ncond1=2;
+ncond2=2;
+n = numel(list);
+
+S=1:n;
+S = repmat(S, [1 ncond1*ncond2]);
+F1 = [1*ones(1,n*ncond2), 2*ones(1,n*ncond2)];
+F2 = repmat([1*ones(1,n) 2*ones(1,n)], [1 2]);
+Y = [avgC_C avgIC_C avgC_IC avgIC_IC];
+factnames = {'current', 'previous'};
+stat = rm_anova2(Y, S, F1, F2, factnames)
+p = stat{4,6};
+F = stat{4,5};
+df = stat{4,3};
+
+filename = [subjects(1).pathname, 'stat_behavior_gratton_responsediff.mat'];
+save(filename, 'dataprev', 'avgC_C', 'avgC_IC', 'avgIC_C', 'avgIC_IC', 'avgN_C', 'avgN_IC', 'stat', 'p','F','df')
