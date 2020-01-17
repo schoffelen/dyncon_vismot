@@ -30,7 +30,7 @@ mean(ntrl)
 std(ntrl)
 
 % Figure 2a : SIMON EFFECT
-filename = [subjects(1).pathname, '/stat_behavior_simon.mat'];
+filename = [alldir, 'analysis/stat_behavior_simon.mat'];
 d = load(filename);
 effectsize_ms = round(abs(mean(d.avgC-d.avgIC)), 3, 'significant');
 effectsize_perc = round(abs(mean(d.avgC./d.avgIC-1)*100),1);
@@ -55,9 +55,9 @@ box off
 
 % Figure 1b: GRATTON EFFECT
 cmap = brewermap(2, 'RdBu');
-filename = [subjects(1).pathname, '/stat_behavior_gratton.mat'];
+filename = [alldir, 'analysis/stat_behavior_gratton.mat'];
 d2 = load(filename);
-partialeta2 = 0.827;% see [alldir 'analysis/rt/Mats_output_gratton']
+partialeta2 = 0.041;% 
 sprintf('partial eta2 = %s, F(2,17) = %s, p = %s',num2str(round(partialeta2, 3, 'significant')), num2str(round(d2.stat{4,5},2)), num2str(round(d2.stat{4,6},3, 'significant')))
 
 
@@ -133,7 +133,57 @@ for k=1:numel(Uclim)
 end
 
 
-%% Figure 4: pre cue power whole brain
+%% Figure 4: pre cue power ROI
+d = load(fullfile([alldir, 'analysis/stat_bf_pre.mat']));
+clear meanpower stdpower c ic
+
+c = (d.c-squeeze(mean(d.raw)))./squeeze(std(d.raw));
+ic = (d.ic-squeeze(mean(d.raw)))./squeeze(std(d.raw));
+Y = [-0.5 1; -0.5 1; -0.5 1; -1 2; -1 2; -1 2; -1 2;-1 2; -2 4; -2 4; -1 2; -1 2;-1 2; -2 4; -1 2; -1 2; -1 2];
+X = [2 1.5 1.5 1.5 1.5 1.5 1.5 1.5 1 1.5 1.5 1.5 1.5 1 1 1.5 1.5];
+figure
+for k=1:17
+    subplot(3,6,k+1)
+cmap = (brewermap(2,'RdBu'));
+h2 = raincloud_plot(c(:,k), 'box_on', 1, 'color', cmap(1,:), 'alpha', 0.5,...
+    'box_dodge', 1, 'box_dodge_amount', .35, 'dot_dodge_amount', .35, 'box_col_match', 0);
+h1 = raincloud_plot(ic(:,k), 'box_on', 1, 'color', cmap(2,:), 'alpha', 0.5,...
+    'box_dodge', 1, 'box_dodge_amount', .15, 'dot_dodge_amount', .15,...
+    'box_col_match', 0);
+% legend([h1{1} h2{1}], {'Congruent', 'Incongruent'});
+% title('reacion times - Simon effect');
+% set(gca,'Ylim', Y(k,:), 'Xlim', [-X(k) X(k)]);
+% xlabel('raw power (a.u.)');
+ylabel('Probability density (1/s)')
+box off
+end
+
+
+
+
+stdpower = squeeze(std(d.raw, [], 1));
+meanpower = squeeze(mean(d.raw,1));
+c=(d.c-meanpower)./stdpower;
+ic=(d.ic-meanpower)./stdpower;
+figure;
+for k = 1:17
+hold on
+plot([2*(k-1)+1 2*k], [ic(:,k) c(:,k)], '.-', 'color', [0.7 0.7 0.7]);
+plot([2*(k-1)+1 2*k], [mean(ic(:,k)) mean(c(:,k))], 'o-k', 'LineWidth',2)
+end
+
+% or
+
+c = (d2.c(:,1:17)+d2.c(:,18:end))./2;
+ic = (d2.ic(:,1:17)+d2.ic(:,18:end))./2;
+figure; hold on
+m=repmat(max([c;ic]),19, 1);
+boxplot((c-ic)./m)
+
+sprintf('After correction there is no statistical significant difference between C and IC trials in the pre-cue window, in any ROI')
+
+
+%% Figure 5: pre cue power whole brain
 d = load(fullfile([alldir, 'analysis/stat_bf_pre_wholebrain.mat']));
 mri = ft_read_mri('single_subj_T1_1mm.nii');
 
@@ -187,7 +237,7 @@ for k=1:numel(Uclim)
 end
 
 
-%% Figure 5: Coherence 
+%% Figure 6: Coherence 
 %%%%%%%%%%%%%%%%%
 % RAW COHERENCE %
 %%%%%%%%%%%%%%%%%
@@ -214,9 +264,15 @@ for k=1:numel(c.idx_sign_uncorrected)
     elseif strfind(e.roi2, 'contra'), l2 = 3; end
     
     for ii=1:numel(freqs), if strcmp(freqs{ii}, e.freq), fidx = ii; end, end
-    
+    % manually correct for one connection present twice
+    if k==5
+      idx2 = c.idx_sign_uncorrected(3);
+      cohmean{fidx}(l1+roi1, l2+roi2) = 100*mean(((c.allcohC(:,idx)./c.allcohIC(:,idx)-1)+(c.allcohC(:,idx2)./c.allcohIC(:,idx2)-1))./2);
+      cohstd{fidx}(l1+roi1, l2+roi2) = 100*std(((c.allcohC(:,idx)./c.allcohIC(:,idx)-1)+(c.allcohC(:,idx2)./c.allcohIC(:,idx2)-1))./2);
+    else
     cohmean{fidx}(l1+roi1, l2+roi2) = 100*mean(c.allcohC(:,idx)./c.allcohIC(:,idx)-1);
     cohstd{fidx}(l1+roi1, l2+roi2) = 100*std(c.allcohC(:,idx)./c.allcohIC(:,idx)-1);
+    end
     iscoh(fidx)=1;
 end
 iscoh = find(iscoh);
@@ -342,55 +398,38 @@ for k=1:numel(Uclim)
   saveas(gcf, sprintf('colorbar_%d',Uclim(k)), 'eps');
 end
 
-
-%% Figure S2: pre cue power ROI
-d = load(fullfile([alldir, 'analysis/stat_bf_pre.mat']));
-clear meanpower stdpower c ic
-
-c = (d.c-squeeze(mean(d.raw)))./squeeze(std(d.raw));
-ic = (d.ic-squeeze(mean(d.raw)))./squeeze(std(d.raw));
-Y = [-0.5 1; -0.5 1; -0.5 1; -1 2; -1 2; -1 2; -1 2;-1 2; -2 4; -2 4; -1 2; -1 2;-1 2; -2 4; -1 2; -1 2; -1 2];
-X = [2 1.5 1.5 1.5 1.5 1.5 1.5 1.5 1 1.5 1.5 1.5 1.5 1 1 1.5 1.5];
-figure
-for k=1:17
-    subplot(3,6,k+1)
-cmap = (brewermap(2,'RdBu'));
-h2 = raincloud_plot(c(:,k), 'box_on', 1, 'color', cmap(2,:), 'alpha', 0.5,...
-    'box_dodge', 1, 'box_dodge_amount', .35, 'dot_dodge_amount', .35, 'box_col_match', 0);
-h1 = raincloud_plot(ic(:,k), 'box_on', 1, 'color', cmap(1,:), 'alpha', 0.5,...
-    'box_dodge', 1, 'box_dodge_amount', .15, 'dot_dodge_amount', .15,...
-    'box_col_match', 0);
-% legend([h1{1} h2{1}], {'Congruent', 'Incongruent'});
-% title('reacion times - Simon effect');
-set(gca,'Ylim', Y(k,:), 'Xlim', [-X(k) X(k)]);
-% xlabel('raw power (a.u.)');
-ylabel('Probability density (1/s)')
-box off
-end
-
-
-
-
-stdpower = squeeze(std(d.raw, [], 1));
-meanpower = squeeze(mean(d.raw,1));
-c=(d.c-meanpower)./stdpower;
-ic=(d.ic-meanpower)./stdpower;
+%% Figure S2: Gratton effect as function of response matching
+cmap = brewermap(2, 'RdBu');
+filename = [alldir, 'analysis/stat_behavior_gratton_responsesame.mat'];
+d2 = load(filename);
 figure;
-for k = 1:17
-hold on
-plot([2*(k-1)+1 2*k], [ic(:,k) c(:,k)], '.-', 'color', [0.7 0.7 0.7]);
-plot([2*(k-1)+1 2*k], [mean(ic(:,k)) mean(c(:,k))], 'o-k', 'LineWidth',2)
-end
+data{1,1} = d2.avgC_C/1000;
+data{2,1} = d2.avgIC_C/1000;
+data{1,2} = d2.avgC_IC/1000;
+data{2,2} = d2.avgIC_IC/1000;
+h  = rm_raincloud(data, cmap);
+% note that the x and y axes are switched
+xlabel('Reaction time (s)')
+yticklabels({'previous IC', 'previous C'}) % in reverse order because of switched axes!
+xlim([.350 1.150])
+legend({'current congruent', 'current incongruent'}, 'Location', 'NorthEast')
+clear data
 
-% or
 
-c = (d2.c(:,1:17)+d2.c(:,18:end))./2;
-ic = (d2.ic(:,1:17)+d2.ic(:,18:end))./2;
-figure; hold on
-m=repmat(max([c;ic]),19, 1);
-boxplot((c-ic)./m)
 
-sprintf('After correction there is no statistical significant difference between C and IC trials in the pre-cue window, in any ROI')
+cmap = brewermap(2, 'RdBu');
+filename = [alldir, 'analysis/stat_behavior_gratton_responsediff.mat'];
+d2 = load(filename);
+figure;
+data{1,1} = d2.avgC_C/1000;
+data{2,1} = d2.avgIC_C/1000;
+data{1,2} = d2.avgC_IC/1000;
+data{2,2} = d2.avgIC_IC/1000;
+h  = rm_raincloud(data, cmap);
+% note that the x and y axes are switched
+xlabel('Reaction time (s)')
+yticklabels({'previous IC', 'previous C'}) % in reverse order because of switched axes!
+xlim([.350 1.1500])
 
 %% Figure S3: coherence of connections not significant (uncorrected)
 c = load([alldir 'analysis/stat_coh_pre.mat']);
@@ -430,7 +469,7 @@ for k=1:numel(idx_nonsig)
     cohstd2{fidx}(l1+roi1, l2+roi2) = 100*std(c.allcohC(:,idx)./c.allcohIC(:,idx)-1);
     ncomp2(l1+roi1, l2+roi2, fidx) = ncomp2(l1+roi1, l2+roi2, fidx)+1;
 end
-% average over connections within the same area
+% average over connections within the same areas
 for k=1:numel(cohmean2)
     cohmean2{k} = cohmean2{k} + transpose(cohmean2{k});
     cohstd2{k} = cohstd2{k} + transpose(cohstd2{k});
@@ -508,3 +547,4 @@ for k=1:numel(freqs)
     suptitle(sprintf('%s, not sig',freqs{k}))
     vismot_circularGraph(coh2{k}(order, order), 'Colormap', repmat(cat(3,cmap(1,:), cmap(2,:)), [7 1 1]), 'Label', label,'maxnumber', maxnumber);
 end
+
