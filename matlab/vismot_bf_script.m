@@ -17,10 +17,10 @@ if ~exist('singletrialpow'); singletrialpow = false; end
 subject = vismot_subjinfo(subjectname);
 
 load(fullfile(subject.pathname,'grid',sprintf('%s_sourcemodel3d4mm',subject.name)),'sourcemodel');
-[source, stat, filter] = vismot_bf(subject,'frequency',frequency, 'smoothing', smoothing, 'sourcemodel',sourcemodel,'prewhiten',prewhiten, 'lambda', lambda, 'nrand', nrand, 'latoi', latoi, 'stratifyflag', stratifyflag);
+[source, stat, filter, freqpow] = vismot_bf(subject,'frequency',frequency, 'smoothing', smoothing, 'sourcemodel',sourcemodel,'prewhiten',prewhiten, 'lambda', lambda, 'nrand', nrand, 'latoi', latoi, 'stratifyflag', stratifyflag);
 
 %% post process stats
-filename = fullfile(subject.pathname,'source', [subject.name,sprintf('_source3d4mm_%s_', latoi), num2str(frequency,'%03d')]);
+filename = fullfile(subject.pathname,'source','tmp', [subject.name,sprintf('_source3d4mm_%s_', latoi), num2str(frequency,'%03d')]);
 if istrue(prewhiten), filename = [filename '_prewhitened']; end
 if istrue(stratifyflag), filename = [filename, '_stratified']; end
 if nrand>0, filename = [filename, '_resamp']; end
@@ -106,7 +106,7 @@ stat.statCvsIC = statCvsIC.stat;
 stat.statCvsIC2 = statCvsIC2.stat;
 
 
-save(filename, 'source','stat', 'smoothing', 'lambda', 'stat_resamp', 'nrand','yuenD_13', 'yuenD_42');
+save(filename, 'source','stat', 'smoothing', 'lambda', 'stat_resamp', 'nrand','yuenD_13', 'yuenD_42', 'freqpow');
 
 
 % compute single trial source power

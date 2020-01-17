@@ -1,5 +1,5 @@
 
-function [source, stat, filter] = vismot_bf(subject,varargin)
+function [source, stat, filter, freqpow] = vismot_bf(subject,varargin)
 
 %function [source, filter, freq] = vismot_bf_post(subject,varargin)
 
@@ -104,7 +104,7 @@ cfg.channel   = freq.label;
 cfg.singleshell.batchsize = 2000;
 leadfield     = ft_prepare_leadfield(cfg);
 
-[source, stat, filter] = sourcepow(freq, headmodel, sourcemodel, leadfield, lambda, latoi, conditions, stratifyflag);
+[source, stat, filter, freqpow] = sourcepow(freq, headmodel, sourcemodel, leadfield, lambda, latoi, conditions, stratifyflag);
 
 if nrand>0
   
@@ -149,7 +149,7 @@ if nrand>0
 end
 
 
-function [source, stat, filter] = sourcepow(freq, headmodel, sourcemodel, leadfield, lambda, latoi, conditions, stratifyflag,  onlycompute_stat13_42)
+function [source, stat, filter, freqpow] = sourcepow(freq, headmodel, sourcemodel, leadfield, lambda, latoi, conditions, stratifyflag,  onlycompute_stat13_42)
 if ~exist('onlycompute_stat13_42', 'var'); onlycompute_stat13_42=false; end
 
 cfg                 = [];
@@ -163,6 +163,32 @@ cfg.dics.keepfilter = 'yes';
 cfg.dics.realfilter = 'yes';
 tmpsource = ft_sourceanalysis(cfg, freq);
 filter    = tmpsource.avg.filter;
+
+
+% find unique number of tapers over trials. take the one that appears most
+% often.
+x = unique(freq.cumtapcnt);
+for ii=1:numel(x)
+  y(ii) = sum(freq.cumtapcnt==x(ii));
+end
+[~, tmpidx] = max(y);
+x(tmpidx)=[];
+tmpidx = find(ismember(freq.cumtapcnt, x));
+cfg2=[];
+cfg2.trials = setdiff(1:numel(freq.cumtapcnt), tmpidx)
+freqpow = ft_selectdata(cfg2, freq);
+
+nrpt = numel(freqpow.cumtapcnt);
+ntap = freq.cumtapcnt(1);
+ix = reshape(repmat(1:nrpt,[ntap 1]),[],1);
+iy = 1:(nrpt*ntap);
+iz = ones(nrpt*ntap,1)./ntap;
+P  = sparse(iy,ix,iz,nrpt*ntap,nrpt);
+F = cat(1,filter{:});
+
+p = (abs(F*transpose(freqpow.fourierspctrm)).^2)*P;
+freqpow.pow = p;
+freqpow = keepfields(freqpow, {'freq', 'trialinfo', 'pow'});
 
 cfg2             = [];
 cfg2.fwhm        = 'yes';
