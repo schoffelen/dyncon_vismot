@@ -95,7 +95,7 @@ classdef circularGraphNode < handle
       
       this.TextLabel = text(0,0,this.Label, 'Interpreter', 'none');
       
-      this.TextLabel.Position = node.labelOffsetFactor*this.Position;
+      this.TextLabel.Position = 1.1*this.Position;% node.labelOffsetFactor*this.Position;
       if abs(t) > pi/2
         this.TextLabel.Rotation = 180*(t/pi + 1);
         this.TextLabel.HorizontalAlignment = 'right';
