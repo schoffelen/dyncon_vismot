@@ -20,7 +20,7 @@ for k = 1:numel(subject)
   fprintf('processing subject %s\n',subject(k).name);
 
   cd(subject(k).rawpath);
-  cd([name,'_RAW']);
+  cd([name,'/anat']);
   d   = dir([upper(name),'*']);
   mri = ft_read_mri(d(end).name);
   
