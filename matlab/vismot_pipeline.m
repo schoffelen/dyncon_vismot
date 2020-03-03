@@ -79,6 +79,9 @@ vismot_execute_pipeline('vismot_define_roi', []);
 vismot_execute_pipeline('vismot_script_Tstat_wholebrain', [],  {'stratifyflag', false}, {'toi', 'pre'})
 vismot_execute_pipeline('vismot_script_Tstat_roi', [])
 
+% correlation between sensorimotor power and behavior
+vismot_singletrialcorr
+
 % pre cue coherence
 vismot_execute_pipeline('vismot_script_Tstat_coh', [])
 
