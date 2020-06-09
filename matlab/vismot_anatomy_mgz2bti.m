@@ -22,7 +22,7 @@ for k = [1:numel(subject)]
   mri = ft_volumerealign(cfg, mri);
   transform_interactive = mri.transform;
   
-  hsfile = fullfile(subject(k).rawpath,subject(k).name,subject(k).scanname,subject(k).sessionname,subject(k).runnames{1},'hs_file');
+  hsfile = fullfile(subject(k).rawpath,'ses01','meg',subject(k).name,subject(k).scanname,subject(k).sessionname,subject(k).runnames{1},'hs_file');
           
   cfg           = [];
   cfg.method    = 'headshape';

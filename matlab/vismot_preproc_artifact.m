@@ -7,7 +7,7 @@ nconditions = 5;
 for k = 1:length(subject.runnames)
  for m = 1:nconditions
    warning off;
-   fname        = [subject.rawpath, '/', subject.name,'/', subject.scanname, subject.sessionname, subject.runnames{k},subject.datafile];
+   fname        = [subject.rawpath, '/', 'ses01','/', 'meg','/', subject.name,'/', subject.scanname, subject.sessionname, subject.runnames{k},subject.datafile];
    cfg          = [];
    cfg.datafile = fname;
    cfg.trialfun = ['trialfun_condition',num2str(m)];
@@ -20,7 +20,7 @@ end
 %% extract long trial-definition for detecting artifacts
 for k = 1:length(subject.runnames)
  warning off;
- fname        = [subject.rawpath, '/', subject.name,'/', subject.scanname, subject.sessionname, subject.runnames{k},subject.datafile];
+ fname        = [subject.rawpath, '/', 'ses01','/', 'meg','/', subject.name,'/', subject.scanname, subject.sessionname, subject.runnames{k},subject.datafile];
  cfg          = [];
  cfg.datafile = fname;
  cfg.trialfun = 'trialfun_longtrials';
@@ -36,7 +36,7 @@ for k = 1:length(subject.runnames)
  warning off;
  load([subject.pathname,'/trl/',subject.name,'trl-run',subject.runnames{k}(1:end-1),'longtrials'],'cfg');
  trl   = cfg.trl;
- fname        = [subject.rawpath, '/', subject.name,'/', subject.scanname, subject.sessionname, subject.runnames{k},subject.datafile];
+ fname        = [subject.rawpath, '/', 'ses01','/', 'meg','/', subject.name,'/', subject.scanname, subject.sessionname, subject.runnames{k},subject.datafile];
  cfg   = detect_jumps(fname, trl, padding, subject.denoise); 
  cd([subject.pathname,'artifact/']);
  save([subject.name,'jump-run',subject.runnames{k}(1:end-1)],'cfg');

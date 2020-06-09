@@ -1,17 +1,19 @@
-addpath('/project/3011085.03/scripts/RainCloudPlots/tutorial_matlab/')
-addpath('/project/3011085.03/scripts/Robust_Statistical_Toolbox/')
 subjects = vismot_subjinfo;
 alldir = '/project/3011085.03/';
-
-%% FIGURE 2 - behavior
-% general behavioral measures
+addpath([alldir 'scripts/RainCloudPlots/tutorial_matlab/'])
+addpath([alldir 'scripts/Robust_Statistical_Toolbox/'])
+addpath([alldir 'scripts/circularGraph/']);
+load(fullfile([alldir, 'analysis/roi.mat']));
 load list
 
+%% FIGURE 2: behavior
+% general behavioral measures
+
 for k=1:19
-x = load(sprintf('/project/3011085.03/analysis/behaviour/%sbehaviour.mat', list{k}));
-performance(k) = sum(x.correct(:))/840;
-rttmp = x.rt(x.correct);
-rt(k) = mean(rttmp(rttmp~=0));
+    x = load([alldir sprintf('analysis/behaviour/%sbehaviour.mat', list{k})]);
+    performance(k) = sum(x.correct(:))/840;
+    rttmp = x.rt(x.correct);
+    rt(k) = mean(rttmp(rttmp~=0));
 end
 mean(performance)
 std(performance)
@@ -20,15 +22,15 @@ mean(rt)
 std(rt)
 
 for k=1:19
-subject= vismot_subjinfo(list{k});
-alldata = load(fullfile(subject.pathname,'data',[subject.name,'data']));
-ntrl(k) = numel(unique(alldata.data1.trialinfo(:,2)))  + numel(unique(alldata.data2.trialinfo(:,2))) + numel(unique(alldata.data3.trialinfo(:,2))) + numel(unique(alldata.data4.trialinfo(:,2))) + numel(unique(alldata.data5.trialinfo(:,2)));
+    subject= vismot_subjinfo(list{k});
+    alldata = load(fullfile(subject.pathname,'data',[subject.name,'data']));
+    ntrl(k) = numel(unique(alldata.data1.trialinfo(:,2)))  + numel(unique(alldata.data2.trialinfo(:,2))) + numel(unique(alldata.data3.trialinfo(:,2))) + numel(unique(alldata.data4.trialinfo(:,2))) + numel(unique(alldata.data5.trialinfo(:,2)));
 end
 mean(ntrl)
 std(ntrl)
 
-% Figure 1a : SIMON EFFECT
-filename = [subjects(1).pathname, '/stat_behavior_simon.mat'];
+% Figure 2a : SIMON EFFECT
+filename = [alldir, 'analysis/stat_behavior_simon.mat'];
 d = load(filename);
 effectsize_ms = round(abs(mean(d.avgC-d.avgIC)), 3, 'significant');
 effectsize_perc = round(abs(mean(d.avgC./d.avgIC-1)*100),1);
@@ -39,10 +41,10 @@ figure;
 cmap = (brewermap(2,'RdBu'));
 f1 = figure;
 h2 = raincloud_plot(d.avgIC/1000, 'box_on', 1, 'color', cmap(2,:), 'alpha', 0.5,...
-     'box_dodge', 1, 'box_dodge_amount', .35, 'dot_dodge_amount', .35, 'box_col_match', 0);
+    'box_dodge', 1, 'box_dodge_amount', .35, 'dot_dodge_amount', .35, 'box_col_match', 0);
 h1 = raincloud_plot(d.avgC/1000, 'box_on', 1, 'color', cmap(1,:), 'alpha', 0.5,...
-     'box_dodge', 1, 'box_dodge_amount', .15, 'dot_dodge_amount', .15,...
-     'box_col_match', 0);
+    'box_dodge', 1, 'box_dodge_amount', .15, 'dot_dodge_amount', .15,...
+    'box_col_match', 0);
 
 legend([h1{1} h2{1}], {'Congruent', 'Incongruent'});
 title('reacion times - Simon effect');
@@ -53,9 +55,9 @@ box off
 
 % Figure 1b: GRATTON EFFECT
 cmap = brewermap(2, 'RdBu');
-filename = [subjects(1).pathname, '/stat_behavior_gratton.mat'];
+filename = [alldir, 'analysis/stat_behavior_gratton.mat'];
 d2 = load(filename);
-partialeta2 = 0.827;% see /project/3011085.03/analysis/rt/Mats_output_gratton
+partialeta2 = 0.041;% 
 sprintf('partial eta2 = %s, F(2,17) = %s, p = %s',num2str(round(partialeta2, 3, 'significant')), num2str(round(d2.stat{4,5},2)), num2str(round(d2.stat{4,6},3, 'significant')))
 
 
@@ -75,310 +77,474 @@ legend({'current congruent', 'current incongruent'}, 'Location', 'NorthEast') % 
 
 
 
-%% FIGURE 3 - Post cue power slice plots
-alldir = '/project/3011085.03/';
-load(fullfile([alldir, 'analysis/source/roi.mat']));
-d = load(fullfile([alldir, 'analysis/stat_bf_post.mat']));
+%% FIGURE 3: Post cue power slice plots
+d = load(fullfile([alldir, 'analysis/stat_bf_post_stratified.mat']));
 mri = ft_read_mri('single_subj_T1_1mm.nii');
-
-effect_size = mean(d.effectsize_largest_cluster); % get average from 'significant clusters' of raw effect (not 1st level T)
-effect_size_sd = std(d.effectsize_largest_cluster);
-sprintf('effect size M = %s percent (SD = %s percent), p = %s', num2str(round(100*effect_size,1)),num2str(round(100*effect_size_sd,2)), num2str(round(d.stat.posclusters(1).prob, 3, 'significant')))
-
-d2 = load(fullfile([alldir, 'analysis/stat_bf_post_stratified.mat']));
-effect_size_stratified = mean(d2.effectsize_largest_cluster); % get average from 'significant clusters' of raw effect (not 1st level T)
-effect_size_stratified_sd = std(d2.effectsize_largest_cluster);
-sprintf('RT-stratified effect size M = %s percent (SD = %s percent), p = %s', num2str(round(100*effect_size_stratified,1)),num2str(round(100*effect_size_stratified_sd,1)), num2str(round(d2.stat.posclusters(1).prob, 3, 'significant')))
 
 % make slice plots of power
 cfg=[];
-cfg.parameter = {'stat'};
-stat_int = ft_sourceinterpolate(cfg, d2.stat, mri);
+cfg.parameter = {'stat', 'mask'};
+for k=1:6
+    stat_int{k} = ft_sourceinterpolate(cfg, d.stat{k}, mri);
+end
+
 
 cmap = flipud(brewermap(64, 'RdBu'));
 cfgp = [];
 cfgp.funparameter = 'stat';
 cfgp.method = 'slice';
 cfgp.funcolormap = cmap;
-cfgp.maskparameter = cfgp.funparameter;
+cfgp.maskparameter = 'mask2';
 cfgp.slicerange = [70 150];
 cfgp.nslices = 16;
-clim = [5 6 5 8 6];
-k=1;
-for f=stat_int.freq
-  cfgp.frequency = f;
+cfgp.opacitylim = [-0.1 0.1];
+clim = [5 6 8 6 8 6];
+tmp = {'theta', 'alpha', 'beta', 'gamma1', 'gamma2', 'gamma3'};
+
+for k=1:6
+  s=stat_int{k};
+  s.mask2 = s.stat;
+  xmin = min(s.stat); xmax = max(s.stat);
+  s.mask2(s.mask2<0.3*xmax & s.mask2>0.3*xmin & s.inside(:)==1)=0;
+  s.mask2(s.mask2>0|s.mask<0)=1;
+  s.mask2(isnan(s.mask2))=0;
+  ix=find(s.inside(:)==0 & s.anatomy(:)~=0); s.mask2(ix) = 0; % this line makes sure the anatomy doesn't disappear
   cfgp.funcolorlim = [-clim(k) clim(k)];
-  ft_sourceplot(cfgp, stat_int);
-  title(sprintf('post-cue power - %d Hz',f))
-  k=k+1;
+  ft_sourceplot(cfgp, s);
+  saveas(gcf, sprintf('3_postpow_slice_%s_str', tmp{k}), 'png')
 end
 
 
-%% FIGURE 4 - post cue power ROI + bar plot
-% raincloud graph of ipsi vs contra ROI pow diff (C./IC)
-idx_left = d2.l;
-idx_right = d2.r;
+f=[];
+f.powspctrm = ones(1,10,10);
+f.dimord = 'chan_freq_time';
+f.time = 1:10;
+f.freq = 1:10;
+f.label{1} = 'tmp';
 
-pow_ipsi = zeros(19,15);
-pow_contra = zeros(19,15);
-zeroidx = [2 7 14];
-pow_ipsi(:, setdiff(1:15, zeroidx)) = d2.effectsize_roi_left;
-pow_contra(:, setdiff(1:15, zeroidx))  = d2.effectsize_roi_right;
-
-cmap = brewermap(2, 'RdBu');
+Uclim = unique(clim);
 figure;
-for k = setdiff(1:15, zeroidx)
-    subplot(3,5,k)
-  h1{k} = raincloud_plot(pow_ipsi(:,k), 'box_on', 1, 'color', cmap(1,:), 'alpha', 0.5,...
-     'box_dodge', 1, 'box_dodge_amount', .15, 'dot_dodge_amount', .15,...
-     'box_col_match', 0);
-  h2{k} = raincloud_plot(pow_contra(:,k), 'box_on', 1, 'color', cmap(2,:), 'alpha', 0.5,...
-     'box_dodge', 1, 'box_dodge_amount', .35, 'dot_dodge_amount', .35, 'box_col_match', 0);
-f1 = ksdensity(pow_ipsi(:,k));
-f2 = ksdensity(pow_contra(:,k));
-   maxy = max([f1 f2]);
-   set(gca, 'Ylim', [-maxy maxy])
+for k=1:numel(Uclim)
+  cfgp=[];
+  cfgp.colormap = flipud(brewermap(64, 'RdBu'));
+  cfgp.zlim = [-Uclim(k) Uclim(k)];
+  ft_singleplotTFR(cfgp, f);
+  saveas(gcf, sprintf('colorbar_%d',Uclim(k)), 'eps');
 end
 
-% ROI plot
-s = d2.stat;
-s.stat = d2.stat.stat(:,1);
-s.freq = 1;
-cmap = brewermap(3, 'Accent');
-location = {'L-occipital', 'R-occipital'; 'L-parietal', 'R-parietal'; 'L-motor', 'R-motor'};
 
-cfgp=[];
+%% Figure 4: pre cue power ROI
+d = load(fullfile([alldir, 'analysis/stat_bf_pre.mat']));
+clear meanpower stdpower c ic
+
+c = (d.c-squeeze(mean(d.raw)))./squeeze(std(d.raw));
+ic = (d.ic-squeeze(mean(d.raw)))./squeeze(std(d.raw));
+Y = [-0.5 1; -0.5 1; -0.5 1; -1 2; -1 2; -1 2; -1 2;-1 2; -2 4; -2 4; -1 2; -1 2;-1 2; -2 4; -1 2; -1 2; -1 2];
+X = [2 1.5 1.5 1.5 1.5 1.5 1.5 1.5 1 1.5 1.5 1.5 1.5 1 1 1.5 1.5];
+figure
+for k=1:17
+    subplot(3,6,k+1)
+cmap = (brewermap(2,'RdBu'));
+h2 = raincloud_plot(c(:,k), 'box_on', 1, 'color', cmap(1,:), 'alpha', 0.5,...
+    'box_dodge', 1, 'box_dodge_amount', .35, 'dot_dodge_amount', .35, 'box_col_match', 0);
+h1 = raincloud_plot(ic(:,k), 'box_on', 1, 'color', cmap(2,:), 'alpha', 0.5,...
+    'box_dodge', 1, 'box_dodge_amount', .15, 'dot_dodge_amount', .15,...
+    'box_col_match', 0);
+% legend([h1{1} h2{1}], {'Congruent', 'Incongruent'});
+% title('reacion times - Simon effect');
+% set(gca,'Ylim', Y(k,:), 'Xlim', [-X(k) X(k)]);
+% xlabel('raw power (a.u.)');
+ylabel('Probability density (1/s)')
+box off
+end
+
+
+
+
+stdpower = squeeze(std(d.raw, [], 1));
+meanpower = squeeze(mean(d.raw,1));
+c=(d.c-meanpower)./stdpower;
+ic=(d.ic-meanpower)./stdpower;
+figure;
+for k = 1:17
+hold on
+plot([2*(k-1)+1 2*k], [ic(:,k) c(:,k)], '.-', 'color', [0.7 0.7 0.7]);
+plot([2*(k-1)+1 2*k], [mean(ic(:,k)) mean(c(:,k))], 'o-k', 'LineWidth',2)
+end
+
+% or
+
+c = (d2.c(:,1:17)+d2.c(:,18:end))./2;
+ic = (d2.ic(:,1:17)+d2.ic(:,18:end))./2;
+figure; hold on
+m=repmat(max([c;ic]),19, 1);
+boxplot((c-ic)./m)
+
+sprintf('After correction there is no statistical significant difference between C and IC trials in the pre-cue window, in any ROI')
+
+
+%% Figure 5: pre cue power whole brain
+d = load(fullfile([alldir, 'analysis/stat_bf_pre_wholebrain.mat']));
+mri = ft_read_mri('single_subj_T1_1mm.nii');
+
+% make slice plots of power
+cfg=[];
+cfg.parameter = {'stat', 'mask'};
+for k=1:6
+    stat_int{k} = ft_sourceinterpolate(cfg, d.stat{k}, mri);
+end
+
+tmp = {'theta', 'alpha', 'beta', 'gamma1', 'gamma2', 'gamma3'};
+cmap = flipud(brewermap(64, 'RdBu'));
+cfgp = [];
 cfgp.funparameter = 'stat';
-cfgp.maskparameter = 'stat';
-cfgp.method = 'surface';
-cfgp.funcolorlim = [-100, 100];
-cfgp.colorbar = 'no';
-cfgp.surfdownsample = 20;
-cfgp.facecolor = 'brain';
-
-% alpha
-ft_sourceplot(cfgp, s);
-material dull
-p = [1 5 9];
-grad=[];
-grad.label = {'1'};
-for k=1:length(p)
-  grad.chanpos=[s.pos(l(p(k)),:)];
-  grad.elecpos=grad.chanpos;
-  ft_plot_sens(grad,'elecshape','point', 'elecsize', 50, 'facecolor', [cmap(k,:)])
-  
-  grad.chanpos=[s.pos(r(p(k)),:)];
-  grad.elecpos=grad.chanpos;
-  ft_plot_sens(grad,'elecshape','point', 'elecsize', 50, 'facecolor', [cmap(k,:)])
+cfgp.method = 'slice';
+cfgp.funcolormap = cmap;
+cfgp.maskparameter = 'mask2';
+cfgp.slicerange = [70 150];
+cfgp.nslices = 16;
+cfgp.opacitylim = [-0.1 0.1];
+clim = [5 5 5 5 5 5];
+for k=1:6
+  s=stat_int{k};
+  s.mask2 = s.stat;
+  xmin = min(s.stat); xmax = max(s.stat);
+  s.mask2(s.mask2<0.3*xmax & s.mask2>0.3*xmin & s.inside(:)==1)=0;
+  s.mask2(s.mask2>0|s.mask<0)=1;
+  s.mask2(isnan(s.mask2))=0;
+  ix=find(s.inside(:)==0 & s.anatomy(:)~=0); s.mask2(ix) = 0; % this line makes sure the anatomy doesn't disappear
+  cfgp.funcolorlim = [-clim(k) clim(k)];
+  ft_sourceplot(cfgp, s);
+  saveas(gcf, sprintf('4_prepow_slice_%s', tmp{k}), 'png')
 end
-view([0,69]);
-view([-90,0]);camlight
 
-% beta
-ft_sourceplot(cfgp, s);
-material dull
-p = [10];
-grad=[];
-grad.label = {'1'};
-for k=1:length(p)
-  grad.chanpos=[s.pos(l(p(k)),:)]+[0 0 1.5];
-  grad.elecpos=grad.chanpos;
-  ft_plot_sens(grad,'elecshape','point', 'elecsize', 40, 'facecolor', [cmap(3,:)])
-  
-  grad.chanpos=[s.pos(r(p(k)),:)]+[0 0 1.5];
-  grad.elecpos=grad.chanpos;
-  ft_plot_sens(grad,'elecshape','point', 'elecsize', 40, 'facecolor', [cmap(3,:)])
-end
-view([0,69]);
-view([-90,0]);camlight
 
-% gamma1
-ft_sourceplot(cfgp, s);
-material dull
-p = [2 6 11];
-grad=[];
-grad.label = {'1'};
-for k=1:length(p)
-  grad.chanpos=[s.pos(l(p(k)),:)];
-  if k==3
-    grad.chanpos = grad.chanpos + [0 0 2];
-  end
-  grad.elecpos=grad.chanpos;
-  ft_plot_sens(grad,'elecshape','point', 'elecsize', 40, 'facecolor', [cmap(k,:)])
-  
-  grad.chanpos=[s.pos(r(p(k)),:)];
-    if k==3
-    grad.chanpos = grad.chanpos + [0 0 2];
-  end
-  grad.elecpos=grad.chanpos;
-  ft_plot_sens(grad,'elecshape','point', 'elecsize', 40, 'facecolor', [cmap(k,:)])
-end
-view([0,69]);
-view([-90,0]);camlight
+f=[];
+f.powspctrm = ones(1,10,10);
+f.dimord = 'chan_freq_time';
+f.time = 1:10;
+f.freq = 1:10;
+f.label{1} = 'tmp';
 
-% gamma2
-ft_sourceplot(cfgp, s);
-material dull
-p = [3 7];
-grad=[];
-grad.label = {'1'};
-for k=1:length(p)
-  grad.chanpos=[s.pos(l(p(k)),:)];
-  if k==1
-    grad.chanpos = grad.chanpos - [0 1 0];
-  end
-  grad.elecpos=grad.chanpos;
-  ft_plot_sens(grad,'elecshape','point', 'elecsize', 40, 'facecolor', [cmap(k,:)])
-  
-  grad.chanpos=[s.pos(r(p(k)),:)];
-  if k==1
-    grad.chanpos = grad.chanpos - [0 1.2 0];
-  end
-  grad.elecpos=grad.chanpos;
-  ft_plot_sens(grad,'elecshape','point', 'elecsize', 40, 'facecolor', [cmap(k,:)])
-end
-view([0,69]);
-view([-90,0]);camlight
-
-% gamma3
-ft_sourceplot(cfgp, s);
-material dull
-p = [4 8 12];
-grad=[];
-grad.label = {'1'};
-for k=1:length(p)
-  grad.chanpos=[s.pos(l(p(k)),:)];
-  grad.elecpos=grad.chanpos;
-  ft_plot_sens(grad,'elecshape','point', 'elecsize', 40, 'facecolor', [cmap(k,:)])
-  
-  grad.chanpos=[s.pos(r(p(k)),:)];
-  grad.elecpos=grad.chanpos;
-  ft_plot_sens(grad,'elecshape','point', 'elecsize', 40, 'facecolor', [cmap(k,:)])
-end
-view([0,69]);
-view([-90,0]);camlight
-
-%% pre cue power
-alldir = '/project/3011085.03/';
-s = load(fullfile([alldir, 'analysis/stat_bf_pre.mat']));
-
-pow_ipsi = zeros(19,15);
-pow_contra = zeros(19,15);
-zeroidx = [2 7 14];
-pow_ipsi(:, setdiff(1:15, zeroidx)) = s.effectsize_roi_left;
-pow_contra(:, setdiff(1:15, zeroidx))  = s.effectsize_roi_right;
-
+Uclim = unique(clim);
 figure;
-cmap = brewermap(2, 'RdBu');
-for k=setdiff(1:15, zeroidx)
-  subplot(3,5,k)
-  h1{k} = raincloud_plot(pow_ipsi(:,k), 'box_on', 1, 'color', cmap(1,:), 'alpha', 0.5,...
-     'box_dodge', 1, 'box_dodge_amount', .15, 'dot_dodge_amount', .15,...
-     'box_col_match', 0);
-  h2{k} = raincloud_plot(pow_contra(:,k), 'box_on', 1, 'color', cmap(2,:), 'alpha', 0.5,...
-     'box_dodge', 1, 'box_dodge_amount', .35, 'dot_dodge_amount', .35, 'box_col_match', 0);
-   f1 = ksdensity(pow_ipsi(:,k));
-f2 = ksdensity(pow_contra(:,k));
-   maxy = max([f1 f2]);
-   set(gca, 'Ylim', [-maxy maxy])
+for k=1:numel(Uclim)
+  cfgp=[];
+  cfgp.colormap = flipud(brewermap(64, 'RdBu'));
+  cfgp.zlim = [-Uclim(k) Uclim(k)];
+  ft_singleplotTFR(cfgp, f);
+  saveas(gcf, sprintf('colorbar_%d',Uclim(k)), 'eps');
 end
 
 
+%% Figure 6: Coherence 
+%%%%%%%%%%%%%%%%%
+% RAW COHERENCE %
+%%%%%%%%%%%%%%%%%
+c = load([alldir 'analysis/stat_coh_pre.mat']);
+freqs = {'theta', 'alpha', 'beta', 'gamma2', 'gamma3'};
+iscoh=zeros(numel(freqs),1);
+for k=1:numel(freqs), cohmean{k} = zeros(7,7); cohstd{k} = zeros(7,7); end
+for k=1:numel(c.idx_sign_uncorrected)
+    idx = c.idx_sign_uncorrected(k);
+    e=c.effect(idx);
+    
+    % find ROI
+    if strfind(e.roi1, 'occipital'), roi1 = 1;
+    elseif strfind(e.roi1, 'parietal'), roi1 = 2;
+    elseif strfind(e.roi1, 'motor'), roi1 = 3; end
+    if strfind(e.roi2, 'occipital'), roi2 = 1;
+    elseif strfind(e.roi2, 'parietal'), roi2 = 2;
+    elseif strfind(e.roi2, 'motor'), roi2 = 3; end
 
-%% Coherence
-% within-between hemispheres
-c = load('/project/3011085.03/analysis/stat_coh_pre.mat');
+    % find lateralization
+    if strfind(e.roi1, 'ipsi'), l1 = 0;
+    elseif strfind(e.roi1, 'contra'), l1 = 3; end
+    if strfind(e.roi2, 'ipsi'), l2 = 0;
+    elseif strfind(e.roi2, 'contra'), l2 = 3; end
+    
+    for ii=1:numel(freqs), if strcmp(freqs{ii}, e.freq), fidx = ii; end, end
+    % manually correct for one connection present twice
+    if k==5
+      idx2 = c.idx_sign_uncorrected(3);
+      cohmean{fidx}(l1+roi1, l2+roi2) = 100*mean(((c.allcohC(:,idx)./c.allcohIC(:,idx)-1)+(c.allcohC(:,idx2)./c.allcohIC(:,idx2)-1))./2);
+      cohstd{fidx}(l1+roi1, l2+roi2) = 100*std(((c.allcohC(:,idx)./c.allcohIC(:,idx)-1)+(c.allcohC(:,idx2)./c.allcohIC(:,idx2)-1))./2);
+    else
+    cohmean{fidx}(l1+roi1, l2+roi2) = 100*mean(c.allcohC(:,idx)./c.allcohIC(:,idx)-1);
+    cohstd{fidx}(l1+roi1, l2+roi2) = 100*std(c.allcohC(:,idx)./c.allcohIC(:,idx)-1);
+    end
+    iscoh(fidx)=1;
+end
+iscoh = find(iscoh);
 
-cmap = brewermap(2,'RdBu');
-figure;
-subplot(1,2,1)
-h1 = raincloud_plot(c.coh_within_C, 'box_on', 1, 'color', cmap(1,:), 'alpha', 0.5,...
-     'box_dodge', 1, 'box_dodge_amount', .15, 'dot_dodge_amount', .15,...
-     'box_col_match', 0);
-h2 = raincloud_plot(c.coh_within_IC, 'box_on', 1, 'color', cmap(2,:), 'alpha', 0.5,...
-     'box_dodge', 1, 'box_dodge_amount', .35, 'dot_dodge_amount', .35, 'box_col_match', 0);
-legend([h1{1} h2{1}], {'Previous congruent', 'Previous incongruent'});
-title('Coherence within hemispheres');
-set(gca,'Xlim', [0.05 0.3], 'Ylim', [-12 25]);
-xlabel('Coherence'); ylabel('Probability (coh^-1)')
-box off
-
-
-subplot(1,2,2)
-h3 = raincloud_plot(c.coh_between_C, 'box_on', 1, 'color', cmap(1,:), 'alpha', 0.5,...
-     'box_dodge', 1, 'box_dodge_amount', .15, 'dot_dodge_amount', .15,...
-     'box_col_match', 0);
-h4 = raincloud_plot(c.coh_between_IC, 'box_on', 1, 'color', cmap(2,:), 'alpha', 0.5,...
-     'box_dodge', 1, 'box_dodge_amount', .35, 'dot_dodge_amount', .35, 'box_col_match', 0);
-legend([h1{1} h2{1}], {'Previous congruent', 'Previous incongruent'});
-title('Coherence between hemispheres');
-set(gca,'Xlim', [0.02 0.2], 'Ylim', [-10 20]);
-xlabel('Coherence'); ylabel('Probability (coh^-1)')
-box off
-
-% individual coherences
-stat = c.stat.stat; 
-% stat = mean(c.allconnectivity,1); % still not raw coh values-->1st level
-% T
-coh = zeros(6,6,5);
-% alpha
-x = ones(6);
-x(find(triu(x)))=0;
-x(find(x)) = stat(1:c.ncomparisson(1));
-coh(:,:,1) = x;
-
-%beta
-x = zeros(6);
-idx = c.ncomparisson(1)+1;
-x(6,3) = stat(idx);
-coh(:,:,2) = x;
-
-% gamma1
-x = ones(6);
-x(find(triu(x)))=0;
-idx = sum(c.ncomparisson([1 2]))+1:sum(c.ncomparisson([1 2]))+c.ncomparisson(3);
-x(find(x)) = stat(idx);
-coh(:,:,3) = x;
-
-% gamma2
-x = ones(6);
-x(find(triu(x)))=0;
-x([3 6],:) = 0; % no motor
-x(:,[3 6]) = 0;
-idx = sum(c.ncomparisson(1:3))+1:sum(c.ncomparisson(1:3))+c.ncomparisson(4);
-x(find(x)) = stat(idx);
-coh(:,:,4) = x;
-
-% gamma 3
-x = ones(6);
-x(find(triu(x)))=0;
-idx = sum(c.ncomparisson(1:4))+1:sum(c.ncomparisson(1:4))+c.ncomparisson(5);
-x(find(x)) = stat(idx);
-coh(:,:,5) = x;
-
-cmap = brewermap(5, 'Accent');
-C = [];
-C.label = {'left occipital', 'left parietal', 'left motor', 'right occipital', 'right parietal', 'right motor'};
-C.channelcmb = ft_channelcombination({'all' 'all'}, C.label);
-C.cohspctrm = coh;
-C.dimord = 'chan_chan_freq';
-C.freq=[10 22 40 60 80];
-
-label = {'L_occ', 'L_par', 'L_mot','R_occ', 'R_par', 'R_mot'};
+warning('please enable line 74 in circularGraph.m')
 cmap = brewermap(2, 'RdBu');
-addpath('/project/3011085.03/scripts/circularGraph/');
+transparency = 0.3;
+cmap2=[cmap [transparency; transparency]];
 % permute data and labels such that the graph is symmetrical and in the
-% right order
-order = [2 1 4 5 6 3];
-label = label(order);
-C.cohspctrm = C.cohspctrm(order, order, :);
-for k=1:5
-  figure;
-  viscircles([0,0], 1, 'color','k'); hold on
-  tmpc = C.cohspctrm(:,:,k);
-  tmpc(tmpc<0) = 0;
-  circularGraph(tmpc, 'Colormap', repmat(cmap(1,:), [6 1]), 'Label', label);
-  tmpc = C.cohspctrm(:,:,k);
-  tmpc(tmpc>0) = 0;
-  circularGraph(abs(tmpc), 'Colormap', repmat(cmap(2,:), [6 1]), 'Label', label);
+label = {'occ_ipsi', 'par_ipsi', 'mot_ipsi','occ_contra', 'par_contra', 'mot_contra', 'fron'};
+order = [2 1 4 5 6 7 3];
+label=label(order);
+
+maxnumber = abs(cat(3,cohmean{:}));
+maxnumber = max(maxnumber(:));
+maxnumberstd = (cat(3,cohstd{:}));
+maxnumberstd = max(maxnumberstd(:));
+for k=1:numel(iscoh)
+    figure;
+    viscircles([0,0], 1, 'color','k'); hold on
+    suptitle(sprintf('mean %s, sign uncor',freqs{iscoh(k)}))
+    vismot_circularGraph(cohmean{iscoh(k)}(order, order),'std', cohstd{iscoh(k)}(order, order), 'Colormap', repmat(cat(3,cmap(1,:), cmap(2,:)), [7 1 1]), 'Label', label, 'maxnumber', maxnumber, 'maxnumberstd', maxnumberstd);
 end
+
+
+%%%%%%%%%%%%
+% T-VALUES %
+%%%%%%%%%%%%
+iscoh=zeros(numel(freqs),1);
+for k=1:numel(freqs), coh{k} = zeros(7,7); end
+for k=1:numel(c.idx_sign_uncorrected)
+    idx = c.idx_sign_uncorrected(k);
+    e=c.effect(idx);
+    
+    % find ROI
+    if strfind(e.roi1, 'occipital'), roi1 = 1;
+    elseif strfind(e.roi1, 'parietal'), roi1 = 2;
+    elseif strfind(e.roi1, 'motor'), roi1 = 3; end
+    if strfind(e.roi2, 'occipital'), roi2 = 1;
+    elseif strfind(e.roi2, 'parietal'), roi2 = 2;
+    elseif strfind(e.roi2, 'motor'), roi2 = 3; end
+
+    % find lateralization
+    if strfind(e.roi1, 'ipsi'), l1 = 0;
+    elseif strfind(e.roi1, 'contra'), l1 = 3; end
+    if strfind(e.roi2, 'ipsi'), l2 = 0;
+    elseif strfind(e.roi2, 'contra'), l2 = 3; end
+    
+    for ii=1:numel(freqs), if strcmp(freqs{ii}, e.freq), fidx = ii; end, end
+    
+    coh{fidx}(l1+roi1, l2+roi2) = e.stat;
+    iscoh(fidx)=1;
+end
+iscoh = find(iscoh);
+
+warning('please enable line 74 in circularGraph.m')
+cmap = brewermap(2, 'RdBu');
+% permute data and labels such that the graph is symmetrical and in the
+label = {'occ_ipsi', 'par_ipsi', 'mot_ipsi','occ_contra', 'par_contra', 'mot_contra', 'fron'};
+order = [2 1 4 5 6 7 3];
+label=label(order);
+maxnumber = abs(cat(3,coh{:}));
+maxnumber = max(maxnumber(:));
+for k=1:numel(iscoh)
+    figure;
+    viscircles([0,0], 1, 'color','k'); hold on
+    suptitle(sprintf('%s, sign uncor',freqs{iscoh(k)}))
+    vismot_circularGraph(coh{iscoh(k)}(order, order), 'Colormap', repmat(cat(3,cmap(1,:), cmap(2,:)), [7 1 1]), 'Label', label,'maxnumber', maxnumber);
+end
+
+%% Figure S1: Post cue power (not stratified)
+d = load(fullfile([alldir, 'analysis/stat_bf_post_stratified.mat']));
+mri = ft_read_mri('single_subj_T1_1mm.nii');
+
+% make slice plots of power
+cfg=[];
+cfg.parameter = {'stat', 'mask'};
+for k=1:6
+    stat_int{k} = ft_sourceinterpolate(cfg, d.stat{k}, mri);
+end
+
+
+cmap = flipud(brewermap(64, 'RdBu'));
+cfgp = [];
+cfgp.funparameter = 'stat';
+cfgp.method = 'slice';
+cfgp.funcolormap = cmap;
+cfgp.maskparameter = 'mask2';
+cfgp.slicerange = [70 150];
+cfgp.nslices = 16;
+cfgp.opacitylim = [-0.1 0.1];
+clim = [5 6 8 6 8 6];
+tmp = {'theta', 'alpha', 'beta', 'gamma1', 'gamma2', 'gamma3'};
+
+for k=1:6
+  s=stat_int{k};
+  s.mask2 = s.stat;
+  xmin = min(s.stat); xmax = max(s.stat);
+  s.mask2(s.mask2<0.3*xmax & s.mask2>0.3*xmin & s.inside(:)==1)=0;
+  s.mask2(s.mask2>0|s.mask<0)=1;
+  s.mask2(isnan(s.mask2))=0;
+  ix=find(s.inside(:)==0 & s.anatomy(:)~=0); s.mask2(ix) = 0; % this line makes sure the anatomy doesn't disappear
+  cfgp.funcolorlim = [-clim(k) clim(k)];
+  ft_sourceplot(cfgp, s);
+  saveas(gcf, sprintf('3_postpow_slice_%s_str', tmp{k}), 'png')
+end
+
+
+f=[];
+f.powspctrm = ones(1,10,10);
+f.dimord = 'chan_freq_time';
+f.time = 1:10;
+f.freq = 1:10;
+f.label{1} = 'tmp';
+
+Uclim = unique(clim);
+figure;
+for k=1:numel(Uclim)
+  cfgp=[];
+  cfgp.colormap = flipud(brewermap(64, 'RdBu'));
+  cfgp.zlim = [-Uclim(k) Uclim(k)];
+  ft_singleplotTFR(cfgp, f);
+  saveas(gcf, sprintf('colorbar_%d',Uclim(k)), 'eps');
+end
+
+%% Figure S2: Gratton effect as function of response matching
+cmap = brewermap(2, 'RdBu');
+filename = [alldir, 'analysis/stat_behavior_gratton_responsesame.mat'];
+d2 = load(filename);
+figure;
+data{1,1} = d2.avgC_C/1000;
+data{2,1} = d2.avgIC_C/1000;
+data{1,2} = d2.avgC_IC/1000;
+data{2,2} = d2.avgIC_IC/1000;
+h  = rm_raincloud(data, cmap);
+% note that the x and y axes are switched
+xlabel('Reaction time (s)')
+yticklabels({'previous IC', 'previous C'}) % in reverse order because of switched axes!
+xlim([.350 1.150])
+legend({'current congruent', 'current incongruent'}, 'Location', 'NorthEast')
+clear data
+
+
+
+cmap = brewermap(2, 'RdBu');
+filename = [alldir, 'analysis/stat_behavior_gratton_responsediff.mat'];
+d2 = load(filename);
+figure;
+data{1,1} = d2.avgC_C/1000;
+data{2,1} = d2.avgIC_C/1000;
+data{1,2} = d2.avgC_IC/1000;
+data{2,2} = d2.avgIC_IC/1000;
+h  = rm_raincloud(data, cmap);
+% note that the x and y axes are switched
+xlabel('Reaction time (s)')
+yticklabels({'previous IC', 'previous C'}) % in reverse order because of switched axes!
+xlim([.350 1.1500])
+
+%% Figure S3: coherence of connections not significant (uncorrected)
+c = load([alldir 'analysis/stat_coh_pre.mat']);
+freqs = {'theta', 'alpha', 'beta', 'gamma2', 'gamma3'};
+
+%%%%%%%%%%%%%%%%%
+% RAW COHERENCE %
+%%%%%%%%%%%%%%%%%
+for k=1:numel(freqs), cohmean2{k} = zeros(7,7);cohstd2{k} = zeros(7,7); end
+ncomp2=zeros(7,7,5);
+idx_nonsig = setdiff(1:numel(c.effect), c.idx_sign_uncorrected');
+for k=1:numel(idx_nonsig)
+    idx=idx_nonsig(k);
+    e=c.effect(idx);
+    
+    % find ROI
+    if strfind(e.roi1, 'occipital'), roi1 = 1;
+    elseif strfind(e.roi1, 'parietal'), roi1 = 2;
+    elseif strfind(e.roi1, 'motor'), roi1 = 3; 
+    elseif strfind(e.roi1, 'frontal'), roi1 = 4; end
+    if strfind(e.roi2, 'occipital'), roi2 = 1;
+    elseif strfind(e.roi2, 'parietal'), roi2 = 2;
+    elseif strfind(e.roi2, 'motor'), roi2 = 3; 
+    elseif strfind(e.roi2, 'frontal'), roi2 = 4; end
+
+    % find lateralization
+    if strfind(e.roi1, 'ipsi'), l1 = 0;
+    elseif strfind(e.roi1, 'contra'), l1 = 3; 
+    elseif strfind(e.roi1, 'midline'), l1 =3; end
+    if strfind(e.roi2, 'ipsi'), l2 = 0;
+    elseif strfind(e.roi2, 'contra'), l2 = 3; 
+    elseif strfind(e.roi2, 'midline'), l2 = 3; end
+    
+    for ii=1:numel(freqs), if strcmp(freqs{ii}, e.freq), fidx = ii; end, end
+    
+    cohmean2{fidx}(l1+roi1, l2+roi2) = 100*mean(c.allcohC(:,idx)./c.allcohIC(:,idx)-1);
+    cohstd2{fidx}(l1+roi1, l2+roi2) = 100*std(c.allcohC(:,idx)./c.allcohIC(:,idx)-1);
+    ncomp2(l1+roi1, l2+roi2, fidx) = ncomp2(l1+roi1, l2+roi2, fidx)+1;
+end
+% average over connections within the same areas
+for k=1:numel(cohmean2)
+    cohmean2{k} = cohmean2{k} + transpose(cohmean2{k});
+    cohstd2{k} = cohstd2{k} + transpose(cohstd2{k});
+    ncomp2(:,:,k) = ncomp2(:,:,k) + transpose(ncomp2(:,:,k));
+end
+    ncomp2(ncomp2(:)==0)=nan;
+for k=1:numel(cohmean2)
+   cohmean2{k} =  cohmean2{k}./ncomp2(:,:,k);
+   cohmean2{k}(isnan(cohmean2{k})) = 0;
+   cohstd2{k} =  cohstd2{k}./ncomp2(:,:,k);
+   cohstd2{k}(isnan(cohstd2{k})) = 0;
+end
+
+
+maxnumber = abs(cat(3,cohmean2{:}));
+maxnumber = max(maxnumber(:));
+maxnumberstd = (cat(3,cohstd2{:}));
+maxnumberstd = max(maxnumberstd(:));
+for k=1:numel(cohmean2)
+    figure;
+    viscircles([0,0], 1, 'color','k'); hold on
+    suptitle(sprintf('mean %s, nonsig',freqs{k}))
+    vismot_circularGraph(cohmean2{k}(order, order),'std', cohstd2{k}(order, order), 'Colormap', repmat(cat(3,cmap(1,:), cmap(2,:)), [7 1 1]), 'Label', label, 'maxnumber', maxnumber, 'maxnumberstd', maxnumberstd);
+end
+
+%%%%%%%%%%%%
+% T-VALUES %
+%%%%%%%%%%%%
+for k=1:numel(freqs), coh2{k} = zeros(7,7); end
+ncomp=zeros(7,7,numel(freqs));
+idx_nonsig = setdiff(1:numel(c.effect), c.idx_sign_uncorrected');
+for k=1:numel(idx_nonsig)
+    idx=idx_nonsig(k);
+    e=c.effect(idx);
+    
+    % find ROI
+    if strfind(e.roi1, 'occipital'), roi1 = 1;
+    elseif strfind(e.roi1, 'parietal'), roi1 = 2;
+    elseif strfind(e.roi1, 'motor'), roi1 = 3; 
+    elseif strfind(e.roi1, 'frontal'), roi1 = 4; end
+    if strfind(e.roi2, 'occipital'), roi2 = 1;
+    elseif strfind(e.roi2, 'parietal'), roi2 = 2;
+    elseif strfind(e.roi2, 'motor'), roi2 = 3; 
+    elseif strfind(e.roi2, 'frontal'), roi2 = 4; end
+
+    % find lateralization
+    if strfind(e.roi1, 'ipsi'), l1 = 0;
+    elseif strfind(e.roi1, 'contra'), l1 = 3; 
+    elseif strfind(e.roi1, 'midline'), l1 =3; end
+    if strfind(e.roi2, 'ipsi'), l2 = 0;
+    elseif strfind(e.roi2, 'contra'), l2 = 3; 
+    elseif strfind(e.roi2, 'midline'), l2 = 3; end
+    
+    for ii=1:numel(freqs), if strcmp(freqs{ii}, e.freq), fidx = ii; end, end
+    
+    coh2{fidx}(l1+roi1, l2+roi2) = e.stat + coh2{fidx}(l1+roi1, l2+roi2);
+    ncomp(l1+roi1, l2+roi2, fidx) = ncomp(l1+roi1, l2+roi2, fidx)+1;
+end
+% average over connections within the same area
+for k=1:numel(freqs)
+    coh2{k} = coh2{k} + transpose(coh2{k});
+    ncomp(:,:,k) = ncomp(:,:,k) + transpose(ncomp(:,:,k));
+end
+    ncomp(ncomp(:)==0)=nan;
+for k=1:numel(freqs)
+   coh2{k} =  coh2{k}./ncomp(:,:,k);
+   coh2{k}(isnan(coh2{k})) = 0;
+end
+
+maxnumber = abs(cat(3,coh2{:}));
+maxnumber = max(maxnumber(:));
+for k=1:numel(freqs)
+    figure;
+    viscircles([0,0], 1, 'color','k'); hold on
+    suptitle(sprintf('%s, not sig',freqs{k}))
+    vismot_circularGraph(coh2{k}(order, order), 'Colormap', repmat(cat(3,cmap(1,:), cmap(2,:)), [7 1 1]), 'Label', label,'maxnumber', maxnumber);
+end
+
