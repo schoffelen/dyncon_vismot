@@ -59,7 +59,7 @@ for k=1:numel(list)
 end
 [H_r,P_r,CI_r,STATS_r] = ttest(avgC_r, avgIC_r)
 
-filename = [subjects(1).pathname, 'stat_behavior_simon.mat'];
+filename = [subjects(1).pathname, '/stat_behavior_simon.mat'];
 save(filename, 'data', 'avgC', 'avgIC', 'avgC_r', 'avgIC_r', 'avgC_l', 'avgIC_l','H', 'P', 'CI', 'STATS','perc', 'H_l', 'P_l', 'CI_l', 'STATS_l', 'H_r', 'P_r', 'CI_r', 'STATS_r')
 %% Are subjects faster when the current and previous trial are of the same condition?
 for k=1:numel(list)
