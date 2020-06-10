@@ -24,7 +24,9 @@ load(filename, 'stat', 'c', 'ic')
 if ~doroi
   % take the raw effect of the largest cluster
   for k=1:numel(stat)
-    [~, ix] = min([stat{k}.posclusters(1).prob stat{k}.negclusters(1).prob]);
+    if isempty(stat{k}.posclusters), stat{k}.posclusters(1).prob = nan; end
+    if isempty(stat{k}.negclusters), stat{k}.negclusters(1).prob = nan; end
+    [~, ix] = nanmin([stat{k}.posclusters(1).prob stat{k}.negclusters(1).prob]);
     if ix==1
       tmpc(:,k) = mean(c(stat{k}.posclusterslabelmat==1,k,:),1);
       tmpic(:,k) = mean(ic(stat{k}.posclusterslabelmat==1,k,:),1);
@@ -53,11 +55,15 @@ cfg.statistic = 'ft_statfun_bayesfactor';
 cfg.ivar = 1;
 cfg.uvar = 2;
 cfg.design = [ones(1,n), 2*ones(1,n); 1:n, 1:n];
-bayes = ft_timelockstatistics(cfg, datC, datIC);
+bayesfactor = ft_timelockstatistics(cfg, datC, datIC);
+
+save(filename, 'bayesfactor', '-append')
+
 
 %% for the coherence results
 alldir = '/project/3011085.03/';
-load(fullfile([alldir, 'analysis/stat_coh_pre.mat']), 'effect', 'idx_sign_uncorrected');
+filename = fullfile([alldir, 'analysis/stat_coh_pre.mat']);
+load(filename, 'effect', 'idx_sign_uncorrected');
 
 for k=1:numel(effect)
   c(:,k) = effect(k).rawcoh_C;
@@ -80,9 +86,10 @@ cfg.statistic = 'ft_statfun_bayesfactor';
 cfg.ivar = 1;
 cfg.uvar = 2;
 cfg.design = [ones(1,n), 2*ones(1,n); 1:n, 1:n];
-bayes = ft_timelockstatistics(cfg, datC, datIC);
+bayesfactor = ft_timelockstatistics(cfg, datC, datIC);
 
 for k=1:numel(effect)
-  effect(k).bayesfactor = bayes.bf10(k);
+  effect(k).bayesfactor = bayesfactor.bf10(k);
 end
+save(filename, 'effect', '-append');
 effect(idx_sign_uncorrected).bayesfactor
