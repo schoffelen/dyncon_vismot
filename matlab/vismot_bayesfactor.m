@@ -3,6 +3,7 @@ alldir = '/project/3011085.03/';
 if ~exist('stratifyflag', 'var'), stratifyflag = true; end
 if ~exist('toi', 'var'), toi = 'post'; end
 if ~exist('doroi', 'var'), doroi = false; end
+if ~exist('dosave', 'var'), dosave = false; end
 
 switch toi
   case 'post'
@@ -57,8 +58,9 @@ cfg.uvar = 2;
 cfg.design = [ones(1,n), 2*ones(1,n); 1:n, 1:n];
 bayesfactor = ft_timelockstatistics(cfg, datC, datIC);
 
-save(filename, 'bayesfactor', '-append')
-
+if dosave
+  save(filename, 'bayesfactor', '-append')
+end
 
 %% for the coherence results
 alldir = '/project/3011085.03/';
@@ -91,5 +93,7 @@ bayesfactor = ft_timelockstatistics(cfg, datC, datIC);
 for k=1:numel(effect)
   effect(k).bayesfactor = bayesfactor.bf10(k);
 end
-save(filename, 'effect', '-append');
+if dosave
+  save(filename, 'effect', '-append');
+end
 effect(idx_sign_uncorrected).bayesfactor
