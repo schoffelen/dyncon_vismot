@@ -25,13 +25,13 @@ for k=1:numel(list_orig)
   list_anon{k} = sprintf('sub%02d', k);
 end
 list_transform = [list_orig, list_anon];
-save('list_transform.mat', 'list_transform')
+% save('list_transform.mat', 'list_transform')
 
 list = list_anon;
-save('list.mat', 'list')
+% save('list.mat', 'list')
 
 %% Change filenames of folders
-go = false; % change to true to change filenames
+go = true%false; % change to true to change filenames
 
  % change all filenames in this folder
 filelist = dir('/project/3011085.03/analysis/**');
@@ -48,22 +48,30 @@ for k=1:numel(filelist)
 end
 filelist(rem) = [];
 
+% sort on length of directory (which forces to start at the lowest
+% directory level)
+for k=1:numel(filelist)
+  fulldirlevel(k) = count(fullfile(filelist(k).folder, filelist(k).name), '/');
+end
+[~, sortbydirlevel] = sort(fulldirlevel,2,'descend');
+filelist = filelist(sortbydirlevel);
+
 % loop through folders and replace subjectnames
-status = zeros(numel(filelist),1);
+status = ones(numel(filelist),1);
 for k=1:numel(filelist)
   fname_orig = fullfile(filelist(k).folder, filelist(k).name);
-  if contains(fname_orig, list_orig)
+  if contains(filelist(k).name, list_orig)
     for j=1:numel(list)
-      if contains(fname_orig, list_orig{j})
+      if contains(filelist(k).name, list_orig{j})
         fname_new = strrep(fname_orig, list_orig{j}, list_anon{j});
-        if go, status(k) = movefile(fname_orig, fname_new); end
+        if go, [status(k), message] = movefile(fname_orig, fname_new); end
+        if ~status(k), sprintf(message), pause, end
         break
       end
     end
   end
 end
-if any(status) % possibly because a directory contains double subjectnames, 
-  % and these were changed in a previous iteration
+if any(~status) 
   error('SOMETHING WENT HORRIBLY WRONG! CHECK WHICH FOLDERS WERE NOT CORRECTLY MOVED!')
 end
 
@@ -73,20 +81,21 @@ filelist = dir('/project/3011085.03/analysis/**');
 filelist = filelist(~[filelist.isdir]);  %only keep files
 
 % loop through folders and replace subjectnames
-status = zeros(numel(filelist),1);
+status = ones(numel(filelist),1);
 for k=1:numel(filelist)
   fname_orig = fullfile(filelist(k).folder, filelist(k).name);
-  if contains(fname_orig, list_orig)
+  if contains(filelist(k).name, list_orig)
     for j=1:numel(list)
-      if contains(fname_orig, list_orig{j})
+      if contains(filelist(k).name, list_orig{j})
         fname_new = strrep(fname_orig, list_orig{j}, list_anon{j});
-        if go, status(k) = movefile(fname_orig, fname_new); end
+        if go, [status(k), message] = movefile(fname_orig, fname_new); end
+        if ~status(k), sprintf(message), pause, end
         break
       end
     end
   end
 end
-if any(status)
+if any(~status)
   error('SOMETHING WENT HORRIBLY WRONG! CHECK WHICH FILES WERE NOT CORRECTLY MOVED!')
 end
 
